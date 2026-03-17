@@ -2,13 +2,13 @@
 
 ## 组员信息
 
-
-| Name        | QM Stu Number | BUPT Stu Number | GitHub email            |
-|-------------|---------------|-----------------|-------------------------|
-| Wanran Sun  | 231223254     | 2023213626      | 112358wan@gmail.com     |
-| Siyuan Xue  | 231223564     | 2023213657      | jp2023213657@qmul.ac.uk |
-| Yutong Wu   | 231223575     | 2023213658      | serovia@126.com         |
-| Xiaoxiao Ma | 231223715     | 2023213672      | maxiaoxiao@bupt.edu.cn  |
+|     Name      | QM Stu Number | BUPT Stu Number |       GitHub email        |
+|---------------|---------------|-----------------|---------------------------|
+| Wanran Sun    | 231223254     | 2023213626      | <112358wan@gmail.com>     |
+| Xiankun Jiang | 231223542     | 2023213655      | <jp2023213655@qmul.ac.uk> |
+| Siyuan Xue    | 231223564     | 2023213657      | <jp2023213657@qmul.ac.uk> |
+| Yutong Wu     | 231223575     | 2023213658      | <serovia@126.com>         |
+| Xiaoxiao Ma   | 231223715     | 2023213672      | <maxiaoxiao@bupt.edu.cn>  |
 
 ## Stack
 
@@ -167,4 +167,3 @@ mvn clean package
 cp target/ta105.war "$(brew --prefix tomcat)/libexec/webapps/"
 "$(brew --prefix tomcat)/bin/catalina" start
 ```
-

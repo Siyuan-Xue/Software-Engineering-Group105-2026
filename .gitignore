@@ -28,3 +28,6 @@ target/
 .m2/
 
 /.idea/
+
+# Local startup script (not for repo)
+init.txt
