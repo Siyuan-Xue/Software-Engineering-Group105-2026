@@ -10,6 +10,9 @@
 | Yutong Wu     | 231223575     | 2023213658      | <serovia@126.com>         |
 | Xiaoxiao Ma   | 231223715     | 2023213672      | <maxiaoxiao@bupt.edu.cn>  |
 
+## TA-information
+Wang Ruijia wang_ruijia@bupt.edu.cn
+
 ## Stack
 
 - OpenJDK 25.0.2 (or any Java 17+)
