@@ -2,13 +2,14 @@
 
 ## 组员信息
 
-|     Name      | QM Stu Number | BUPT Stu Number |       GitHub email        |
+| Name          | QM Stu Number | BUPT Stu Number | GitHub email              |
 |---------------|---------------|-----------------|---------------------------|
 | Wanran Sun    | 231223254     | 2023213626      | <112358wan@gmail.com>     |
 | Xiankun Jiang | 231223542     | 2023213655      | <jp2023213655@qmul.ac.uk> |
 | Siyuan Xue    | 231223564     | 2023213657      | <jp2023213657@qmul.ac.uk> |
 | Yutong Wu     | 231223575     | 2023213658      | <serovia@126.com>         |
 | Xiaoxiao Ma   | 231223715     | 2023213672      | <maxiaoxiao@bupt.edu.cn>  |
+| Rui Ma        | 231223151     | 2023213616      | <940874485@qq.com>        |
 
 ## TA-information
 Wang Ruijia wang_ruijia@bupt.edu.cn
@@ -138,6 +139,13 @@ brew services start tomcat
 
 - `http://localhost:8080/ta105/`
 
+运行项目：
+启动 Tomcat。
+访问 http://localhost:8080/（或你配置的端口），你将看到 QM HIRE 的落地页。
+测试账号：系统首次启动时会自动生成一个测试账号：
+邮箱：test@example.com
+密码：password
+
 API：
 
 - `http://localhost:8080/ta105/api/v1/hello`
@@ -170,3 +178,4 @@ mvn clean package
 cp target/ta105.war "$(brew --prefix tomcat)/libexec/webapps/"
 "$(brew --prefix tomcat)/bin/catalina" start
 ```
+

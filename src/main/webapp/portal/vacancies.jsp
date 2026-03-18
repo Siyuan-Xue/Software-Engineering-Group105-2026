@@ -1,0 +1,180 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vacancies - QM HIRE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0f172a',
+                        accent: '#3b82f6',
+                        'background-light': '#f8fafc',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+    <div class="relative flex min-h-screen w-full flex-col">
+        <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
+
+        <div class="flex flex-1 overflow-hidden">
+            <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
+
+            <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
+                <div class="max-w-6xl mx-auto w-full">
+                    <!-- Page Header -->
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                        <div>
+                            <h2 class="text-slate-900 text-3xl font-black tracking-tight">Available Vacancies</h2>
+                            <p class="text-slate-500 text-sm mt-2">Browse and apply for open Teaching Assistant positions across departments.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+                                <span class="material-symbols-outlined text-sm">notifications_active</span>
+                                Job Alerts
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-8 shadow-sm">
+                        <div class="flex flex-col lg:flex-row gap-4">
+                            <div class="flex-1">
+                                <label class="flex flex-col w-full">
+                                    <div class="flex w-full items-center rounded-lg bg-slate-100 px-4 h-11 border border-transparent focus-within:border-primary/30 transition-all">
+                                        <span class="material-symbols-outlined text-slate-400">search</span>
+                                        <input class="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm font-medium pl-3 outline-none" placeholder="Search by course code, title, or keywords..." />
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <div class="relative group">
+                                    <button class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                        <span>Department</span>
+                                        <span class="material-symbols-outlined text-lg">expand_more</span>
+                                    </button>
+                                </div>
+                                <div class="relative group">
+                                    <button class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                        <span>Term</span>
+                                        <span class="material-symbols-outlined text-lg">expand_more</span>
+                                    </button>
+                                </div>
+                                <button class="flex h-11 items-center gap-2 rounded-lg bg-slate-100 px-4 text-sm font-bold text-slate-500 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">filter_list</span>
+                                    More Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vacancy List -->
+                    <div class="space-y-4">
+                        <!-- Vacancy Card 1 -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-md tracking-wider">CS101</span>
+                                        <a href="${pageContext.request.contextPath}/portal/vacancy_detail.jsp?id=1" class="text-xl font-bold text-slate-900 hover:text-primary transition-colors cursor-pointer">Introduction to Computer Science</a>
+                                    </div>
+                                    <p class="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
+                                        Seeking 3 Teaching Assistants for the Fall 2024 semester. Responsibilities include leading weekly discussion sections, grading assignments, and holding office hours. Strong programming skills in Python required.
+                                    </p>
+                                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">domain</span>
+                                            Computer Science
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">schedule</span>
+                                            10-15 hrs/week
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">payments</span>
+                                            $25/hr
+                                        </div>
+                                        <div class="flex items-center gap-1.5 text-amber-600 font-medium">
+                                            <span class="material-symbols-outlined text-[18px]">event</span>
+                                            Deadline: Oct 15
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col justify-between items-end gap-4 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                                    <button class="text-slate-400 hover:text-red-500 transition-colors" title="Save Vacancy">
+                                        <span class="material-symbols-outlined text-2xl">favorite_border</span>
+                                    </button>
+                                    <a href="${pageContext.request.contextPath}/portal/vacancy_detail.jsp?id=1" class="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors text-center">
+                                        Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vacancy Card 2 -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-bold uppercase rounded-md tracking-wider">MATH220</span>
+                                        <a href="${pageContext.request.contextPath}/portal/vacancy_detail.jsp?id=2" class="text-xl font-bold text-slate-900 hover:text-primary transition-colors cursor-pointer">Linear Algebra</a>
+                                    </div>
+                                    <p class="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
+                                        Looking for experienced TAs to assist with grading and holding review sessions before exams. Must have completed MATH220 or equivalent with an A grade.
+                                    </p>
+                                    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">domain</span>
+                                            Mathematics
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">schedule</span>
+                                            8-10 hrs/week
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">payments</span>
+                                            $22/hr
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-[18px]">event</span>
+                                            Deadline: Oct 20
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col justify-between items-end gap-4 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                                    <button class="text-red-500 transition-colors" title="Saved">
+                                        <span class="material-symbols-outlined text-2xl fill-1">favorite</span>
+                                    </button>
+                                    <a href="${pageContext.request.contextPath}/portal/vacancy_detail.jsp?id=2" class="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors text-center">
+                                        Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Load More -->
+                    <div class="mt-8 text-center">
+                        <button class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">sync</span>
+                            Load More Vacancies
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
