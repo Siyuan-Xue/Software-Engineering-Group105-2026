@@ -1,4 +1,4 @@
-package ta105;
+package com.bupt.ta.web.filter;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -14,10 +14,10 @@ public class EncodingFilter implements Filter {
     private static final String DEFAULT_ENCODING = "UTF-8";
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        req.setCharacterEncoding(DEFAULT_ENCODING);
-        resp.setCharacterEncoding(DEFAULT_ENCODING);
-        chain.doFilter(req, resp);
+        request.setCharacterEncoding(DEFAULT_ENCODING);
+        response.setCharacterEncoding(DEFAULT_ENCODING);
+        chain.doFilter(request, response);
     }
 }

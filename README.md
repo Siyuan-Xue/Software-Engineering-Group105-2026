@@ -16,17 +16,20 @@ Wang Ruijia wang_ruijia@bupt.edu.cn
 
 ## Stack
 
-- OpenJDK 25.0.2 (or any Java 17+)
+- OpenJDK 25.0.2 (or any Java 17+ runtime)
 - Tomcat 11
-- Servlet API (Jakarta) + 原生 HTML/CSS/JS
+- Servlet API (Jakarta) + JSP
+- Jackson JSON persistence
+- JUnit 6
 - Maven WAR project
 
 ## Architecture
 
-- 单 WAR 同源部署，前后端分离：
-- 前端：纯静态 `index.html` + `static/js` + `static/css`（不使用 JSP）
-- 后端：Servlet 仅提供 JSON API（`/api/v1/*`）
-- 注解注册：`@WebServlet`、`@WebFilter`，不使用 `web.xml`
+- 单 WAR 同源部署
+- 前端：JSP 页面与共享组件
+- 后端：Servlet/JSP Web 应用 + 基于文件的持久化层
+- 数据存储：`data/*.json`，不使用数据库
+- 注解注册：`@WebFilter`，`web.xml` 仅保留最小描述符
 
 ## Project Layout
 
@@ -35,50 +38,16 @@ Wang Ruijia wang_ruijia@bupt.edu.cn
 ├── pom.xml
 └── src/
     └── main/
-        ├── java/ta105/
-        │   ├── EncodingFilter.java
-        │   ├── HelloApiServlet.java
-        │   └── User.java
-        ├── resources/
+        ├── java/com/bupt/ta/
+        │   ├── config/
+        │   ├── persistence/
+        │   ├── repository/
+        │   ├── service/
+        │   └── web/
+        ├── test/
         └── webapp/
-            ├── index.html
-            └── static/
-                ├── css/style.css
-                └── js/app.js
-```
-
-## API Contract
-
-### GET `/api/v1/hello?name=Nick`
-
-```json
-{
-  "title": "105组TA招聘系统",
-  "user": { "name": "Nick", "email": "user@example.com" }
-}
-```
-
-### POST `/api/v1/hello`
-
-Request:
-
-```json
-{ "name": "Nick" }
-```
-
-Response:
-
-```json
-{
-  "title": "105组TA招聘系统",
-  "user": { "name": "Nick", "email": "user@example.com" }
-}
-```
-
-### Error Response
-
-```json
-{ "code": "INVALID_REQUEST", "message": "..." }
+            ├── index.jsp
+            └── portal/
 ```
 
 ## macOS 从零安装并运行（Homebrew）
@@ -106,10 +75,11 @@ mvn -version
 "$(brew --prefix tomcat)/bin/catalina" version
 ```
 
-### 4) 构建项目
+### 4) 构建与测试项目
 
 ```bash
 cd /path/to/your/TA_recruitment_system
+mvn test
 mvn clean package
 ```
 
@@ -146,20 +116,10 @@ brew services start tomcat
 邮箱：test@example.com
 密码：password
 
-API：
+运行期数据目录：
 
-- `http://localhost:8080/ta105/api/v1/hello`
-- `http://localhost:8080/ta105/api/v1/hello?name=Nick`
-
-curl：
-
-```bash
-curl "http://localhost:8080/ta105/api/v1/hello"
-curl "http://localhost:8080/ta105/api/v1/hello?name=Nick"
-curl -X POST "http://localhost:8080/ta105/api/v1/hello" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Nick"}'
-```
+- 默认：`./data`
+- 可覆盖：`-Dta105.data.dir=/absolute/path/to/data`
 
 ### 8) 停止 Tomcat
 
@@ -178,4 +138,3 @@ mvn clean package
 cp target/ta105.war "$(brew --prefix tomcat)/libexec/webapps/"
 "$(brew --prefix tomcat)/bin/catalina" start
 ```
-
