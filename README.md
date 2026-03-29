@@ -40,6 +40,8 @@ Wang Ruijia wang_ruijia@bupt.edu.cn
     └── main/
         ├── java/com/bupt/ta/
         │   ├── config/
+        │   ├── bootstrap/
+        │   ├── model/
         │   ├── persistence/
         │   ├── repository/
         │   ├── service/
@@ -120,6 +122,16 @@ brew services start tomcat
 
 - 默认：`./data`
 - 可覆盖：`-Dta105.data.dir=/absolute/path/to/data`
+
+数据库层使用方式：
+
+```java
+TaDatabase db = DatabaseProvider.get(servletContext);
+db.users().findByEmail("user@example.com");
+db.resumes().listByUserId(userId);
+db.jobs().listOpen(Instant.now());
+db.applications().listByJobId(jobId);
+```
 
 ### 8) 停止 Tomcat
 
