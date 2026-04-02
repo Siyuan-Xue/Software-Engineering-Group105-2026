@@ -27,6 +27,9 @@ replay_pid*
 target/
 .m2/
 
+# macOS Finder metadata
+.DS_Store
+
 /.idea/
 
 # Local startup script (not for repo)
