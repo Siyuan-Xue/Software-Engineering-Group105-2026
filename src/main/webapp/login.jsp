@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +43,21 @@
         <h2 class="text-3xl font-black mb-2">Welcome back</h2>
         <p class="text-slate-500 mb-8">Sign in to access your TA portal</p>
 
-        <form action="${pageContext.request.contextPath}/portal/dashboard.jsp" method="POST" class="space-y-5">
+        <%-- Error and Success Messages --%>
+        <c:if test="${not empty errorMessage}">
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
+                <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                <p class="text-sm font-medium">${errorMessage}</p>
+            </div>
+        </c:if>
+        <c:if test="${not empty successMessage}">
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
+                <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
+                <p class="text-sm font-medium">${successMessage}</p>
+            </div>
+        </c:if>
+
+        <form action="${pageContext.request.contextPath}/login" method="POST" class="space-y-5">
             <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">University Email</label>
                 <div class="relative">

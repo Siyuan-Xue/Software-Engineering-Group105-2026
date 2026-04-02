@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +35,20 @@
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
                 <div class="max-w-2xl mx-auto space-y-8">
+                    <%-- Error and Success Messages --%>
+                    <c:if test="${not empty errorMessage}">
+                        <div class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                            <p class="text-sm font-medium">${errorMessage}</p>
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty successMessage}">
+                        <div class="p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
+                            <p class="text-sm font-medium">${successMessage}</p>
+                        </div>
+                    </c:if>
+
                     <div>
                         <h2 class="text-3xl font-black text-slate-900 tracking-tight">Settings</h2>
                         <p class="text-slate-500 mt-2">Manage your account preferences and settings.</p>
@@ -88,7 +103,7 @@
                                     <p class="text-sm text-slate-500">Sign out of your account securely.</p>
                                 </div>
                             </div>
-                            <a href="${pageContext.request.contextPath}/" class="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-600/20">
+                            <a href="${pageContext.request.contextPath}/logout" class="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-600/20">
                                 Logout
                             </a>
                         </div>

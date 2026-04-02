@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,10 +35,24 @@
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
                 <div class="max-w-5xl mx-auto space-y-8">
+                    <%-- Error and Success Messages --%>
+                    <c:if test="${not empty errorMessage}">
+                        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                            <p class="text-sm font-medium">${errorMessage}</p>
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty successMessage}">
+                        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
+                            <p class="text-sm font-medium">${successMessage}</p>
+                        </div>
+                    </c:if>
+
                     <!-- Welcome Header -->
                     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
                         <div>
-                            <h2 class="text-primary text-4xl font-black tracking-tight mb-2">Welcome back, Alex!</h2>
+                            <h2 class="text-primary text-4xl font-black tracking-tight mb-2">Welcome back, <c:out value="${userName != null ? userName : 'User'}"/>!</h2>
                             <p class="text-slate-500 text-lg">Here's a summary of your academic journey today.</p>
                         </div>
                         <div class="flex gap-3">
@@ -59,21 +74,21 @@
                                 <span class="material-symbols-outlined">description</span>
                             </div>
                             <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Saved Resumes</p>
-                            <p class="text-primary text-4xl font-black">2</p>
+                            <p class="text-primary text-4xl font-black"><c:out value="${savedResumesCount != null ? savedResumesCount : 0}"/></p>
                         </div>
                         <div class="flex flex-col gap-2 rounded-2xl bg-white p-6 border border-primary/5 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-primary">
                             <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
                                 <span class="material-symbols-outlined">send</span>
                             </div>
                             <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Submitted</p>
-                            <p class="text-primary text-4xl font-black">4</p>
+                            <p class="text-primary text-4xl font-black"><c:out value="${submittedApplicationsCount != null ? submittedApplicationsCount : 0}"/></p>
                         </div>
                         <div class="flex flex-col gap-2 rounded-2xl bg-white p-6 border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
                             <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
                                 <span class="material-symbols-outlined">pending_actions</span>
                             </div>
                             <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Under Review</p>
-                            <p class="text-primary text-4xl font-black">1</p>
+                            <p class="text-primary text-4xl font-black"><c:out value="${underReviewApplicationsCount != null ? underReviewApplicationsCount : 0}"/></p>
                         </div>
                     </div>
 
@@ -86,44 +101,32 @@
                             </div>
                             <div class="bg-white rounded-2xl border border-primary/5 shadow-sm overflow-hidden">
                                 <div class="divide-y divide-primary/5">
-                                    <div class="flex items-center gap-4 p-5 hover:bg-slate-50 transition-colors">
-                                        <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-600">
-                                            <span class="material-symbols-outlined text-xl">check_circle</span>
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-bold text-primary">Application for CS101 submitted</p>
-                                            <p class="text-xs text-slate-500">Computer Science Department • Graduate Research Asst.</p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-xs font-semibold text-slate-400">Yesterday</p>
-                                            <p class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">SUCCESS</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-4 p-5 hover:bg-slate-50 transition-colors">
-                                        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                            <span class="material-symbols-outlined text-xl">edit_document</span>
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-bold text-primary">Resume "Academic_V2.pdf" updated</p>
-                                            <p class="text-xs text-slate-500">Profile Management</p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-xs font-semibold text-slate-400">2 days ago</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-4 p-5 hover:bg-slate-50 transition-colors">
-                                        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                                            <span class="material-symbols-outlined text-xl">visibility</span>
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-bold text-primary">Application viewed by Recruiter</p>
-                                            <p class="text-xs text-slate-500">Engineering Lab • Summer Internship</p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-xs font-semibold text-slate-400">3 days ago</p>
-                                            <p class="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">REVIEWING</p>
-                                        </div>
-                                    </div>
+                                    <c:choose>
+                                        <c:when test="${empty recentActivities}">
+                                            <div class="p-5 text-center text-slate-500 text-sm">
+                                                No recent activities.
+                                            </div>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach items="${recentActivities}" var="activity">
+                                                <div class="flex items-center gap-4 p-5 hover:bg-slate-50 transition-colors">
+                                                    <div class="w-10 h-10 rounded-xl ${activity.iconBgClass} flex items-center justify-center ${activity.iconColorClass}">
+                                                        <span class="material-symbols-outlined text-xl"><c:out value="${activity.icon}"/></span>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <p class="text-sm font-bold text-primary"><c:out value="${activity.title}"/></p>
+                                                        <p class="text-xs text-slate-500"><c:out value="${activity.description}"/></p>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <p class="text-xs font-semibold text-slate-400"><c:out value="${activity.timeAgo}"/></p>
+                                                        <c:if test="${not empty activity.statusBadge}">
+                                                            <p class="text-[10px] font-bold ${activity.statusBadgeClass} px-2 py-0.5 rounded-full inline-block mt-1"><c:out value="${activity.statusBadge}"/></p>
+                                                        </c:if>
+                                                    </div>
+                                                </div>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
@@ -134,27 +137,29 @@
                             <div class="bg-primary text-white rounded-2xl p-6 shadow-xl shadow-primary/20 relative overflow-hidden group">
                                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
                                 <h4 class="font-bold text-lg mb-2 relative z-10">Complete Bio-Data</h4>
-                                <p class="text-sm text-white/70 mb-4 relative z-10">Your profile is 85% complete. Add your references to stand out to recruiters.</p>
+                                <p class="text-sm text-white/70 mb-4 relative z-10">Your profile is <c:out value="${profileCompletionPercentage != null ? profileCompletionPercentage : 0}"/>% complete. Add your references to stand out to recruiters.</p>
                                 <button class="w-full py-2.5 bg-white text-primary rounded-xl font-bold text-sm shadow-md hover:bg-slate-100 transition-colors relative z-10">Update Profile</button>
                             </div>
 
                             <div class="bg-white rounded-2xl p-6 border border-primary/5 shadow-sm">
                                 <h4 class="font-bold text-primary mb-4">Upcoming Deadlines</h4>
                                 <ul class="space-y-4">
-                                    <li class="flex items-start gap-3">
-                                        <div class="w-2 h-2 mt-1.5 rounded-full bg-red-500"></div>
-                                        <div>
-                                            <p class="text-sm font-bold text-slate-700">TA Application Spring</p>
-                                            <p class="text-xs text-red-500 font-semibold">Ends in 2 days</p>
-                                        </div>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="w-2 h-2 mt-1.5 rounded-full bg-amber-500"></div>
-                                        <div>
-                                            <p class="text-sm font-bold text-slate-700">Library Assistant Pool</p>
-                                            <p class="text-xs text-amber-600 font-semibold">Ends in 5 days</p>
-                                        </div>
-                                    </li>
+                                    <c:choose>
+                                        <c:when test="${empty upcomingDeadlines}">
+                                            <li class="text-sm text-slate-500">No upcoming deadlines.</li>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach items="${upcomingDeadlines}" var="deadline">
+                                                <li class="flex items-start gap-3">
+                                                    <div class="w-2 h-2 mt-1.5 rounded-full ${deadline.colorClass}"></div>
+                                                    <div>
+                                                        <p class="text-sm font-bold text-slate-700"><c:out value="${deadline.title}"/></p>
+                                                        <p class="text-xs ${deadline.textColorClass} font-semibold"><c:out value="${deadline.timeRemaining}"/></p>
+                                                    </div>
+                                                </li>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </ul>
                             </div>
                         </div>

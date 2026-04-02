@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +34,21 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
+                <div class="max-w-6xl mx-auto w-full">
+                    <%-- Error and Success Messages --%>
+                    <c:if test="${not empty errorMessage}">
+                        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                            <p class="text-sm font-medium">${errorMessage}</p>
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty successMessage}">
+                        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
+                            <p class="text-sm font-medium">${successMessage}</p>
+                        </div>
+                    </c:if>
+                </div>
                 <div class="max-w-6xl mx-auto w-full h-[calc(100vh-120px)] flex bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                     <!-- Chat List -->
                     <div class="w-80 border-r border-slate-200 flex flex-col">
@@ -40,100 +56,120 @@
                             <h2 class="text-xl font-bold text-slate-900">Messages</h2>
                         </div>
                         <div class="flex-1 overflow-y-auto">
-                            <!-- Chat Item 1 (Active) -->
-                            <button class="w-full p-4 flex gap-3 text-left transition-colors hover:bg-slate-50 bg-primary/5 border-r-4 border-primary">
-                                <img src="https://ui-avatars.com/api/?name=System&background=0D8ABC&color=fff" alt="System" class="w-12 h-12 rounded-full object-cover" />
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-baseline">
-                                        <h3 class="text-sm font-bold text-slate-900 truncate">System Messages</h3>
-                                        <span class="text-[10px] text-slate-500">10:30 AM</span>
+                            <c:choose>
+                                <c:when test="${empty conversations}">
+                                    <div class="p-6 text-center text-slate-500 text-sm">
+                                        No conversations yet.
                                     </div>
-                                    <p class="text-xs text-slate-500 truncate mt-1">Welcome to the platform!</p>
-                                </div>
-                                <div class="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold">
-                                    1
-                                </div>
-                            </button>
-
-                            <!-- Chat Item 2 -->
-                            <button class="w-full p-4 flex gap-3 text-left transition-colors hover:bg-slate-50">
-                                <img src="https://ui-avatars.com/api/?name=Dr+Smith&background=random" alt="Dr. Smith" class="w-12 h-12 rounded-full object-cover" />
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex justify-between items-baseline">
-                                        <h3 class="text-sm font-bold text-slate-900 truncate">CS101 - MO (Dr. Smith)</h3>
-                                        <span class="text-[10px] text-slate-500">Yesterday</span>
-                                    </div>
-                                    <p class="text-xs text-slate-500 truncate mt-1">Your application has been received.</p>
-                                </div>
-                            </button>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:forEach items="${conversations}" var="conv">
+                                        <!-- Chat Item -->
+                                        <button class="w-full p-4 flex gap-3 text-left transition-colors hover:bg-slate-50 ${conv.id == activeConversation.id ? 'bg-primary/5 border-r-4 border-primary' : ''}">
+                                            <img src="https://ui-avatars.com/api/?name=${conv.otherUserName}&background=random" alt="${conv.otherUserName}" class="w-12 h-12 rounded-full object-cover" />
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-baseline">
+                                                    <h3 class="text-sm font-bold text-slate-900 truncate"><c:out value="${conv.otherUserName}"/></h3>
+                                                    <span class="text-[10px] text-slate-500"><c:out value="${conv.lastMessageTime}"/></span>
+                                                </div>
+                                                <p class="text-xs text-slate-500 truncate mt-1"><c:out value="${conv.lastMessagePreview}"/></p>
+                                            </div>
+                                            <c:if test="${conv.unreadCount > 0}">
+                                                <div class="w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                                                    <c:out value="${conv.unreadCount}"/>
+                                                </div>
+                                            </c:if>
+                                        </button>
+                                    </c:forEach>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
 
                     <!-- Chat Window -->
                     <div class="flex-1 flex flex-col">
-                        <!-- Chat Header -->
-                        <div class="p-4 border-b border-slate-200 flex items-center gap-3">
-                            <img src="https://ui-avatars.com/api/?name=System&background=0D8ABC&color=fff" alt="System" class="w-10 h-10 rounded-full object-cover" />
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-900">System Messages</h3>
-                                <span class="text-xs text-green-500 font-medium">Online</span>
-                            </div>
-                        </div>
-
-                        <!-- Messages Area -->
-                        <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-                            <!-- System Message -->
-                            <div class="flex gap-3 flex-row">
-                                <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-slate-200 text-slate-700 mx-auto text-center rounded-lg italic">
-                                    Welcome to the platform! We are glad to have you here.
-                                    <div class="text-[10px] mt-1 text-slate-400">
-                                        10:30 AM
+                        <c:choose>
+                            <c:when test="${empty activeConversation}">
+                                <div class="flex-1 flex items-center justify-center text-slate-400">
+                                    <div class="text-center">
+                                        <span class="material-symbols-outlined text-4xl mb-2">chat</span>
+                                        <p>Select a conversation to start messaging</p>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Example of a regular message from another user -->
-                            <!--
-                            <div class="flex gap-3 flex-row">
-                                <img src="https://ui-avatars.com/api/?name=Dr+Smith&background=random" alt="Dr. Smith" class="w-8 h-8 rounded-full object-cover self-end" />
-                                <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-white text-slate-900 border border-slate-200 rounded-bl-none">
-                                    Hello Alex. I saw your application for the CS101 TA position.
-                                    <div class="text-[10px] mt-1 text-slate-400">
-                                        Yesterday
+                            </c:when>
+                            <c:otherwise>
+                                <!-- Chat Header -->
+                                <div class="p-4 border-b border-slate-200 flex items-center gap-3">
+                                    <img src="https://ui-avatars.com/api/?name=${activeConversation.otherUserName}&background=random" alt="${activeConversation.otherUserName}" class="w-10 h-10 rounded-full object-cover" />
+                                    <div>
+                                        <h3 class="text-sm font-bold text-slate-900"><c:out value="${activeConversation.otherUserName}"/></h3>
+                                        <span class="text-xs text-green-500 font-medium">Online</span>
                                     </div>
                                 </div>
-                            </div>
-                            -->
 
-                            <!-- Example of a message from the current user -->
-                            <!--
-                            <div class="flex gap-3 flex-row-reverse">
-                                <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-primary text-white rounded-br-none">
-                                    Thank you, Dr. Smith. I am looking forward to it.
-                                    <div class="text-[10px] mt-1 text-white/70 text-right">
-                                        Yesterday
-                                    </div>
+                                <!-- Messages Area -->
+                                <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+                                    <c:forEach items="${activeConversation.messages}" var="msg">
+                                        <c:choose>
+                                            <c:when test="${msg.isSystemMessage}">
+                                                <!-- System Message -->
+                                                <div class="flex gap-3 flex-row">
+                                                    <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-slate-200 text-slate-700 mx-auto text-center rounded-lg italic">
+                                                        <c:out value="${msg.content}"/>
+                                                        <div class="text-[10px] mt-1 text-slate-400">
+                                                            <c:out value="${msg.time}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </c:when>
+                                            <c:when test="${msg.isFromCurrentUser}">
+                                                <!-- Message from current user -->
+                                                <div class="flex gap-3 flex-row-reverse">
+                                                    <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-primary text-white rounded-br-none">
+                                                        <c:out value="${msg.content}"/>
+                                                        <div class="text-[10px] mt-1 text-white/70 text-right">
+                                                            <c:out value="${msg.time}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <!-- Message from other user -->
+                                                <div class="flex gap-3 flex-row">
+                                                    <img src="https://ui-avatars.com/api/?name=${activeConversation.otherUserName}&background=random" alt="${activeConversation.otherUserName}" class="w-8 h-8 rounded-full object-cover self-end" />
+                                                    <div class="max-w-[70%] p-3 rounded-2xl text-sm bg-white text-slate-900 border border-slate-200 rounded-bl-none">
+                                                        <c:out value="${msg.content}"/>
+                                                        <div class="text-[10px] mt-1 text-slate-400">
+                                                            <c:out value="${msg.time}"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </c:forEach>
                                 </div>
-                            </div>
-                            -->
-                        </div>
 
-                        <!-- Message Input -->
-                        <div class="p-4 border-t border-slate-200">
-                            <form class="flex gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="Type a message..."
-                                    class="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
-                                />
-                                <button
-                                    type="submit"
-                                    class="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
-                                >
-                                    <span class="material-symbols-outlined">send</span>
-                                </button>
-                            </form>
-                        </div>
+                                <!-- Message Input -->
+                                <div class="p-4 border-t border-slate-200">
+                                    <form action="${pageContext.request.contextPath}/messages" method="POST" class="flex gap-2">
+                                        <input type="hidden" name="conversationId" value="${activeConversation.id}" />
+                                        <input
+                                            type="text"
+                                            name="messageContent"
+                                            placeholder="Type a message..."
+                                            class="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                            required
+                                        />
+                                        <button
+                                            type="submit"
+                                            class="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primary/90 transition-colors"
+                                        >
+                                            <span class="material-symbols-outlined">send</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
                 </div>
             </main>

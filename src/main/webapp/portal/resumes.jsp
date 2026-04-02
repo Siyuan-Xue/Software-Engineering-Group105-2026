@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,6 +35,20 @@
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
                 <div class="max-w-6xl mx-auto w-full">
+                    <%-- Error and Success Messages --%>
+                    <c:if test="${not empty errorMessage}">
+                        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                            <p class="text-sm font-medium">${errorMessage}</p>
+                        </div>
+                    </c:if>
+                    <c:if test="${not empty successMessage}">
+                        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
+                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
+                            <p class="text-sm font-medium">${successMessage}</p>
+                        </div>
+                    </c:if>
+
                     <!-- Page Header -->
                     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                         <div>
@@ -51,82 +66,69 @@
                         <!-- Left Column: Resume List -->
                         <div class="lg:col-span-2 space-y-6">
                             
-                            <!-- Resume Card 1 -->
-                            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
-                                <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
-                                        <span class="material-symbols-outlined text-xl">download</span>
-                                    </button>
-                                    <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
-                                        <span class="material-symbols-outlined text-xl">delete</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="flex items-start gap-4">
-                                    <div class="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center text-red-500 shrink-0">
-                                        <span class="material-symbols-outlined text-3xl">picture_as_pdf</span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-3 mb-1">
-                                            <h3 class="text-lg font-bold text-slate-900">Academic_CV_2024.pdf</h3>
-                                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
+                            <c:choose>
+                                <c:when test="${empty resumes}">
+                                    <div class="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
+                                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+                                            <span class="material-symbols-outlined text-3xl">description</span>
                                         </div>
-                                        <p class="text-sm text-slate-500 mb-4">Uploaded on Oct 24, 2023 • 1.2 MB</p>
-                                        
-                                        <div class="flex flex-wrap gap-2">
-                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">Computer Science</span>
-                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">Research</span>
-                                            <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-[14px]">add</span>
-                                                Add Tag
-                                            </button>
-                                        </div>
+                                        <h3 class="text-lg font-bold text-slate-900 mb-2">No resumes uploaded yet</h3>
+                                        <p class="text-sm text-slate-500">Upload your first resume to start applying for TA positions.</p>
                                     </div>
-                                </div>
-                                
-                                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                                    <span class="text-slate-500">Used in <strong class="text-slate-900">3</strong> active applications</span>
-                                    <button class="text-primary font-bold hover:underline">View Applications</button>
-                                </div>
-                            </div>
-
-                            <!-- Resume Card 2 -->
-                            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
-                                <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
-                                        <span class="material-symbols-outlined text-xl">download</span>
-                                    </button>
-                                    <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
-                                        <span class="material-symbols-outlined text-xl">delete</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="flex items-start gap-4">
-                                    <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-                                        <span class="material-symbols-outlined text-3xl">description</span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-3 mb-1">
-                                            <h3 class="text-lg font-bold text-slate-900">Industry_Resume_Tech.docx</h3>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:forEach items="${resumes}" var="resume">
+                                        <!-- Resume Card -->
+                                        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
+                                            <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
+                                                    <span class="material-symbols-outlined text-xl">download</span>
+                                                </button>
+                                                <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
+                                                    <span class="material-symbols-outlined text-xl">delete</span>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="flex items-start gap-4">
+                                                <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+                                                    <span class="material-symbols-outlined text-3xl">description</span>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-3 mb-1">
+                                                        <h3 class="text-lg font-bold text-slate-900"><c:out value="${resume.resumeName}"/></h3>
+                                                        <c:if test="${resume.isDefault}">
+                                                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
+                                                        </c:if>
+                                                    </div>
+                                                    <p class="text-sm text-slate-500 mb-4">Uploaded on <c:out value="${resume.uploadDate}"/> • <c:out value="${resume.fileSize}"/></p>
+                                                    
+                                                    <div class="flex flex-wrap gap-2">
+                                                        <c:forEach items="${resume.tags}" var="tag">
+                                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md"><c:out value="${tag}"/></span>
+                                                        </c:forEach>
+                                                        <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
+                                                            <span class="material-symbols-outlined text-[14px]">add</span>
+                                                            Add Tag
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
+                                                <span class="text-slate-500">Used in <strong class="text-slate-900"><c:out value="${resume.activeApplicationsCount}"/></strong> active application(s)</span>
+                                                <c:choose>
+                                                    <c:when test="${resume.isDefault}">
+                                                        <button class="text-primary font-bold hover:underline">View Applications</button>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <button class="text-primary font-bold hover:underline">Set as Default</button>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
                                         </div>
-                                        <p class="text-sm text-slate-500 mb-4">Uploaded on Sep 12, 2023 • 845 KB</p>
-                                        
-                                        <div class="flex flex-wrap gap-2">
-                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">Software Engineering</span>
-                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">Industry</span>
-                                            <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-[14px]">add</span>
-                                                Add Tag
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                                    <span class="text-slate-500">Used in <strong class="text-slate-900">1</strong> active application</span>
-                                    <button class="text-primary font-bold hover:underline">Set as Default</button>
-                                </div>
-                            </div>
+                                    </c:forEach>
+                                </c:otherwise>
+                            </c:choose>
 
                             <!-- Upload Area -->
                             <div class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
