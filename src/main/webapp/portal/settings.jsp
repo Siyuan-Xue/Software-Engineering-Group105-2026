@@ -35,19 +35,7 @@
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
                 <div class="max-w-2xl mx-auto space-y-8">
-                    <%-- Error and Success Messages --%>
-                    <c:if test="${not empty errorMessage}">
-                        <div class="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
-                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
-                            <p class="text-sm font-medium">${errorMessage}</p>
-                        </div>
-                    </c:if>
-                    <c:if test="${not empty successMessage}">
-                        <div class="p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
-                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
-                            <p class="text-sm font-medium">${successMessage}</p>
-                        </div>
-                    </c:if>
+                    <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp" />
 
                     <div>
                         <h2 class="text-3xl font-black text-slate-900 tracking-tight">Settings</h2>

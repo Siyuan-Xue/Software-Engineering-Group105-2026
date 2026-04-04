@@ -40,19 +40,9 @@
                         Back to Vacancies
                     </a>
 
-                    <%-- Error and Success Messages --%>
-                    <c:if test="${not empty errorMessage}">
-                        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-start gap-3">
-                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
-                            <p class="text-sm font-medium">${errorMessage}</p>
-                        </div>
-                    </c:if>
-                    <c:if test="${not empty successMessage}">
-                        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl flex items-start gap-3">
-                            <span class="material-symbols-outlined text-green-500 shrink-0">check_circle</span>
-                            <p class="text-sm font-medium">${successMessage}</p>
-                        </div>
-                    </c:if>
+                    <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
+                        <jsp:param name="containerClass" value="mb-6" />
+                    </jsp:include>
 
                     <c:choose>
                         <c:when test="${empty vacancy}">
