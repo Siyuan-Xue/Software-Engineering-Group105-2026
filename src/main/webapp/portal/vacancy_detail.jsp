@@ -45,15 +45,25 @@
                     </jsp:include>
 
                     <c:choose>
+                        <c:when test="${pageState == 'loadError'}">
+                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                <jsp:param name="variant" value="error" />
+                                <jsp:param name="icon" value="work_alert" />
+                                <jsp:param name="title" value="Vacancy unavailable" />
+                                <jsp:param name="message" value="We couldn't load this vacancy right now. Please refresh the page or return to the list and try again." />
+                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                <jsp:param name="actionLabel" value="Back to Vacancies" />
+                            </jsp:include>
+                        </c:when>
                         <c:when test="${empty vacancy}">
-                            <div class="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-                                <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">error_outline</span>
-                                <h3 class="text-xl font-bold text-slate-900 mb-2">Vacancy Not Found</h3>
-                                <p class="text-slate-500">The vacancy you are looking for does not exist or has been removed.</p>
-                                <a href="${pageContext.request.contextPath}/vacancies" class="inline-block mt-6 bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors">
-                                    Browse Vacancies
-                                </a>
-                            </div>
+                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                <jsp:param name="variant" value="notFound" />
+                                <jsp:param name="icon" value="search_off" />
+                                <jsp:param name="title" value="Vacancy not found" />
+                                <jsp:param name="message" value="The vacancy you are looking for does not exist or has been removed." />
+                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                <jsp:param name="actionLabel" value="Browse Vacancies" />
+                            </jsp:include>
                         </c:when>
                         <c:otherwise>
                             <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -124,7 +134,14 @@
                                         <div class="space-y-3 mb-8">
                                             <c:choose>
                                                 <c:when test="${empty resumeList}">
-                                                    <p class="text-sm text-slate-500 italic">No resumes found. Please upload a resume first.</p>
+                                                    <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                        <jsp:param name="icon" value="description" />
+                                                        <jsp:param name="title" value="No resumes available" />
+                                                        <jsp:param name="message" value="Upload a resume first so you can submit this application." />
+                                                        <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
+                                                        <jsp:param name="actionLabel" value="Go to Resumes" />
+                                                        <jsp:param name="containerClass" value="px-0 py-2" />
+                                                    </jsp:include>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <c:forEach items="${resumeList}" var="resume" varStatus="status">

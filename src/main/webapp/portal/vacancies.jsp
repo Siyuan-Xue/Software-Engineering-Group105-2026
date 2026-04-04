@@ -88,72 +88,86 @@
                         <jsp:param name="containerClass" value="mb-6" />
                     </jsp:include>
 
-                    <!-- Vacancy List -->
-                    <div class="space-y-4">
-                        <c:choose>
-                            <c:when test="${empty vacancies}">
-                                <div class="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-                                    <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">search_off</span>
-                                    <h3 class="text-xl font-bold text-slate-900 mb-2">No vacancies found</h3>
-                                    <p class="text-slate-500">Try adjusting your search filters or check back later for new opportunities.</p>
-                                </div>
-                            </c:when>
-                            <c:otherwise>
-                                <c:forEach items="${vacancies}" var="vacancy">
-                                    <!-- Vacancy Card -->
-                                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
-                                        <div class="flex flex-col md:flex-row gap-6">
-                                            <div class="flex-1">
-                                                <div class="flex items-center gap-3 mb-2">
-                                                    <span class="px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-md tracking-wider"><c:out value="${vacancy.courseCode}"/></span>
-                                                    <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="text-xl font-bold text-slate-900 hover:text-primary transition-colors cursor-pointer"><c:out value="${vacancy.title}"/></a>
-                                                </div>
-                                                <p class="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
-                                                    <c:out value="${vacancy.description}"/>
-                                                </p>
-                                                <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                                                    <div class="flex items-center gap-1.5">
-                                                        <span class="material-symbols-outlined text-[18px]">domain</span>
-                                                        <c:out value="${vacancy.department}"/>
+                    <c:choose>
+                        <c:when test="${pageState == 'loadError'}">
+                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                <jsp:param name="variant" value="error" />
+                                <jsp:param name="icon" value="travel_explore" />
+                                <jsp:param name="title" value="Vacancies unavailable" />
+                                <jsp:param name="message" value="We couldn't load the vacancy list right now. Please refresh the page and try again." />
+                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                <jsp:param name="actionLabel" value="Try Again" />
+                            </jsp:include>
+                        </c:when>
+                        <c:otherwise>
+                            <!-- Vacancy List -->
+                            <div class="space-y-4">
+                                <c:choose>
+                                    <c:when test="${empty vacancies}">
+                                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                            <jsp:param name="icon" value="search_off" />
+                                            <jsp:param name="title" value="No vacancies found" />
+                                            <jsp:param name="message" value="Try adjusting your search filters or check back later for new opportunities." />
+                                        </jsp:include>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:forEach items="${vacancies}" var="vacancy">
+                                            <!-- Vacancy Card -->
+                                            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+                                                <div class="flex flex-col md:flex-row gap-6">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center gap-3 mb-2">
+                                                            <span class="px-2.5 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-md tracking-wider"><c:out value="${vacancy.courseCode}"/></span>
+                                                            <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="text-xl font-bold text-slate-900 hover:text-primary transition-colors cursor-pointer"><c:out value="${vacancy.title}"/></a>
+                                                        </div>
+                                                        <p class="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
+                                                            <c:out value="${vacancy.description}"/>
+                                                        </p>
+                                                        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                                                            <div class="flex items-center gap-1.5">
+                                                                <span class="material-symbols-outlined text-[18px]">domain</span>
+                                                                <c:out value="${vacancy.department}"/>
+                                                            </div>
+                                                            <div class="flex items-center gap-1.5">
+                                                                <span class="material-symbols-outlined text-[18px]">schedule</span>
+                                                                <c:out value="${vacancy.hoursPerWeek}"/> hrs/week
+                                                            </div>
+                                                            <div class="flex items-center gap-1.5">
+                                                                <span class="material-symbols-outlined text-[18px]">payments</span>
+                                                                $<c:out value="${vacancy.hourlyRate}"/>/hr
+                                                            </div>
+                                                            <div class="flex items-center gap-1.5 text-amber-600 font-medium">
+                                                                <span class="material-symbols-outlined text-[18px]">event</span>
+                                                                Deadline: <c:out value="${vacancy.deadline}"/>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div class="flex items-center gap-1.5">
-                                                        <span class="material-symbols-outlined text-[18px]">schedule</span>
-                                                        <c:out value="${vacancy.hoursPerWeek}"/> hrs/week
-                                                    </div>
-                                                    <div class="flex items-center gap-1.5">
-                                                        <span class="material-symbols-outlined text-[18px]">payments</span>
-                                                        $<c:out value="${vacancy.hourlyRate}"/>/hr
-                                                    </div>
-                                                    <div class="flex items-center gap-1.5 text-amber-600 font-medium">
-                                                        <span class="material-symbols-outlined text-[18px]">event</span>
-                                                        Deadline: <c:out value="${vacancy.deadline}"/>
+                                                    <div class="flex flex-col justify-between items-end gap-4 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                                                        <button class="text-slate-400 hover:text-red-500 transition-colors" title="Save Vacancy">
+                                                            <span class="material-symbols-outlined text-2xl">favorite_border</span>
+                                                        </button>
+                                                        <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors text-center">
+                                                            Apply Now
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="flex flex-col justify-between items-end gap-4 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                                <button class="text-slate-400 hover:text-red-500 transition-colors" title="Save Vacancy">
-                                                    <span class="material-symbols-outlined text-2xl">favorite_border</span>
-                                                </button>
-                                                <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors text-center">
-                                                    Apply Now
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </c:forEach>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
+                                        </c:forEach>
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
 
-                    <!-- Load More -->
-                    <c:if test="${not empty vacancies}">
-                        <div class="mt-8 text-center">
-                            <button class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-2">
-                                <span class="material-symbols-outlined text-lg">sync</span>
-                                Load More Vacancies
-                            </button>
-                        </div>
-                    </c:if>
+                            <!-- Load More -->
+                            <c:if test="${not empty vacancies}">
+                                <div class="mt-8 text-center">
+                                    <button class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-lg">sync</span>
+                                        Load More Vacancies
+                                    </button>
+                                </div>
+                            </c:if>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </main>
         </div>

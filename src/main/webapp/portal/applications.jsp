@@ -88,94 +88,110 @@
                     </form>
 
                     <!-- Applications Table -->
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200">
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Module Name</th>
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Department</th>
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Submitted Date</th>
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Resume Used</th>
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
-                                        <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <c:choose>
-                                        <c:when test="${empty applications}">
-                                            <tr>
-                                                <td colspan="6" class="px-6 py-8 text-center text-slate-500">
-                                                    <div class="flex flex-col items-center justify-center">
-                                                        <span class="material-symbols-outlined text-4xl mb-2 text-slate-300">inbox</span>
-                                                        <p class="font-medium">No applications found.</p>
-                                                        <p class="text-sm mt-1">You haven't applied to any vacancies yet or no applications match your filters.</p>
-                                                    </div>
-                                                </td>
+                    <c:choose>
+                        <c:when test="${pageState == 'loadError'}">
+                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                <jsp:param name="variant" value="error" />
+                                <jsp:param name="icon" value="work_history" />
+                                <jsp:param name="title" value="Applications unavailable" />
+                                <jsp:param name="message" value="We couldn't load your application history right now. Please refresh the page and try again." />
+                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/applications" />
+                                <jsp:param name="actionLabel" value="Try Again" />
+                            </jsp:include>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200">
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Module Name</th>
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Department</th>
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Submitted Date</th>
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Resume Used</th>
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
                                             </tr>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:forEach items="${applications}" var="app">
-                                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                                    <td class="px-6 py-5">
-                                                        <div class="font-bold text-slate-900"><c:out value="${app.vacancyTitle}"/></div>
-                                                        <div class="text-xs text-slate-400 font-medium"><c:out value="${app.courseCode}"/> (Ref: #<c:out value="${app.applicationId}"/>)</div>
-                                                    </td>
-                                                    <td class="px-6 py-5 text-sm text-slate-600 font-medium">Engineering & Tech</td> <%-- Assuming department isn't in Application object, or we can add it later --%>
-                                                    <td class="px-6 py-5 text-sm text-slate-600"><c:out value="${app.appliedDate}"/></td>
-                                                    <td class="px-6 py-5">
-                                                        <div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded w-fit">
-                                                            <span class="material-symbols-outlined text-sm">description</span>
-                                                            <c:out value="${app.resumeName}"/>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-6 py-5">
-                                                        <c:choose>
-                                                            <c:when test="${app.status == 'Accepted'}">
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                                                                    Accepted
-                                                                </span>
-                                                            </c:when>
-                                                            <c:when test="${app.status == 'Rejected'}">
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                                                                    Rejected
-                                                                </span>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                                                                    <c:out value="${app.status}"/>
-                                                                </span>
-                                                            </c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                    <td class="px-6 py-5 text-right">
-                                                        <button class="text-slate-400 hover:text-primary transition-colors">
-                                                            <span class="material-symbols-outlined">more_vert</span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </c:forEach>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- Pagination -->
-                        <c:if test="${not empty applications}">
-                            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                                <p class="text-sm text-slate-500">Showing applications</p>
-                                <div class="flex gap-2">
-                                    <button class="p-1 rounded border border-slate-200 bg-white text-slate-400 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                                        <span class="material-symbols-outlined">chevron_left</span>
-                                    </button>
-                                    <button class="p-1 rounded border border-slate-200 bg-white text-slate-600 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                                        <span class="material-symbols-outlined">chevron_right</span>
-                                    </button>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            <c:choose>
+                                                <c:when test="${empty applications}">
+                                                    <tr>
+                                                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">
+                                                            <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                                <jsp:param name="icon" value="inbox" />
+                                                                <jsp:param name="title" value="No applications found" />
+                                                                <jsp:param name="message" value="You haven't applied to any vacancies yet or no applications match your current filters." />
+                                                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                                                <jsp:param name="actionLabel" value="Browse Vacancies" />
+                                                            </jsp:include>
+                                                        </td>
+                                                    </tr>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <c:forEach items="${applications}" var="app">
+                                                        <tr class="hover:bg-slate-50/50 transition-colors">
+                                                            <td class="px-6 py-5">
+                                                                <div class="font-bold text-slate-900"><c:out value="${app.vacancyTitle}"/></div>
+                                                                <div class="text-xs text-slate-400 font-medium"><c:out value="${app.courseCode}"/> (Ref: #<c:out value="${app.applicationId}"/>)</div>
+                                                            </td>
+                                                            <td class="px-6 py-5 text-sm text-slate-600 font-medium">Engineering & Tech</td> <%-- Assuming department isn't in Application object, or we can add it later --%>
+                                                            <td class="px-6 py-5 text-sm text-slate-600"><c:out value="${app.appliedDate}"/></td>
+                                                            <td class="px-6 py-5">
+                                                                <div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded w-fit">
+                                                                    <span class="material-symbols-outlined text-sm">description</span>
+                                                                    <c:out value="${app.resumeName}"/>
+                                                                </div>
+                                                            </td>
+                                                            <td class="px-6 py-5">
+                                                                <c:choose>
+                                                                    <c:when test="${app.status == 'Accepted'}">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                                                            Accepted
+                                                                        </span>
+                                                                    </c:when>
+                                                                    <c:when test="${app.status == 'Rejected'}">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                                                            Rejected
+                                                                        </span>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                                            <c:out value="${app.status}"/>
+                                                                        </span>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                            </td>
+                                                            <td class="px-6 py-5 text-right">
+                                                                <button class="text-slate-400 hover:text-primary transition-colors">
+                                                                    <span class="material-symbols-outlined">more_vert</span>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </c:forEach>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </tbody>
+                                    </table>
                                 </div>
+                                
+                                <!-- Pagination -->
+                                <c:if test="${not empty applications}">
+                                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                                        <p class="text-sm text-slate-500">Showing applications</p>
+                                        <div class="flex gap-2">
+                                            <button class="p-1 rounded border border-slate-200 bg-white text-slate-400 hover:text-primary transition-colors disabled:opacity-50" disabled>
+                                                <span class="material-symbols-outlined">chevron_left</span>
+                                            </button>
+                                            <button class="p-1 rounded border border-slate-200 bg-white text-slate-600 hover:text-primary transition-colors disabled:opacity-50" disabled>
+                                                <span class="material-symbols-outlined">chevron_right</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </c:if>
                             </div>
-                        </c:if>
-                    </div>
+                        </c:otherwise>
+                    </c:choose>
 
                     <!-- Informational Banner -->
                     <div class="mt-8 p-4 bg-primary/5 border border-primary/10 rounded-xl flex gap-4">

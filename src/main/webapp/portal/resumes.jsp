@@ -51,137 +51,149 @@
                         </button>
                     </div>
 
-                    <!-- Main Content Grid -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Left Column: Resume List -->
-                        <div class="lg:col-span-2 space-y-6">
-                            
-                            <c:choose>
-                                <c:when test="${empty resumes}">
-                                    <div class="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
-                                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
-                                            <span class="material-symbols-outlined text-3xl">description</span>
-                                        </div>
-                                        <h3 class="text-lg font-bold text-slate-900 mb-2">No resumes uploaded yet</h3>
-                                        <p class="text-sm text-slate-500">Upload your first resume to start applying for TA positions.</p>
-                                    </div>
-                                </c:when>
-                                <c:otherwise>
-                                    <c:forEach items="${resumes}" var="resume">
-                                        <!-- Resume Card -->
-                                        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
-                                            <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
-                                                    <span class="material-symbols-outlined text-xl">download</span>
-                                                </button>
-                                                <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
-                                                    <span class="material-symbols-outlined text-xl">delete</span>
-                                                </button>
-                                            </div>
-                                            
-                                            <div class="flex items-start gap-4">
-                                                <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-                                                    <span class="material-symbols-outlined text-3xl">description</span>
-                                                </div>
-                                                <div class="flex-1">
-                                                    <div class="flex items-center gap-3 mb-1">
-                                                        <h3 class="text-lg font-bold text-slate-900"><c:out value="${resume.resumeName}"/></h3>
-                                                        <c:if test="${resume.isDefault}">
-                                                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
-                                                        </c:if>
-                                                    </div>
-                                                    <p class="text-sm text-slate-500 mb-4">Uploaded on <c:out value="${resume.uploadDate}"/> • <c:out value="${resume.fileSize}"/></p>
-                                                    
-                                                    <div class="flex flex-wrap gap-2">
-                                                        <c:forEach items="${resume.tags}" var="tag">
-                                                            <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md"><c:out value="${tag}"/></span>
-                                                        </c:forEach>
-                                                        <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
-                                                            <span class="material-symbols-outlined text-[14px]">add</span>
-                                                            Add Tag
+                    <c:choose>
+                        <c:when test="${pageState == 'loadError'}">
+                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                <jsp:param name="variant" value="error" />
+                                <jsp:param name="icon" value="description" />
+                                <jsp:param name="title" value="Resumes unavailable" />
+                                <jsp:param name="message" value="We couldn't load your saved resumes right now. Please refresh the page and try again." />
+                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
+                                <jsp:param name="actionLabel" value="Try Again" />
+                            </jsp:include>
+                        </c:when>
+                        <c:otherwise>
+                            <!-- Main Content Grid -->
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <!-- Left Column: Resume List -->
+                                <div class="lg:col-span-2 space-y-6">
+                                    
+                                    <c:choose>
+                                        <c:when test="${empty resumes}">
+                                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                                                <jsp:param name="icon" value="description" />
+                                                <jsp:param name="title" value="No resumes uploaded yet" />
+                                                <jsp:param name="message" value="Upload your first resume to start applying for TA positions." />
+                                            </jsp:include>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach items="${resumes}" var="resume">
+                                                <!-- Resume Card -->
+                                                <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative group">
+                                                    <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
+                                                            <span class="material-symbols-outlined text-xl">download</span>
+                                                        </button>
+                                                        <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
+                                                            <span class="material-symbols-outlined text-xl">delete</span>
                                                         </button>
                                                     </div>
+                                                    
+                                                    <div class="flex items-start gap-4">
+                                                        <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
+                                                            <span class="material-symbols-outlined text-3xl">description</span>
+                                                        </div>
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center gap-3 mb-1">
+                                                                <h3 class="text-lg font-bold text-slate-900"><c:out value="${resume.resumeName}"/></h3>
+                                                                <c:if test="${resume.isDefault}">
+                                                                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
+                                                                </c:if>
+                                                            </div>
+                                                            <p class="text-sm text-slate-500 mb-4">Uploaded on <c:out value="${resume.uploadDate}"/> • <c:out value="${resume.fileSize}"/></p>
+                                                            
+                                                            <div class="flex flex-wrap gap-2">
+                                                                <c:forEach items="${resume.tags}" var="tag">
+                                                                    <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md"><c:out value="${tag}"/></span>
+                                                                </c:forEach>
+                                                                <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
+                                                                    <span class="material-symbols-outlined text-[14px]">add</span>
+                                                                    Add Tag
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
+                                                        <span class="text-slate-500">Used in <strong class="text-slate-900"><c:out value="${resume.activeApplicationsCount}"/></strong> active application(s)</span>
+                                                        <c:choose>
+                                                            <c:when test="${resume.isDefault}">
+                                                                <button class="text-primary font-bold hover:underline">View Applications</button>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <button class="text-primary font-bold hover:underline">Set as Default</button>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                                                <span class="text-slate-500">Used in <strong class="text-slate-900"><c:out value="${resume.activeApplicationsCount}"/></strong> active application(s)</span>
-                                                <c:choose>
-                                                    <c:when test="${resume.isDefault}">
-                                                        <button class="text-primary font-bold hover:underline">View Applications</button>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <button class="text-primary font-bold hover:underline">Set as Default</button>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </div>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+
+                                    <!-- Upload Area -->
+                                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
+                                        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                            <span class="material-symbols-outlined text-3xl">cloud_upload</span>
                                         </div>
-                                    </c:forEach>
-                                </c:otherwise>
-                            </c:choose>
-
-                            <!-- Upload Area -->
-                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-10 text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                    <span class="material-symbols-outlined text-3xl">cloud_upload</span>
+                                        <h3 class="text-lg font-bold text-slate-900 mb-2">Drag & drop your resume here</h3>
+                                        <p class="text-sm text-slate-500 mb-6">Supported formats: PDF, DOCX, DOC (Max 5MB)</p>
+                                        <button class="bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                                            Browse Files
+                                        </button>
+                                    </div>
                                 </div>
-                                <h3 class="text-lg font-bold text-slate-900 mb-2">Drag & drop your resume here</h3>
-                                <p class="text-sm text-slate-500 mb-6">Supported formats: PDF, DOCX, DOC (Max 5MB)</p>
-                                <button class="bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm">
-                                    Browse Files
-                                </button>
-                            </div>
-                        </div>
 
-                        <!-- Right Column: Tips & Info -->
-                        <div class="space-y-6">
-                            <!-- AI Resume Review (Placeholder) -->
-                            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
-                                <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-                                <div class="flex items-center gap-2 mb-4 relative z-10">
-                                    <span class="material-symbols-outlined">auto_awesome</span>
-                                    <h3 class="font-bold text-lg">AI Resume Review</h3>
+                                <!-- Right Column: Tips & Info -->
+                                <div class="space-y-6">
+                                    <!-- AI Resume Review (Placeholder) -->
+                                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
+                                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                                        <div class="flex items-center gap-2 mb-4 relative z-10">
+                                            <span class="material-symbols-outlined">auto_awesome</span>
+                                            <h3 class="font-bold text-lg">AI Resume Review</h3>
+                                        </div>
+                                        <p class="text-sm text-white/80 mb-6 relative z-10 leading-relaxed">
+                                            Get instant feedback on your resume tailored for TA positions. Our AI analyzes keywords, formatting, and impact.
+                                        </p>
+                                        <button class="w-full bg-white text-indigo-600 font-bold py-2.5 rounded-lg text-sm hover:bg-opacity-90 transition-colors relative z-10 shadow-md">
+                                            Analyze Default Resume
+                                        </button>
+                                    </div>
+
+                                    <!-- Tips Card -->
+                                    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-amber-500">lightbulb</span>
+                                            Resume Tips for TAs
+                                        </h3>
+                                        <ul class="space-y-4">
+                                            <li class="flex gap-3">
+                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
+                                                <p class="text-sm text-slate-600 leading-relaxed">
+                                                    <strong class="text-slate-900 block mb-0.5">Highlight Teaching Experience</strong>
+                                                    Include any tutoring, mentoring, or previous TA roles prominently.
+                                                </p>
+                                            </li>
+                                            <li class="flex gap-3">
+                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
+                                                <p class="text-sm text-slate-600 leading-relaxed">
+                                                    <strong class="text-slate-900 block mb-0.5">Relevant Coursework</strong>
+                                                    List advanced courses related to the module you're applying for.
+                                                </p>
+                                            </li>
+                                            <li class="flex gap-3">
+                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
+                                                <p class="text-sm text-slate-600 leading-relaxed">
+                                                    <strong class="text-slate-900 block mb-0.5">Keep it Concise</strong>
+                                                    Aim for 1-2 pages maximum. Academic CVs can be longer if necessary.
+                                                </p>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
-                                <p class="text-sm text-white/80 mb-6 relative z-10 leading-relaxed">
-                                    Get instant feedback on your resume tailored for TA positions. Our AI analyzes keywords, formatting, and impact.
-                                </p>
-                                <button class="w-full bg-white text-indigo-600 font-bold py-2.5 rounded-lg text-sm hover:bg-opacity-90 transition-colors relative z-10 shadow-md">
-                                    Analyze Default Resume
-                                </button>
                             </div>
-
-                            <!-- Tips Card -->
-                            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-amber-500">lightbulb</span>
-                                    Resume Tips for TAs
-                                </h3>
-                                <ul class="space-y-4">
-                                    <li class="flex gap-3">
-                                        <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                        <p class="text-sm text-slate-600 leading-relaxed">
-                                            <strong class="text-slate-900 block mb-0.5">Highlight Teaching Experience</strong>
-                                            Include any tutoring, mentoring, or previous TA roles prominently.
-                                        </p>
-                                    </li>
-                                    <li class="flex gap-3">
-                                        <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                        <p class="text-sm text-slate-600 leading-relaxed">
-                                            <strong class="text-slate-900 block mb-0.5">Relevant Coursework</strong>
-                                            List advanced courses related to the module you're applying for.
-                                        </p>
-                                    </li>
-                                    <li class="flex gap-3">
-                                        <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                        <p class="text-sm text-slate-600 leading-relaxed">
-                                            <strong class="text-slate-900 block mb-0.5">Keep it Concise</strong>
-                                            Aim for 1-2 pages maximum. Academic CVs can be longer if necessary.
-                                        </p>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </main>
         </div>
