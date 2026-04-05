@@ -55,11 +55,11 @@
                                     <p class="text-slate-500 text-lg">Here's a summary of your academic journey today.</p>
                                 </div>
                                 <div class="flex gap-3">
-                                    <a href="${pageContext.request.contextPath}/portal/resumes.jsp" class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                                    <a href="${pageContext.request.contextPath}/resumes" class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
                                         <span class="material-symbols-outlined text-lg">upload</span>
                                         Upload New Resume
                                     </a>
-                                    <a href="${pageContext.request.contextPath}/portal/vacancies.jsp" class="flex items-center gap-2 bg-white border border-primary/10 text-primary px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-colors">
+                                    <a href="${pageContext.request.contextPath}/vacancies" class="flex items-center gap-2 bg-white border border-primary/10 text-primary px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-colors">
                                         <span class="material-symbols-outlined text-lg">search</span>
                                         Find Vacancies
                                     </a>
