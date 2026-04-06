@@ -78,7 +78,7 @@ public class AuthFilter implements Filter {
         
         userProfile.put("email", currentUser.getEmail());
         // 应对 User 实体缺失 department 的问题，这里先放一个默认值，防止页面出错
-        userProfile.put("department", "Computer Science"); 
+        userProfile.put("department", "None"); 
         // fallback 兼容字段
         req.setAttribute("userName", fullName); 
 

@@ -2,7 +2,7 @@ package com.bupt.ta.service;
 
 import com.bupt.ta.model.User;
 import com.bupt.ta.repository.UserRepository;
-import com.bupt.ta.util.PasswordUtil; // 我们等下会建这个工具类
+import com.bupt.ta.util.PasswordUtil;
 
 import java.util.Optional;
 import java.util.UUID;

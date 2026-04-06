@@ -1,8 +1,8 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.config.DatabaseConfig; // 导入你的配置类
+import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.json.JsonUserRepository; // 导入你提供的真实类
+import com.bupt.ta.persistence.json.JsonUserRepository;
 import com.bupt.ta.service.AuthService;
 
 import jakarta.servlet.ServletException;
