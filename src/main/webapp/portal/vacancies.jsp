@@ -25,6 +25,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -34,15 +35,15 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-6xl mx-auto w-full">
+                <div class="portal-page">
                     <!-- Page Header -->
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div class="portal-page-header mb-2">
                         <div>
-                            <h2 class="text-slate-900 text-3xl font-black tracking-tight">Available Vacancies</h2>
-                            <p class="text-slate-500 text-sm mt-2">Browse and apply for open Teaching Assistant positions across departments.</p>
+                            <h2 class="portal-page-title">Available Vacancies</h2>
+                            <p class="portal-page-copy">Browse and apply for open Teaching Assistant positions across departments.</p>
                         </div>
                         <div class="flex gap-3">
-                            <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+                            <button class="portal-btn portal-btn-secondary">
                                 <span class="material-symbols-outlined text-sm">notifications_active</span>
                                 Job Alerts
                             </button>
@@ -50,7 +51,7 @@
                     </div>
 
                     <!-- Search and Filters -->
-                    <form action="${pageContext.request.contextPath}/vacancies" method="GET" class="bg-white border border-slate-200 rounded-xl p-4 mb-8 shadow-sm">
+                    <form action="${pageContext.request.contextPath}/vacancies" method="GET" class="portal-filter-bar">
                         <div class="flex flex-col lg:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="flex flex-col w-full">
@@ -77,7 +78,7 @@
                                     </select>
                                     <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
                                 </div>
-                                <button type="submit" class="flex h-11 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-white hover:bg-primary/90 transition-colors shadow-md">
+                                <button type="submit" class="portal-btn portal-btn-primary">
                                     Search
                                 </button>
                             </div>
@@ -113,7 +114,7 @@
                                     <c:otherwise>
                                         <c:forEach items="${vacancies}" var="vacancy">
                                             <!-- Vacancy Card -->
-                                            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group">
+                                            <div class="portal-panel p-6 hover:shadow-md transition-shadow group">
                                                 <div class="flex flex-col md:flex-row gap-6">
                                                     <div class="flex-1">
                                                         <div class="flex items-center gap-3 mb-2">
@@ -146,7 +147,7 @@
                                                         <button class="text-slate-400 hover:text-red-500 transition-colors" title="Save Vacancy">
                                                             <span class="material-symbols-outlined text-2xl">favorite_border</span>
                                                         </button>
-                                                        <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="w-full md:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:bg-primary/90 transition-colors text-center">
+                                                        <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}" class="portal-btn portal-btn-primary w-full md:w-auto text-center">
                                                             Apply Now
                                                         </a>
                                                     </div>
@@ -160,7 +161,7 @@
                             <!-- Load More -->
                             <c:if test="${not empty vacancies}">
                                 <div class="mt-8 text-center">
-                                    <button class="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-2">
+                                    <button class="portal-btn portal-btn-secondary">
                                         <span class="material-symbols-outlined text-lg">sync</span>
                                         Load More Vacancies
                                     </button>

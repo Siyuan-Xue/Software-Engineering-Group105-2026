@@ -19,14 +19,14 @@
 </c:choose>
 <c:choose>
     <c:when test="${actionStyle == 'secondary'}">
-        <c:set var="actionClass" value="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50" />
+        <c:set var="actionClass" value="border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50" />
     </c:when>
     <c:otherwise>
-        <c:set var="actionClass" value="bg-primary text-white shadow-md hover:bg-primary/90" />
+        <c:set var="actionClass" value="bg-primary text-white shadow-md shadow-primary/10 hover:bg-primary/90" />
     </c:otherwise>
 </c:choose>
-<div class="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm ${param.containerClass}">
-    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${iconWrapClass}">
+<div class="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm ${param.containerClass}">
+    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl ${iconWrapClass}">
         <span class="material-symbols-outlined text-3xl"><c:out value="${stateIcon}" /></span>
     </div>
     <h3 class="text-xl font-bold ${titleClass}"><c:out value="${param.title}" /></h3>
@@ -34,7 +34,7 @@
         <p class="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-500"><c:out value="${param.message}" /></p>
     </c:if>
     <c:if test="${not empty param.actionHref and not empty param.actionLabel}">
-        <a href="${param.actionHref}" class="mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-bold transition-colors ${actionClass}">
+        <a href="${param.actionHref}" class="mt-6 inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-colors ${actionClass}">
             <c:out value="${param.actionLabel}" />
         </a>
     </c:if>

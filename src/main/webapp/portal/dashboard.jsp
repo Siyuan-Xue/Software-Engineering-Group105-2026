@@ -25,6 +25,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -34,7 +35,7 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-5xl mx-auto space-y-8">
+                <div class="portal-page">
                     <c:set var="dashboardState" value="${empty pageState ? 'normal' : pageState}" />
                     <c:set var="displayName" value="${empty userName ? 'User' : userName}" />
                     <c:set var="resumeCount" value="${empty savedResumesCount ? 0 : savedResumesCount}" />
@@ -57,7 +58,7 @@
                         </c:when>
                         <c:otherwise>
                             <c:if test="${activitiesEmpty or deadlinesEmpty}">
-                                <div class="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                                <div class="portal-callout border-amber-200 bg-amber-50/80 p-5">
                                     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                         <div>
                                             <p class="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Dashboard Status</p>
@@ -76,7 +77,7 @@
                                                 </c:otherwise>
                                             </c:choose>
                                         </div>
-                                        <a href="${pageContext.request.contextPath}/vacancies" class="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90">
+                                        <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
                                             Explore Vacancies
                                         </a>
                                     </div>
@@ -84,10 +85,10 @@
                             </c:if>
 
                             <!-- Welcome Header -->
-                            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <div class="portal-page-header">
                                 <div>
-                                    <h2 class="text-primary text-4xl font-black tracking-tight mb-2">Welcome back, <c:out value="${displayName}"/>!</h2>
-                                    <p class="text-slate-500 text-lg">
+                                    <h2 class="portal-page-title">Welcome back, <c:out value="${displayName}"/>!</h2>
+                                    <p class="portal-page-copy">
                                         <c:choose>
                                             <c:when test="${activitiesEmpty and deadlinesEmpty}">
                                                 Build momentum by preparing your profile, uploading resumes, and exploring open TA opportunities.
@@ -105,14 +106,14 @@
                                     </p>
                                 </div>
                                 <div class="flex flex-wrap gap-3">
-                                    <a href="${pageContext.request.contextPath}/resumes" class="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                                    <a href="${pageContext.request.contextPath}/resumes" class="portal-btn portal-btn-primary">
                                         <span class="material-symbols-outlined text-lg">upload</span>
                                         <c:choose>
                                             <c:when test="${resumeCount == 0}">Upload First Resume</c:when>
                                             <c:otherwise>Manage Resumes</c:otherwise>
                                         </c:choose>
                                     </a>
-                                    <a href="${pageContext.request.contextPath}/vacancies" class="flex items-center gap-2 bg-white border border-primary/10 text-primary px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-colors">
+                                    <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary text-primary">
                                         <span class="material-symbols-outlined text-lg">search</span>
                                         Browse Vacancies
                                     </a>
@@ -121,7 +122,7 @@
 
                             <!-- Stats Grid -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="flex flex-col gap-2 rounded-2xl bg-white p-6 border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="portal-stat-card flex flex-col gap-2">
                                     <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
                                         <span class="material-symbols-outlined">description</span>
                                     </div>
@@ -129,7 +130,7 @@
                                     <p class="text-primary text-4xl font-black"><c:out value="${resumeCount}"/></p>
                                     <p class="text-xs text-slate-500">Keep at least one up-to-date resume ready for quick applications.</p>
                                 </div>
-                                <div class="flex flex-col gap-2 rounded-2xl bg-white p-6 border border-primary/5 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-primary">
+                                <div class="portal-stat-card flex flex-col gap-2">
                                     <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
                                         <span class="material-symbols-outlined">send</span>
                                     </div>
@@ -137,7 +138,7 @@
                                     <p class="text-primary text-4xl font-black"><c:out value="${submittedCount}"/></p>
                                     <p class="text-xs text-slate-500">Every submitted application will feed the status and activity modules below.</p>
                                 </div>
-                                <div class="flex flex-col gap-2 rounded-2xl bg-white p-6 border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="portal-stat-card flex flex-col gap-2">
                                     <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
                                         <span class="material-symbols-outlined">pending_actions</span>
                                     </div>
@@ -150,11 +151,11 @@
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 <!-- Recent Activity -->
                                 <div class="lg:col-span-2 space-y-4">
-                                    <div class="flex items-center justify-between px-2">
-                                        <h3 class="text-primary text-xl font-bold">Recent Activities</h3>
-                                        <a href="${pageContext.request.contextPath}/applications" class="text-sm font-bold text-primary hover:underline">View Applications</a>
+                                    <div class="portal-section-bar">
+                                        <h3 class="portal-section-title">Recent Activities</h3>
+                                        <a href="${pageContext.request.contextPath}/applications" class="portal-section-link">View Applications</a>
                                     </div>
-                                    <div class="bg-white rounded-2xl border border-primary/5 shadow-sm overflow-hidden">
+                                    <div class="portal-panel overflow-hidden">
                                         <div class="divide-y divide-primary/5">
                                             <c:choose>
                                                 <c:when test="${activitiesEmpty}">
@@ -192,8 +193,8 @@
 
                                 <!-- Sidebar Actions / Reminders -->
                                 <div class="space-y-6">
-                                    <div class="flex items-center justify-between px-2">
-                                        <h3 class="text-primary text-xl font-bold">Action Required</h3>
+                                    <div class="portal-section-bar">
+                                        <h3 class="portal-section-title">Action Required</h3>
                                         <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${profileCompletion < 100 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">
                                             <c:choose>
                                                 <c:when test="${profileCompletion < 100}">Needs update</c:when>
@@ -201,15 +202,15 @@
                                             </c:choose>
                                         </span>
                                     </div>
-                                    <div class="bg-primary text-white rounded-2xl p-6 shadow-xl shadow-primary/20 relative overflow-hidden group">
+                                    <div class="portal-panel portal-panel--accent relative overflow-hidden p-6 group">
                                         <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-                                        <h4 class="font-bold text-lg mb-2 relative z-10">
+                                        <h4 class="font-bold text-lg mb-2 relative z-10 text-slate-900">
                                             <c:choose>
                                                 <c:when test="${profileCompletion < 100}">Complete Your Profile</c:when>
                                                 <c:otherwise>Profile Ready</c:otherwise>
                                             </c:choose>
                                         </h4>
-                                        <p class="text-sm text-white/70 mb-4 relative z-10">
+                                        <p class="text-sm text-slate-600 mb-4 relative z-10">
                                             <c:choose>
                                                 <c:when test="${profileCompletion < 100}">
                                                     Your profile is <c:out value="${profileCompletion}"/>% complete. Add missing details so recruiters can review your information faster.
@@ -219,7 +220,7 @@
                                                 </c:otherwise>
                                             </c:choose>
                                         </p>
-                                        <a href="${pageContext.request.contextPath}/settings" class="relative z-10 inline-flex w-full items-center justify-center rounded-xl bg-white py-2.5 text-sm font-bold text-primary shadow-md transition-colors hover:bg-slate-100">
+                                        <a href="${pageContext.request.contextPath}/settings" class="portal-btn portal-btn-primary relative z-10 w-full">
                                             <c:choose>
                                                 <c:when test="${profileCompletion < 100}">Update Profile</c:when>
                                                 <c:otherwise>Review Settings</c:otherwise>
@@ -227,8 +228,8 @@
                                         </a>
                                     </div>
 
-                                    <div class="bg-white rounded-2xl p-6 border border-primary/5 shadow-sm">
-                                        <h4 class="font-bold text-primary mb-4">Upcoming Deadlines</h4>
+                                    <div class="portal-panel p-6">
+                                        <h4 class="portal-section-title mb-4">Upcoming Deadlines</h4>
                                         <c:choose>
                                             <c:when test="${deadlinesEmpty}">
                                                 <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">

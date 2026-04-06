@@ -25,6 +25,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -34,25 +35,25 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-6xl mx-auto w-full">
+                <div class="portal-page">
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
                         <jsp:param name="containerClass" value="mb-6" />
                     </jsp:include>
 
                     <!-- Page Header -->
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div class="portal-page-header mb-2">
                         <div>
-                            <h2 class="text-slate-900 text-3xl font-black tracking-tight">My Applications</h2>
-                            <p class="text-slate-500 text-sm mt-2">Track the progress of your submitted module and program applications.</p>
+                            <h2 class="portal-page-title">My Applications</h2>
+                            <p class="portal-page-copy">Track the progress of your submitted module and program applications.</p>
                         </div>
-                        <button class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-all shadow-sm">
+                        <button class="portal-btn portal-btn-primary">
                             <span class="material-symbols-outlined text-sm">add</span>
                             New Application
                         </button>
                     </div>
 
                     <!-- Search and Filters -->
-                    <form action="${pageContext.request.contextPath}/applications" method="GET" class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <form action="${pageContext.request.contextPath}/applications" method="GET" class="portal-filter-bar">
                         <div class="flex flex-col lg:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="flex flex-col w-full">
@@ -100,7 +101,7 @@
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
-                            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                            <div class="portal-panel overflow-hidden">
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left border-collapse">
                                         <thead>
@@ -194,7 +195,7 @@
                     </c:choose>
 
                     <!-- Informational Banner -->
-                    <div class="mt-8 p-4 bg-primary/5 border border-primary/10 rounded-xl flex gap-4">
+                    <div class="portal-callout flex gap-4">
                         <div class="text-primary">
                             <span class="material-symbols-outlined">info</span>
                         </div>

@@ -26,6 +26,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -35,7 +36,7 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-6xl mx-auto w-full">
+                <div class="portal-page">
                     <c:set var="messagesState" value="${empty pageState ? 'normal' : pageState}" />
                     <c:set var="showConversationEmpty" value="${messagesState == 'empty' or empty conversations}" />
                     <c:set var="showNoActiveConversation" value="${messagesState == 'noActiveConversation' or (not showConversationEmpty and empty activeConversation)}" />
@@ -58,13 +59,13 @@
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
-                            <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                            <div class="portal-page-header">
                                 <div>
-                                    <h2 class="text-3xl font-black tracking-tight text-slate-900">Messages</h2>
-                                    <p class="mt-2 text-sm text-slate-500">Stay in touch with recruiters and department contacts as your applications move forward.</p>
+                                    <h2 class="portal-page-title">Messages</h2>
+                                    <p class="portal-page-copy">Stay in touch with recruiters and department contacts as your applications move forward.</p>
                                 </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Inbox Summary</p>
+                                <div class="portal-summary-card">
+                                    <p class="portal-kicker">Inbox Summary</p>
                                     <p class="mt-1 text-sm font-semibold text-slate-900">
                                         <c:choose>
                                             <c:when test="${showConversationEmpty}">
@@ -91,7 +92,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex h-[calc(100vh-120px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div class="portal-panel flex h-[calc(100vh-120px)] overflow-hidden">
                                 <div class="flex w-80 flex-col border-r border-slate-200">
                                     <div class="border-b border-slate-200 p-4">
                                         <h3 class="text-base font-bold text-slate-900">Conversation List</h3>

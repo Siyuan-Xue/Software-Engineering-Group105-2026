@@ -25,6 +25,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -34,7 +35,7 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-4xl mx-auto">
+                <div class="portal-page portal-page--detail">
                     <a href="${pageContext.request.contextPath}/vacancies" class="flex items-center gap-2 text-slate-500 hover:text-primary mb-6 transition-colors font-medium w-fit">
                         <span class="material-symbols-outlined">arrow_back</span>
                         Back to Vacancies
@@ -66,7 +67,7 @@
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
-                            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div class="portal-panel overflow-hidden">
                                 <div class="p-8 border-b border-slate-100">
                                     <div class="flex flex-col md:flex-row justify-between items-start gap-4">
                                         <div>
@@ -76,7 +77,7 @@
                                             <h2 class="text-3xl font-black text-slate-900 tracking-tight"><c:out value="${vacancy.title}"/></h2>
                                             <p class="text-lg text-slate-500 mt-1"><c:out value="${vacancy.department}"/></p>
                                         </div>
-                                        <button onclick="document.getElementById('applyModal').classList.remove('hidden')" class="bg-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+                                        <button onclick="document.getElementById('applyModal').classList.remove('hidden')" class="portal-btn portal-btn-primary">
                                             Apply Now
                                         </button>
                                     </div>
@@ -125,7 +126,7 @@
 
                             <!-- Apply Modal -->
                             <div id="applyModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                                <div class="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl border border-slate-200">
+                                <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl">
                                     <h3 class="text-2xl font-black text-slate-900 mb-2">Select Resume</h3>
                                     <p class="text-slate-500 text-sm mb-6">Choose which resume you want to use for this application.</p>
                                     
@@ -145,7 +146,7 @@
                                                 </c:when>
                                                 <c:otherwise>
                                                     <c:forEach items="${resumeList}" var="resume" varStatus="status">
-                                                        <label class="w-full p-4 rounded-xl border-2 border-slate-100 hover:border-primary/30 text-left transition-all flex items-center gap-4 cursor-pointer">
+                                                        <label class="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition-all flex items-center gap-4 cursor-pointer hover:border-primary/30 hover:bg-white">
                                                             <input type="radio" name="resumeId" value="${resume.resumeId}" class="w-5 h-5 text-primary border-slate-300 focus:ring-primary" <c:if test="${status.first}">required="required"</c:if>>
                                                             <div class="flex-1">
                                                                 <p class="text-sm font-bold text-slate-900"><c:out value="${resume.resumeName}"/></p>
@@ -157,10 +158,10 @@
                                         </div>
 
                                         <div class="flex gap-3">
-                                            <button type="button" onclick="document.getElementById('applyModal').classList.add('hidden')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">
+                                            <button type="button" onclick="document.getElementById('applyModal').classList.add('hidden')" class="portal-btn portal-btn-secondary flex-1">
                                                 Cancel
                                             </button>
-                                            <button type="submit" class="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors" <c:if test="${empty resumeList}">disabled="disabled"</c:if>>
+                                            <button type="submit" class="portal-btn portal-btn-primary flex-1" <c:if test="${empty resumeList}">disabled="disabled"</c:if>>
                                                 Confirm Apply
                                             </button>
                                         </div>

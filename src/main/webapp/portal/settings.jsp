@@ -26,6 +26,7 @@
             }
         }
     </script>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -35,7 +36,7 @@
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="max-w-2xl mx-auto space-y-8">
+                <div class="portal-page portal-page--compact">
                     <c:set var="settingsState" value="${empty pageState ? 'normal' : pageState}" />
                     <c:set var="firstName" value="${userProfile.firstName}" />
                     <c:set var="lastName" value="${userProfile.lastName}" />
@@ -72,21 +73,21 @@
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
-                            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <div class="portal-page-header">
                                 <div>
-                                    <h2 class="text-3xl font-black tracking-tight text-slate-900">Settings</h2>
-                                    <p class="mt-2 text-slate-500">Manage your account preferences, profile details, and communication settings.</p>
+                                    <h2 class="portal-page-title">Settings</h2>
+                                    <p class="portal-page-copy">Manage your account preferences, profile details, and communication settings.</p>
                                 </div>
-                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Baseline Scope</p>
+                                <div class="portal-summary-card">
+                                    <p class="portal-kicker">Baseline Scope</p>
                                     <p class="mt-1 text-sm font-semibold text-slate-900">Profile data is now dynamic.</p>
                                     <p class="mt-1 text-xs leading-relaxed text-slate-500">This page is currently optimized for display and feedback states. Update actions can be attached once backend endpoints are finalized.</p>
                                 </div>
                             </div>
 
                             <c:if test="${settingsState == 'updateSuccess' or settingsState == 'updateFailure'}">
-                                <div class="rounded-2xl border p-5 shadow-sm ${settingsState == 'updateSuccess' ? 'border-emerald-200 bg-emerald-50/80' : 'border-red-200 bg-red-50/80'}">
-                                    <p class="text-xs font-bold uppercase tracking-[0.18em] ${settingsState == 'updateSuccess' ? 'text-emerald-700' : 'text-red-700'}">Update Status</p>
+                                <div class="portal-panel p-5 ${settingsState == 'updateSuccess' ? 'border-emerald-200 bg-emerald-50/80' : 'border-red-200 bg-red-50/80'}">
+                                    <p class="portal-kicker ${settingsState == 'updateSuccess' ? 'text-emerald-700' : 'text-red-700'}">Update Status</p>
                                     <h3 class="mt-2 text-lg font-bold text-slate-900">
                                         <c:choose>
                                             <c:when test="${settingsState == 'updateSuccess'}">Settings updated successfully.</c:when>
@@ -104,7 +105,7 @@
 
                             <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_0.8fr]">
                                 <div class="space-y-8">
-                                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                    <section class="portal-panel overflow-hidden">
                                         <div class="border-b border-slate-100 p-6">
                                             <div class="flex items-center gap-4">
                                                 <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-bold text-primary">
@@ -133,7 +134,7 @@
                                         </div>
                                     </section>
 
-                                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <section class="portal-panel p-6">
                                         <div class="mb-4 flex items-center gap-3">
                                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
                                                 <span class="material-symbols-outlined">person</span>
@@ -150,7 +151,7 @@
                                 </div>
 
                                 <div class="space-y-6">
-                                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <section class="portal-panel p-6">
                                         <div class="mb-4 flex items-center gap-3">
                                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
                                                 <span class="material-symbols-outlined">notifications</span>
@@ -190,7 +191,7 @@
                                         </div>
                                     </section>
 
-                                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <section class="portal-panel p-6">
                                         <div class="mb-4 flex items-center gap-3">
                                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
                                                 <span class="material-symbols-outlined">info</span>
@@ -203,7 +204,7 @@
                                         <p class="text-sm leading-relaxed text-slate-600">The current Settings page is intentionally read-only. It now consumes backend-provided profile fields and supports success, failure, and load-error feedback without inventing extra update flows before the contract is finalized.</p>
                                     </section>
 
-                                    <section class="rounded-2xl border border-red-200 bg-red-50/50 p-6 shadow-sm">
+                                    <section class="portal-panel portal-panel--danger p-6">
                                         <div class="mb-4 flex items-center gap-3">
                                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600">
                                                 <span class="material-symbols-outlined">logout</span>
@@ -214,7 +215,7 @@
                                             </div>
                                         </div>
                                         <form action="${pageContext.request.contextPath}/logout" method="POST">
-                                            <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-red-600/20 transition-colors hover:bg-red-700">
+                                            <button type="submit" class="portal-btn portal-btn-danger">
                                                 Logout
                                             </button>
                                         </form>

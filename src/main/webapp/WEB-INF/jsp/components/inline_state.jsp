@@ -14,7 +14,7 @@
     </c:otherwise>
 </c:choose>
 <div class="flex flex-col items-center justify-center px-6 py-8 text-center ${param.containerClass}">
-    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full ${iconWrapClass}">
+    <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${iconWrapClass}">
         <span class="material-symbols-outlined text-2xl"><c:out value="${stateIcon}" /></span>
     </div>
     <h3 class="text-base font-bold text-slate-900"><c:out value="${param.title}" /></h3>
@@ -22,7 +22,7 @@
         <p class="mt-2 max-w-md text-sm leading-relaxed text-slate-500"><c:out value="${param.message}" /></p>
     </c:if>
     <c:if test="${not empty param.actionHref and not empty param.actionLabel}">
-        <a href="${param.actionHref}" class="mt-4 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-50">
+        <a href="${param.actionHref}" class="mt-4 inline-flex min-h-[2.5rem] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
             <c:out value="${param.actionLabel}" />
         </a>
     </c:if>
