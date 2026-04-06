@@ -51,6 +51,30 @@ class ResumeRepositoryTest {
     }
 
     @Test
+    void listAllShouldReturnEveryResumeInUpdatedDescOrder() throws InterruptedException {
+        ResumeRepository repository = new JsonResumeRepository(DatabaseConfig.of(tempDir, AppConfig.createObjectMapper()));
+
+        Resume first = new Resume();
+        first.setUserId(UUID.randomUUID());
+        first.setTitle("First");
+        first.setDegreeLevel(DegreeLevel.BACHELOR);
+        repository.save(first);
+
+        Thread.sleep(5);
+
+        Resume second = new Resume();
+        second.setUserId(UUID.randomUUID());
+        second.setTitle("Second");
+        second.setDegreeLevel(DegreeLevel.MASTER);
+        repository.save(second);
+
+        List<Resume> resumes = repository.listAll();
+        assertEquals(2, resumes.size());
+        assertEquals("Second", resumes.get(0).getTitle());
+        assertEquals("First", resumes.get(1).getTitle());
+    }
+
+    @Test
     void saveShouldRejectMissingUserIdOrTitle() {
         ResumeRepository repository = new JsonResumeRepository(DatabaseConfig.of(tempDir, AppConfig.createObjectMapper()));
 
