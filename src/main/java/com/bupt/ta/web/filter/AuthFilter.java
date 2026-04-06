@@ -99,7 +99,6 @@ public class AuthFilter implements Filter {
     }
 
     /**
-     * TODO: 计算资料完整度
      * 根据 User 对象的字段是否完善，简单计算资料完整度
      */
     private int calculateProfileCompletion(User user) {

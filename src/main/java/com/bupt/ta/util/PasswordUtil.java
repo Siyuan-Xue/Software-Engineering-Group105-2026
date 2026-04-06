@@ -1,30 +1,34 @@
 package com.bupt.ta.util;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordUtil {
 
     /**
-     * 将明文密码使用 SHA-256 加密
+     * 加密：将明文密码变为 BCrypt 哈希值（用于注册、重置密码等操作）
      */
-    public static String hashPassword(String password) {
+    public static String hashPassword(String plainPassword) {
+        // gensalt() 默认生成 cost=10 的盐
+        return BCrypt.hashpw(plainPassword, BCrypt.gensalt());
+    }
+
+    /**
+     * 校验：验证输入的明文密码与数据库中的哈希值是否匹配
+     */
+    public static boolean checkPassword(String plainPassword, String hashedPassword) {
+        if (plainPassword == null || hashedPassword == null) {
+            return false;
+        }
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = md.digest(password.getBytes());
-            
-            // 将字节数组转换为 16 进制字符串
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashedBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not found!", e);
+            return BCrypt.checkpw(plainPassword, hashedPassword);
+        } catch (IllegalArgumentException e) {
+            // 如果 hashedPassword 的格式不是合法的 BCrypt，会抛出此异常
+            return false;
         }
     }
 
     public static void main(String[] args) {
+        // 生成 123456 的 BCrypt 哈希值
         System.out.println(hashPassword("123456"));
     }
 }

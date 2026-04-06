@@ -21,4 +21,8 @@ public class DashboardServlet extends HttpServlet  {
     public void init() throws ServletException {
 
     }
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        req.getRequestDispatcher("/portal/dashboard.jsp").forward(req, resp);
+    }
 }

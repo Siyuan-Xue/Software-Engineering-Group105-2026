@@ -42,8 +42,9 @@ public class AuthService {
             }
 
             // 4. 验证密码！将用户输入的明文密码加密，与数据库里的 hash 值比对
-            String hashedInputPassword = PasswordUtil.hashPassword(plainPassword);
-            if (hashedInputPassword.equals(user.getPasswordHash())) {
+            //String hashedInputPassword = PasswordUtil.hashPassword(plainPassword);
+            if (PasswordUtil.checkPassword(plainPassword, user.getPasswordHash())) {
+            //if (hashedInputPassword.equals(user.getPasswordHash())) {
                 return Optional.of(user); // 密码正确，返回用户对象
             }
         }
