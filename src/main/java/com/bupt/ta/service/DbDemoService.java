@@ -101,6 +101,15 @@ public class DbDemoService {
         return userRepository.setActive(id, false);
     }
 
+    public boolean activateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+        if (user.isActive()) {
+            throw new IllegalArgumentException("User is already active");
+        }
+        return userRepository.setActive(id, true);
+    }
+
     public Resume saveResume(Resume resume) {
         if (resume.getId() != null) {
             requireExistingResume(resume.getId(), "Resume not found");

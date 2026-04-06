@@ -163,6 +163,14 @@
                                                                 <button type="submit" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100">Deactivate</button>
                                                             </form>
                                                         </c:if>
+                                                        <c:if test="${not user.active}">
+                                                            <form action="${pageContext.request.contextPath}/db-demo#users-section" method="POST">
+                                                                <input type="hidden" name="entity" value="user" />
+                                                                <input type="hidden" name="operation" value="activate" />
+                                                                <input type="hidden" name="id" value="${user.id}" />
+                                                                <button type="submit" class="px-3 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-bold hover:bg-green-100">Activate</button>
+                                                            </form>
+                                                        </c:if>
                                                     </div>
                                                 </td>
                                             </tr>

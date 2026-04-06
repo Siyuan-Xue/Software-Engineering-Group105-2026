@@ -108,6 +108,11 @@ public class DbDemoServlet extends HttpServlet {
                 dbDemoService.deactivateUser(id);
                 yield "User deactivated successfully";
             }
+            case "activate" -> {
+                UUID id = requireUuid(request.getParameter("id"), "User id is required");
+                dbDemoService.activateUser(id);
+                yield "User activated successfully";
+            }
             default -> throw new IllegalArgumentException("Unsupported user operation: " + operation);
         };
     }

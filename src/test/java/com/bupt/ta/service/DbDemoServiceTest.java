@@ -40,6 +40,16 @@ class DbDemoServiceTest {
     }
 
     @Test
+    void activateUserShouldRestoreInactiveUser() {
+        DbDemoService service = createService();
+        User user = service.saveUser(user("ta@example.com", UserRole.TA, "TA User"));
+        service.deactivateUser(user.getId());
+
+        assertTrue(service.activateUser(user.getId()));
+        assertTrue(service.findUser(user.getId()).orElseThrow().isActive());
+    }
+
+    @Test
     void saveJobShouldRejectPosterWithoutRecruiterRole() {
         DbDemoService service = createService();
         User ta = service.saveUser(user("ta@example.com", UserRole.TA, "TA User"));

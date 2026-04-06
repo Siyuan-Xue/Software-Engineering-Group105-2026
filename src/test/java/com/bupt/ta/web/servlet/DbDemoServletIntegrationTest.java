@@ -96,6 +96,24 @@ class DbDemoServletIntegrationTest {
         assertEquals("resume", exchange.attributes.get("editEntity"));
     }
 
+    @Test
+    void doPostShouldReactivateInactiveUser() throws Exception {
+        DbDemoService service = createService();
+        User user = service.saveUser(user("ta@example.com", UserRole.TA, "TA User"));
+        service.deactivateUser(user.getId());
+
+        TestExchange exchange = new TestExchange(Map.of(
+                "entity", "user",
+                "operation", "activate",
+                "id", user.getId().toString()
+        ));
+
+        new TestableDbDemoServlet(service).handlePost(exchange.request, exchange.response);
+
+        assertTrue(exchange.redirectedUrl.startsWith("/ta105/db-demo?successMessage="));
+        assertTrue(service.findUser(user.getId()).orElseThrow().isActive());
+    }
+
     private DbDemoService createService() {
         TaDatabase database = TaDatabase.open(DatabaseConfig.of(tempDir, AppConfig.createObjectMapper()));
         return DbDemoService.from(database);
