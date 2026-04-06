@@ -29,19 +29,24 @@ public class JsonJobRepository implements JobRepository {
     }
 
     @Override
-    public List<Job> listOpen(Instant now) {
+    public List<Job> listAll() {
         return store.findAll().stream()
-                .filter(job -> job.getStatus() == JobStatus.OPEN)
-                .filter(job -> job.getDeadline() != null && job.getDeadline().isAfter(now))
                 .sorted(Comparator.comparing(Job::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
     @Override
+    public List<Job> listOpen(Instant now) {
+        return listAll().stream()
+                .filter(job -> job.getStatus() == JobStatus.OPEN)
+                .filter(job -> job.getDeadline() != null && job.getDeadline().isAfter(now))
+                .toList();
+    }
+
+    @Override
     public List<Job> listByPoster(UUID posterId) {
-        return store.findAll().stream()
+        return listAll().stream()
                 .filter(job -> posterId.equals(job.getPostedBy()))
-                .sorted(Comparator.comparing(Job::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -57,5 +62,10 @@ public class JsonJobRepository implements JobRepository {
             throw new DataAccessException("Job deadline must not be null");
         }
         return store.save(job);
+    }
+
+    @Override
+    public boolean delete(UUID id) {
+        return store.delete(id);
     }
 }

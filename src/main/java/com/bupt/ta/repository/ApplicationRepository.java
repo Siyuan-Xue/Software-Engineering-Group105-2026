@@ -9,9 +9,13 @@ import java.util.UUID;
 public interface ApplicationRepository {
     Optional<Application> findById(UUID id);
 
+    List<Application> listAll();
+
     List<Application> listByJobId(UUID jobId);
 
     List<Application> listByResumeId(UUID resumeId);
 
     Application save(Application application);
+
+    boolean delete(UUID id);
 }

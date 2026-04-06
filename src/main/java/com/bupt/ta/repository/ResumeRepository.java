@@ -9,6 +9,8 @@ import java.util.UUID;
 public interface ResumeRepository {
     Optional<Resume> findById(UUID id);
 
+    List<Resume> listAll();
+
     List<Resume> listByUserId(UUID userId);
 
     Resume save(Resume resume);

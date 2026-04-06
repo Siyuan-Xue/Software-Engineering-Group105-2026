@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ApplicationRepositoryTest {
 
@@ -48,6 +49,22 @@ class ApplicationRepositoryTest {
         invalid.setJobId(UUID.randomUUID());
 
         assertThrows(DataAccessException.class, () -> repository.save(invalid));
+    }
+
+    @Test
+    void listAllAndDeleteShouldExposeStoredApplications() throws InterruptedException {
+        ApplicationRepository repository = new JsonApplicationRepository(DatabaseConfig.of(tempDir, AppConfig.createObjectMapper()));
+
+        Application first = repository.save(application(UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.PENDING));
+        Thread.sleep(5);
+        Application second = repository.save(application(UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.REVIEWING));
+
+        List<Application> applications = repository.listAll();
+        assertEquals(2, applications.size());
+        assertEquals(second.getId(), applications.get(0).getId());
+
+        assertTrue(repository.delete(first.getId()));
+        assertEquals(1, repository.listAll().size());
     }
 
     private Application application(UUID jobId, UUID resumeId, ApplicationStatus status) {
