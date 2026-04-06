@@ -57,7 +57,7 @@
                     Join our academic excellence. The University TA Recruitment System is your gateway to shaping the next generation of scholars.
                 </p>
                 <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="${pageContext.request.contextPath}/login.jsp" class="px-10 py-5 bg-accent text-white font-black text-lg rounded-xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <a href="${pageContext.request.contextPath}/login" class="px-10 py-5 bg-accent text-white font-black text-lg rounded-xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
                         LOGIN TO PORTAL
                         <span class="material-symbols-outlined">arrow_forward</span>
                     </a>
