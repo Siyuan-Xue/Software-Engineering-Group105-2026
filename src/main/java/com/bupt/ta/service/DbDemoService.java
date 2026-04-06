@@ -75,6 +75,9 @@ public class DbDemoService {
     }
 
     public User saveUser(User user) {
+        if (user.getId() != null) {
+            requireExistingUser(user.getId(), "User not found");
+        }
         requireNonBlank(user.getEmail(), "User email must not be blank");
         requireNonBlank(user.getPasswordHash(), "User passwordHash must not be blank");
         requireNonBlank(user.getFullName(), "User fullName must not be blank");
@@ -99,6 +102,9 @@ public class DbDemoService {
     }
 
     public Resume saveResume(Resume resume) {
+        if (resume.getId() != null) {
+            requireExistingResume(resume.getId(), "Resume not found");
+        }
         requireNonNull(resume.getUserId(), "Resume userId must not be null");
         requireNonBlank(resume.getTitle(), "Resume title must not be blank");
         requireNonNull(resume.getDegreeLevel(), "Resume degreeLevel must not be null");
@@ -121,6 +127,9 @@ public class DbDemoService {
     }
 
     public Job saveJob(Job job) {
+        if (job.getId() != null) {
+            requireExistingJob(job.getId(), "Job not found");
+        }
         requireNonNull(job.getPostedBy(), "Job postedBy must not be null");
         requireNonBlank(job.getTitle(), "Job title must not be blank");
         requireNonNull(job.getType(), "Job type must not be null");
@@ -149,6 +158,10 @@ public class DbDemoService {
     }
 
     public Application saveApplication(Application application) {
+        if (application.getId() != null) {
+            applicationRepository.findById(application.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Application not found: " + application.getId()));
+        }
         requireNonNull(application.getResumeId(), "Application resumeId must not be null");
         requireNonNull(application.getJobId(), "Application jobId must not be null");
         requireNonNull(application.getStatus(), "Application status must not be null");
