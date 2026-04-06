@@ -10,9 +10,13 @@ import java.util.UUID;
 public interface JobRepository {
     Optional<Job> findById(UUID id);
 
+    List<Job> listAll();
+
     List<Job> listOpen(Instant now);
 
     List<Job> listByPoster(UUID posterId);
 
     Job save(Job job);
+
+    boolean delete(UUID id);
 }

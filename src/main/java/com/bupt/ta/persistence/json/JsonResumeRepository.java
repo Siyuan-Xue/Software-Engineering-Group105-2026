@@ -27,10 +27,16 @@ public class JsonResumeRepository implements ResumeRepository {
     }
 
     @Override
-    public List<Resume> listByUserId(UUID userId) {
+    public List<Resume> listAll() {
         return store.findAll().stream()
-                .filter(resume -> userId.equals(resume.getUserId()))
                 .sorted(Comparator.comparing(Resume::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    @Override
+    public List<Resume> listByUserId(UUID userId) {
+        return listAll().stream()
+                .filter(resume -> userId.equals(resume.getUserId()))
                 .toList();
     }
 

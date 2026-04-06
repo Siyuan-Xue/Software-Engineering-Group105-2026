@@ -27,18 +27,23 @@ public class JsonApplicationRepository implements ApplicationRepository {
     }
 
     @Override
-    public List<Application> listByJobId(UUID jobId) {
+    public List<Application> listAll() {
         return store.findAll().stream()
-                .filter(application -> jobId.equals(application.getJobId()))
                 .sorted(Comparator.comparing(Application::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
     @Override
+    public List<Application> listByJobId(UUID jobId) {
+        return listAll().stream()
+                .filter(application -> jobId.equals(application.getJobId()))
+                .toList();
+    }
+
+    @Override
     public List<Application> listByResumeId(UUID resumeId) {
-        return store.findAll().stream()
+        return listAll().stream()
                 .filter(application -> resumeId.equals(application.getResumeId()))
-                .sorted(Comparator.comparing(Application::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -51,5 +56,10 @@ public class JsonApplicationRepository implements ApplicationRepository {
             throw new DataAccessException("Application jobId must not be null");
         }
         return store.save(application);
+    }
+
+    @Override
+    public boolean delete(UUID id) {
+        return store.delete(id);
     }
 }
