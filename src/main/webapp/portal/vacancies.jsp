@@ -26,6 +26,27 @@
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
     <style>
+        /* ── modal overlay ───────────────────────────────────────────── */
+        .qm-modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center;
+            z-index: 9999; padding: 1rem;
+        }
+        .qm-modal-overlay.open { display: flex; }
+        .qm-modal-box {
+            background: #fff; border-radius: 1.5rem;
+            box-shadow: 0 32px 64px -24px rgba(15,23,42,0.4);
+            width: 100%; overflow: hidden;
+            animation: modalPop .28s cubic-bezier(.34,1.4,.64,1) both;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.92) translateY(16px); opacity:0; }
+            to   { transform: scale(1)    translateY(0);    opacity:1; }
+        }
+
+        /* ── favourite button ─────────────────────────────────────────── */
         .fav-btn { transition: transform .15s, color .15s; }
         .fav-btn:hover { transform: scale(1.2); }
         .fav-btn.saved .material-symbols-outlined { font-variation-settings: 'FILL' 1; color: #ef4444; }
@@ -33,10 +54,37 @@
         .fav-btn:not(.saved) .material-symbols-outlined { color: #94a3b8; }
         .fav-btn:not(.saved):hover .material-symbols-outlined { color: #ef4444; }
 
+        /* ── card animation ──────────────────────────────────────────── */
         .vacancy-card { animation: fadeSlideUp .25s ease both; }
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── AI match badge ──────────────────────────────────────────── */
+        .ai-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 11px; font-weight: 700; letter-spacing: .3px;
+            padding: 3px 8px; border-radius: 99px;
+            transition: opacity .3s;
+            white-space: nowrap;
+        }
+        .ai-badge-skeleton {
+            width: 56px; height: 22px; border-radius: 99px;
+            background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+        }
+        @keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+        .score-excellent { background:#dcfce7; color:#16a34a; }
+        .score-good      { background:#dbeafe; color:#2563eb; }
+        .score-fair      { background:#fef9c3; color:#ca8a04; }
+        .score-low       { background:#fee2e2; color:#dc2626; }
+        .score-unknown   { background:#f1f5f9; color:#64748b; }
+
+        /* ── AI match bar (page-level) ───────────────────────────────── */
+        #aiMatchBanner {
+            background: linear-gradient(135deg,#1e293b 0%,#334155 100%);
         }
     </style>
 </head>
@@ -57,11 +105,27 @@
                         <p class="portal-page-copy">Browse and apply for open Teaching Assistant positions across departments.</p>
                     </div>
                     <div class="flex gap-3">
+                        <button id="aiMatchBtn"
+                                onclick="openAIMatchDisclaimer()"
+                                class="portal-btn portal-btn-secondary"
+                                title="Use AI to score how well your resume matches each vacancy">
+                            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                            AI Match
+                        </button>
                         <button class="portal-btn portal-btn-secondary" title="Get notified when new vacancies are posted">
                             <span class="material-symbols-outlined text-sm">notifications_active</span>
                             Job Alerts
                         </button>
                     </div>
+                </div>
+
+                <!-- AI Match Banner (shown while loading / after results) -->
+                <div id="aiMatchBanner" style="display:none" class="rounded-2xl text-white px-5 py-3.5 mb-5 flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-lg shrink-0" style="FILL:1">auto_awesome</span>
+                    <span id="aiMatchBannerText" class="flex-1"></span>
+                    <button onclick="clearAIScores()" class="text-white/60 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-base">close</span>
+                    </button>
                 </div>
 
                 <!-- Search and Filters -->
@@ -198,15 +262,23 @@
                                                 </div>
 
                                                 <!-- Right actions -->
-                                                <div class="flex flex-row md:flex-col justify-between items-end gap-4 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                                    <!-- Favourite button -->
-                                                    <button type="button"
-                                                            class="fav-btn ${vacancy.saved ? 'saved' : ''}"
-                                                            data-vacancy-id="${vacancy.vacancyId}"
-                                                            title="${vacancy.saved ? 'Remove from saved' : 'Save vacancy'}"
-                                                            onclick="toggleFavorite(this)">
-                                                        <span class="material-symbols-outlined text-2xl">favorite</span>
-                                                    </button>
+                                                <div class="flex flex-row md:flex-col justify-between items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                                                    <!-- Favourite button + AI score badge -->
+                                                    <div class="flex flex-col items-center gap-1.5">
+                                                        <button type="button"
+                                                                class="fav-btn ${vacancy.saved ? 'saved' : ''}"
+                                                                data-vacancy-id="${vacancy.vacancyId}"
+                                                                title="${vacancy.saved ? 'Remove from saved' : 'Save vacancy'}"
+                                                                onclick="toggleFavorite(this)">
+                                                            <span class="material-symbols-outlined text-2xl">favorite</span>
+                                                        </button>
+                                                        <!-- AI match score badge (populated by JS) -->
+                                                        <div id="score-${vacancy.vacancyId}"
+                                                             class="ai-score-slot"
+                                                             data-job-id="${vacancy.vacancyId}">
+                                                            <%-- hidden initially; filled by startAIMatch() --%>
+                                                        </div>
+                                                    </div>
                                                     <!-- Apply button -->
                                                     <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
                                                        class="portal-btn portal-btn-primary whitespace-nowrap">
@@ -277,36 +349,204 @@
     </div>
 </div>
 
+<%-- ═══════════════════════════════════════════════════════
+     AI Match Disclaimer Modal
+     ═══════════════════════════════════════════════════════ --%>
+<div id="aiMatchDisclaimerModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeAIMatchDisclaimer()">
+    <div class="qm-modal-box max-w-md">
+        <div class="px-7 pt-7 pb-5">
+            <div class="flex items-start gap-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl text-blue-600"
+                          style="font-variation-settings:'FILL' 1">policy</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">AI Job Match</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Please read before continuing</p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-sm text-amber-900 leading-relaxed">
+                <p class="font-bold mb-2">⚠️ Disclaimer — Read carefully:</p>
+                <ul class="list-disc pl-4 space-y-1.5 text-amber-800">
+                    <li>Match scores are generated by <strong>Qwen AI</strong> and are for <strong>reference only</strong>.</li>
+                    <li>Scores may be inaccurate and <strong>do not</strong> guarantee or predict selection outcomes.</li>
+                    <li>Your resume data is processed transiently and is not stored by the AI service.</li>
+                    <li>For more accurate scores, ensure your resume profile is <strong>complete and up to date</strong> on the Resumes page.</li>
+                </ul>
+            </div>
+            <p class="text-sm text-slate-500">
+                By clicking <strong>"I Agree &amp; Match"</strong> you confirm you have read the above.
+            </p>
+        </div>
+        <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+            <button type="button" onclick="closeAIMatchDisclaimer()" class="portal-btn portal-btn-secondary">
+                Cancel
+            </button>
+            <button type="button" onclick="agreeAndStartAIMatch()" class="portal-btn portal-btn-primary">
+                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                I Agree &amp; Match
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     const CTX = '${pageContext.request.contextPath}';
 
+    // ── AI Match Disclaimer ───────────────────────────────────────────────────
+    function openAIMatchDisclaimer() {
+        document.getElementById('aiMatchDisclaimerModal').classList.add('open');
+    }
+    function closeAIMatchDisclaimer() {
+        document.getElementById('aiMatchDisclaimerModal').classList.remove('open');
+    }
+    function agreeAndStartAIMatch() {
+        closeAIMatchDisclaimer();
+        startAIMatch();
+    }
+
+    // ── Favourite toggle ──────────────────────────────────────────────────────
     async function toggleFavorite(btn) {
         const vacancyId = btn.dataset.vacancyId;
         if (!vacancyId) return;
-
         btn.disabled = true;
         try {
             const fd = new FormData();
             fd.append('vacancyId', vacancyId);
             const res = await fetch(CTX + '/favorites', { method: 'POST', body: fd });
-            if (res.status === 401) {
-                alert('Please log in to save vacancies.');
-                return;
-            }
+            if (res.status === 401) { alert('Please log in to save vacancies.'); return; }
             if (!res.ok) throw new Error('Server error');
             const data = await res.json();
-            if (data.saved) {
-                btn.classList.add('saved');
-                btn.title = 'Remove from saved';
-            } else {
-                btn.classList.remove('saved');
-                btn.title = 'Save vacancy';
+            if (data.saved) { btn.classList.add('saved');    btn.title = 'Remove from saved'; }
+            else             { btn.classList.remove('saved'); btn.title = 'Save vacancy'; }
+        } catch (e) { console.error('Favorite toggle failed:', e); }
+        finally { btn.disabled = false; }
+    }
+
+    // ── AI Match ──────────────────────────────────────────────────────────────
+    // Cache scores in sessionStorage so they survive pagination within a session.
+    const SCORE_CACHE_KEY = 'aiMatchScores';
+
+    function getScoreCache() {
+        try { return JSON.parse(sessionStorage.getItem(SCORE_CACHE_KEY) || '{}'); }
+        catch { return {}; }
+    }
+    function saveScoreCache(scores) {
+        try { sessionStorage.setItem(SCORE_CACHE_KEY, JSON.stringify(scores)); }
+        catch { /* quota exceeded – ignore */ }
+    }
+
+    // Apply cached scores to current page cards on load
+    (function applyCachedScores() {
+        const cache = getScoreCache();
+        if (!Object.keys(cache).length) return;
+        document.querySelectorAll('.ai-score-slot').forEach(slot => {
+            const id = slot.dataset.jobId;
+            if (id && cache[id] !== undefined) renderBadge(slot, cache[id]);
+        });
+        showBanner('AI match scores loaded from cache. Click AI Match to refresh.', false);
+    })();
+
+    async function startAIMatch() {
+        // Collect all job IDs visible on this page
+        const slots = Array.from(document.querySelectorAll('.ai-score-slot'));
+        if (!slots.length) { showBanner('No vacancies on this page to score.', false); return; }
+
+        const ids = slots.map(s => s.dataset.jobId).filter(Boolean);
+
+        // Show skeleton loading state
+        slots.forEach(slot => {
+            slot.innerHTML = '<div class="ai-badge-skeleton"></div>';
+        });
+        showBanner('AI is scoring your resume against these vacancies…', true);
+
+        const btn = document.getElementById('aiMatchBtn');
+        if (btn) btn.disabled = true;
+
+        try {
+            // URLSearchParams sends application/x-www-form-urlencoded,
+            // which servlets without @MultipartConfig can read via getParameterValues()
+            const params = new URLSearchParams();
+            ids.forEach(id => params.append('ids[]', id));
+
+            const res  = await fetch(CTX + '/ai-match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            });
+            const data = await res.json();
+
+            if (res.status === 401) {
+                clearSkeletons(slots);
+                showBanner('Please log in to use AI Match.', false);
+                return;
             }
+
+            if (!data.ok) {
+                clearSkeletons(slots);
+                showBanner('AI Match failed: ' + (data.error || 'Unknown error'), false);
+                return;
+            }
+
+            // Render badges and merge into cache
+            const cache = getScoreCache();
+            slots.forEach(slot => {
+                const id    = slot.dataset.jobId;
+                const score = data.scores && data.scores[id] !== undefined ? data.scores[id] : -1;
+                renderBadge(slot, score);
+                if (score >= 0) cache[id] = score;
+            });
+            saveScoreCache(cache);
+
+            const hasResume = data.hasResume;
+            const tip = hasResume
+                ? 'AI match scores shown below each vacancy. Scores reflect your best-matched resume for each role.'
+                : 'No resume found — upload one on the Resumes page for personalised scores.';
+            showBanner(tip, false);
+
         } catch (e) {
-            console.error('Favorite toggle failed:', e);
+            clearSkeletons(slots);
+            showBanner('Network error: ' + e.message, false);
         } finally {
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
         }
+    }
+
+    function renderBadge(slot, score) {
+        if (score < 0) {
+            slot.innerHTML = '<span class="ai-badge score-unknown">?</span>';
+            return;
+        }
+        let cls, label, icon;
+        if (score >= 80)      { cls = 'score-excellent'; label = score + '%'; icon = '🌟'; }
+        else if (score >= 60) { cls = 'score-good';      label = score + '%'; icon = '✓'; }
+        else if (score >= 40) { cls = 'score-fair';      label = score + '%'; icon = '~'; }
+        else                  { cls = 'score-low';       label = score + '%'; icon = '↓'; }
+
+        slot.innerHTML =
+            '<span class="ai-badge ' + cls + '" title="AI match score: ' + score + '/100">' +
+            icon + ' ' + label +
+            '</span>';
+    }
+
+    function clearSkeletons(slots) {
+        slots.forEach(s => { s.innerHTML = ''; });
+    }
+
+    function clearAIScores() {
+        sessionStorage.removeItem(SCORE_CACHE_KEY);
+        document.querySelectorAll('.ai-score-slot').forEach(s => { s.innerHTML = ''; });
+        document.getElementById('aiMatchBanner').style.display = 'none';
+    }
+
+    function showBanner(text, loading) {
+        const banner = document.getElementById('aiMatchBanner');
+        const label  = document.getElementById('aiMatchBannerText');
+        label.textContent = text;
+        banner.style.display  = 'flex';
+        banner.style.opacity  = loading ? '0.85' : '1';
     }
 
     // Keep filter page-reset on new searches

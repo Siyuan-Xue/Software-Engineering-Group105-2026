@@ -31,7 +31,8 @@ target/
 .DS_Store
 
 /.idea/
-
+/target
+/docs
 # Local startup script (not for repo)
 init.txt
 
