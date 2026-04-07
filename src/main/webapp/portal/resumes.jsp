@@ -9,195 +9,218 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0f172a',
-                        accent: '#3b82f6',
-                        'background-light': '#f8fafc',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
+    <style>
+        .upload-zone { 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .upload-zone.dragover { 
+            background-color: #f0f9ff; 
+            border-color: #3b82f6; 
+            transform: scale(1.02); 
+        }
+        .modal {
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
 <body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
         <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
-
+        
         <div class="flex flex-1 overflow-hidden">
             <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="portal-page">
+                <div class="portal-page max-w-6xl mx-auto">
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
-                        <jsp:param name="containerClass" value="mb-6" />
+                        <jsp:param name="containerClass" value="mb-8" />
                     </jsp:include>
 
-                    <!-- Page Header -->
-                    <div class="portal-page-header mb-2">
+                    <div class="flex justify-between items-end mb-8">
                         <div>
-                            <h2 class="portal-page-title">Resume Management</h2>
-                            <p class="portal-page-copy">Upload, update, and manage your resumes for different TA positions.</p>
+                            <h1 class="text-4xl font-black tracking-tighter text-slate-900">Resumes</h1>
+                            <p class="text-slate-500 mt-1">Upload, analyze, and manage your teaching assistant resumes</p>
                         </div>
-                        <button class="portal-btn portal-btn-primary">
-                            <span class="material-symbols-outlined text-sm">upload_file</span>
-                            Upload Resume
-                        </button>
+                        <div class="flex gap-3">
+                            <button onclick="showAIReviewModal()" 
+                                    class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 font-medium text-sm">
+                                <span class="material-symbols-outlined">auto_awesome</span>
+                                AI Resume Review
+                            </button>
+                        </div>
                     </div>
 
-                    <c:choose>
-                        <c:when test="${pageState == 'loadError'}">
-                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
-                                <jsp:param name="variant" value="error" />
-                                <jsp:param name="icon" value="description" />
-                                <jsp:param name="title" value="Resumes unavailable" />
-                                <jsp:param name="message" value="We couldn't load your saved resumes right now. Please refresh the page and try again." />
-                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
-                                <jsp:param name="actionLabel" value="Try Again" />
-                            </jsp:include>
-                        </c:when>
-                        <c:otherwise>
-                            <!-- Main Content Grid -->
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <!-- Left Column: Resume List -->
-                                <div class="lg:col-span-2 space-y-6">
-                                    
-                                    <c:choose>
-                                        <c:when test="${empty resumes}">
-                                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
-                                                <jsp:param name="icon" value="description" />
-                                                <jsp:param name="title" value="No resumes uploaded yet" />
-                                                <jsp:param name="message" value="Upload your first resume to start applying for TA positions." />
-                                            </jsp:include>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:forEach items="${resumes}" var="resume">
-                                                <!-- Resume Card -->
-                                                <div class="portal-panel p-6 hover:shadow-md transition-shadow relative group">
-                                                    <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
-                                                            <span class="material-symbols-outlined text-xl">download</span>
-                                                        </button>
-                                                        <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
-                                                            <span class="material-symbols-outlined text-xl">delete</span>
-                                                        </button>
-                                                    </div>
-                                                    
-                                                    <div class="flex items-start gap-4">
-                                                        <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-                                                            <span class="material-symbols-outlined text-3xl">description</span>
-                                                        </div>
-                                                        <div class="flex-1">
-                                                            <div class="flex items-center gap-3 mb-1">
-                                                                <h3 class="text-lg font-bold text-slate-900"><c:out value="${resume.resumeName}"/></h3>
-                                                                <c:if test="${resume.isDefault}">
-                                                                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
-                                                                </c:if>
-                                                            </div>
-                                                            <p class="text-sm text-slate-500 mb-4">Uploaded on <c:out value="${resume.uploadDate}"/> • <c:out value="${resume.fileSize}"/></p>
-                                                            
-                                                            <div class="flex flex-wrap gap-2">
-                                                                <c:forEach items="${resume.tags}" var="tag">
-                                                                    <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md"><c:out value="${tag}"/></span>
-                                                                </c:forEach>
-                                                                <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
-                                                                    <span class="material-symbols-outlined text-[14px]">add</span>
-                                                                    Add Tag
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                                                        <span class="text-slate-500">Used in <strong class="text-slate-900"><c:out value="${resume.activeApplicationsCount}"/></strong> active application(s)</span>
-                                                        <c:choose>
-                                                            <c:when test="${resume.isDefault}">
-                                                                <button class="text-primary font-bold hover:underline">View Applications</button>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <button class="text-primary font-bold hover:underline">Set as Default</button>
-                                                            </c:otherwise>
-                                                        </c:choose>
+                    <!-- Upload Area -->
+                    <div id="uploadZone" 
+                         class="upload-zone border-2 border-dashed border-slate-300 rounded-3xl p-16 text-center mb-12 cursor-pointer hover:border-primary transition-colors"
+                         onclick="document.getElementById('fileInput').click()">
+                        <div class="mx-auto w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                            <span class="material-symbols-outlined text-6xl text-primary">cloud_upload</span>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-slate-800 mb-2">Upload Your Resume</h3>
+                        <p class="text-slate-500 max-w-md mx-auto">PDF, JPG, or PNG • Our AI will automatically extract information using OCR and semantic analysis</p>
+                        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" class="hidden" 
+                               onchange="handleFileSelect(event)">
+                        <div class="mt-6 text-xs text-slate-400">or drag and drop files here</div>
+                    </div>
+
+                    <!-- Resume List -->
+                    <div class="mb-12">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-semibold">Your Resumes</h2>
+                            <button onclick="showManualForm()" 
+                                    class="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
+                                <span class="material-symbols-outlined">add</span>
+                                New Manual Resume
+                            </button>
+                        </div>
+
+                        <c:choose>
+                            <c:when test="${empty resumes}">
+                                <div class="bg-white border border-dashed border-slate-200 rounded-3xl p-16 text-center">
+                                    <span class="material-symbols-outlined text-6xl text-slate-300 mb-4">description</span>
+                                    <p class="text-slate-500">No resumes yet. Upload one above to begin.</p>
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <c:forEach items="${resumes}" var="resume">
+                                        <div class="bg-white border border-slate-100 rounded-3xl p-6 hover:shadow-md transition-all group">
+                                            <div class="flex justify-between">
+                                                <div>
+                                                    <div class="font-semibold text-lg"><c:out value="${resume.title}"/></div>
+                                                    <div class="text-sm text-slate-500 mt-1">
+                                                        <c:out value="${resume.department}"/> • 
+                                                        <c:out value="${resume.degreeLevel}"/> • GPA <c:out value="${resume.gpa}"/>
                                                     </div>
                                                 </div>
-                                            </c:forEach>
-                                        </c:otherwise>
-                                    </c:choose>
-
-                                    <!-- Upload Area -->
-                                    <div class="portal-upload-surface cursor-pointer group">
-                                        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                            <span class="material-symbols-outlined text-3xl">cloud_upload</span>
+                                                <div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    <button onclick="editResume('${resume.id}')" 
+                                                            class="w-9 h-9 flex items-center justify-center rounded-2xl hover:bg-slate-100">
+                                                        <span class="material-symbols-outlined text-xl">edit</span>
+                                                    </button>
+                                                    <button onclick="deleteResume('${resume.id}')" 
+                                                            class="w-9 h-9 flex items-center justify-center rounded-2xl hover:bg-red-50 text-red-500">
+                                                        <span class="material-symbols-outlined text-xl">delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="mt-6 pt-6 border-t text-xs text-slate-400">
+                                                Last updated: <c:out value="${resume.updatedAt}"/>
+                                            </div>
                                         </div>
-                                        <h3 class="text-lg font-bold text-slate-900 mb-2">Drag & drop your resume here</h3>
-                                        <p class="text-sm text-slate-500 mb-6">Supported formats: PDF, DOCX, DOC (Max 5MB)</p>
-                                        <button class="portal-btn portal-btn-secondary">
-                                            Browse Files
-                                        </button>
-                                    </div>
+                                    </c:forEach>
                                 </div>
-
-                                <!-- Right Column: Tips & Info -->
-                                <div class="space-y-6">
-                                    <!-- AI Resume Review (Placeholder) -->
-                                    <div class="portal-panel portal-panel--accent p-6 relative overflow-hidden">
-                                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
-                                        <div class="flex items-center gap-2 mb-4 relative z-10">
-                                            <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                                            <h3 class="font-bold text-lg text-slate-900">AI Resume Review</h3>
-                                        </div>
-                                        <p class="text-sm text-slate-600 mb-6 relative z-10 leading-relaxed">
-                                            Get instant feedback on your resume tailored for TA positions. Our AI analyzes keywords, formatting, and impact.
-                                        </p>
-                                        <button class="portal-btn portal-btn-primary relative z-10 w-full">
-                                            Analyze Default Resume
-                                        </button>
-                                    </div>
-
-                                    <!-- Tips Card -->
-                                    <div class="portal-panel p-6">
-                                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-amber-500">lightbulb</span>
-                                            Resume Tips for TAs
-                                        </h3>
-                                        <ul class="space-y-4">
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Highlight Teaching Experience</strong>
-                                                    Include any tutoring, mentoring, or previous TA roles prominently.
-                                                </p>
-                                            </li>
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Relevant Coursework</strong>
-                                                    List advanced courses related to the module you're applying for.
-                                                </p>
-                                            </li>
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Keep it Concise</strong>
-                                                    Aim for 1-2 pages maximum. Academic CVs can be longer if necessary.
-                                                </p>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </c:otherwise>
-                    </c:choose>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
+
+    <!-- AI Review Modal -->
+    <div id="aiModal" onclick="if(event.target.id==='aiModal') hideAIReviewModal()" 
+         class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="modal bg-white rounded-3xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-hidden shadow-2xl">
+            <div class="px-8 pt-8 pb-6 border-b flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-3xl text-violet-600">auto_awesome</span>
+                    <h2 class="text-2xl font-bold">AI Resume Review</h2>
+                </div>
+                <button onclick="hideAIReviewModal()" class="text-slate-400 hover:text-slate-600">
+                    <span class="material-symbols-outlined text-4xl">close</span>
+                </button>
+            </div>
+            
+            <div class="p-8 overflow-auto" style="max-height: calc(85vh - 180px)">
+                <div id="aiDisclaimer" class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-sm leading-relaxed mb-8">
+                    <!-- Injected by servlet -->
+                </div>
+                
+                <div id="aiResult" class="prose text-slate-700">
+                    <!-- Injected by servlet -->
+                </div>
+            </div>
+            
+            <div class="px-8 py-6 border-t bg-slate-50 flex justify-end rounded-b-3xl">
+                <button onclick="hideAIReviewModal()" 
+                        class="px-10 py-3.5 font-semibold rounded-2xl bg-white border border-slate-200 hover:bg-slate-50">
+                    Close Analysis
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append("action", "upload");
+            formData.append("resumeFile", file);
+
+            fetch('${pageContext.request.contextPath}/resumes', {
+                method: 'POST',
+                body: formData
+            }).then(() => {
+                alert("Resume uploaded successfully! AI is analyzing the document...");
+                window.location.reload();
+            });
+        }
+
+        function showAIReviewModal() {
+            fetch('${pageContext.request.contextPath}/resumes?action=aiReview', { method: 'POST' })
+                .then(r => r.text())
+                .then(() => window.location.reload());
+        }
+
+        function hideAIReviewModal() {
+            document.getElementById('aiModal').classList.add('hidden');
+        }
+
+        function deleteResume(id) {
+            if (!confirm("Delete this resume?")) return;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '${pageContext.request.contextPath}/resumes';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="resumeId" value="${id}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function editResume(id) {
+            alert("Edit functionality for resume " + id + " is ready for further development.");
+        }
+
+        // Drag and drop
+        const zone = document.getElementById('uploadZone');
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            zone.classList.add('dragover');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const input = document.getElementById('fileInput');
+                input.files = dt.files;
+                handleFileSelect({target: input});
+            }
+        });
+    </script>
 </body>
 </html>

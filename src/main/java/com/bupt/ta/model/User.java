@@ -1,7 +1,13 @@
 package com.bupt.ta.model;
 
 import com.bupt.ta.model.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User extends BaseEntity {
     private String email;
     private String passwordHash;
@@ -9,6 +15,11 @@ public class User extends BaseEntity {
     private String fullName;
     private String phone;
     private boolean active = true;
+    private String department;
+    private String studentId;
+    private String bio;
+    private boolean notificationsEnabled = true;
+    private Set<UUID> savedJobIds = new HashSet<>();
 
     public String getEmail() {
         return email;
@@ -56,5 +67,25 @@ public class User extends BaseEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+
+    public Set<UUID> getSavedJobIds() {
+        return savedJobIds == null ? new HashSet<>() : savedJobIds;
+    }
+
+    public void setSavedJobIds(Set<UUID> savedJobIds) {
+        this.savedJobIds = savedJobIds == null ? new HashSet<>() : savedJobIds;
     }
 }

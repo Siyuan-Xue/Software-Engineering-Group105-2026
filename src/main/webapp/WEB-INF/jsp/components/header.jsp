@@ -90,14 +90,14 @@
         </div>
     </div>
 
-    <nav class="border-t border-primary/10 px-4 py-3 lg:hidden">
+    <nav class="border-t border-slate-100 px-4 py-3 lg:hidden">
         <div class="flex gap-2 overflow-x-auto">
-            <a href="${contextPath}/dashboard" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${dashboardActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Dashboard</a>
-            <a href="${contextPath}/applications" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${applicationsActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Applications</a>
-            <a href="${contextPath}/resumes" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${resumesActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Resumes</a>
-            <a href="${contextPath}/vacancies" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${vacanciesActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Vacancies</a>
-            <a href="${contextPath}/messages" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${messagesActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Messages</a>
-            <a href="${contextPath}/settings" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors ${settingsActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}">Settings</a>
+            <a href="${contextPath}/dashboard" style="${dashboardActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Dashboard</a>
+            <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Applications</a>
+            <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Resumes</a>
+            <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Vacancies</a>
+            <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Messages</a>
+            <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Settings</a>
         </div>
     </nav>
 </header>

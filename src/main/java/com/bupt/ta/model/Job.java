@@ -2,11 +2,14 @@ package com.bupt.ta.model;
 
 import com.bupt.ta.model.enums.JobStatus;
 import com.bupt.ta.model.enums.JobType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Job extends BaseEntity {
     private UUID postedBy;
     private String title;
@@ -19,6 +22,7 @@ public class Job extends BaseEntity {
     private LocalDate startDate;
     private LocalDate endDate;
     private Instant deadline;
+    private BigDecimal hourlyRate;
 
     public UUID getPostedBy() {
         return postedBy;
@@ -106,5 +110,13 @@ public class Job extends BaseEntity {
 
     public void setDeadline(Instant deadline) {
         this.deadline = deadline;
+    }
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
     }
 }
