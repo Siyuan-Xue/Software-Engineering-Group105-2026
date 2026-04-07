@@ -1,6 +1,6 @@
 # Frontend-Backend Integration Checklist
 
-更新时间：2026-04-06
+更新时间：2026-04-07
 
 关联文件：
 - `FRONTEND_BACKEND_INTERFACE_CONTRACT.md`
@@ -263,24 +263,26 @@ Sidebar 会读取：
 
 ## 7. 额外合同缺口
 
-这些不是你当前负责页面的主线，但联调前最好一起确认：
+### 7.1 Applications 页的 department 与列表状态
 
-### 7.1 Applications 页的 department
+已对齐方案（见 `FRONTEND_BACKEND_INTERFACE_CONTRACT.md` §4.2）：
 
-当前 `applications.jsp` 里 Department 列仍是硬编码占位：
+- `Application.department`（optional）：有值则表格展示；无值时前端显示 `—`，不再使用硬编码院系。
+- `Application.vacancyId`（optional）：有值时「Actions」列为指向 `/vacancy?vacancyId=...` 的链接；无值时退化为指向 `/vacancies`。
+- `pageState`：`empty` / `noFilterResults` / `loadError` 与 JSP 一致；未传 `pageState` 时，空列表下若存在 `keyword`、`status` 或 `date=oldest` 等筛选，JSP 会按「无筛选结果」文案展示，并提供「Clear filters」链到 `GET /applications`。
 
-- `Engineering & Tech`
+联调时后端请尽量下发 `department`、`vacancyId` 与明确的 `pageState`，以减少与启发式不一致的情况。
 
-原因：
+### 7.2 Resumes 上传（POST）
 
-- 合同中的 `Application` 对象目前没有 `department`
+- 路由：`POST /resumes`
+- `Content-Type`：`multipart/form-data`
+- 文件字段名：**`resumeFile`**（与 `resumes.jsp` 一致）
+- 建议成功：`redirect` 到 `GET /resumes` 并带 `successMessage`（及可选 `pageState=uploadSuccess`）
+- 建议失败：同上并带 `errorMessage`（及可选 `pageState=uploadFailure`）
+- 下载、删除、设默认、标签编辑等按钮在前端已 `disabled`，待后续合同与接口再启用
 
-联调建议二选一：
-
-1. 后端在 `Application` 对象中补 `department`
-2. 前端先移除这一列，避免假数据进入联调版本
-
-### 7.2 Logout 方法
+### 7.3 Logout 方法
 
 当前前端已经统一改成：
 
@@ -295,14 +297,14 @@ Sidebar 会读取：
 
 联调前至少确认下面这些点：
 
-- [ ] 后端已实现 `/login`、`/logout`、`/dashboard`、`/vacancies`、`/vacancy`、`/application`、`/applications`、`/resumes`、`/messages`、`/settings`
+- [ ] 后端已实现 `/login`、`/logout`、`/dashboard`、`/vacancies`、`/vacancy`、`/application`、`/applications`（含 `GET` 与筛选）、`POST /resumes`（上传）、`GET /resumes`、`/messages`、`/settings`
 - [ ] 合同已补充 `POST /messages`
 - [ ] 所有页面统一使用 `errorMessage` / `successMessage`
 - [ ] 所有已登录页面统一提供 header 所需用户展示字段
 - [ ] 所有已登录页面统一提供 `profileCompletionPercentage`，避免 sidebar 退回 `0%`
 - [ ] Messages 最终字段命名不再使用旧 fallback 字段名
 - [ ] Settings 本轮范围已确认为只读展示，不临时新增未定义更新接口
-- [ ] Applications 页的 Department 列处理方案已确认
+- [ ] Applications 列表已按合同提供 `department`（可空）、`vacancyId`（可空）及 `pageState`（建议）
 - [ ] 未登录访问 portal 页面时的 redirect 行为已实现
 
 ## 9. 建议发给后端同学的最短结论
@@ -313,4 +315,36 @@ Sidebar 会读取：
 > 现在联调前需要后端统一补 servlet 路由、按合同提供 request attributes，并额外确认三件事：  
 > 1. `POST /messages` 发送消息动作要不要写进合同；  
 > 2. 所有已登录页面是否统一提供 header/sidebar 所需共享字段；  
-> 3. `applications` 页的 `department` 字段是否补进 `Application` 对象。
+> 3. `POST /resumes`（字段名 `resumeFile`）与上传成功/失败后的 redirect 策略；`Application` 是否下发 `department`、`vacancyId` 与 `pageState`。
+
+## 10. 申请 / 简历模块（前端负责范围）需同步给后端的事项
+
+以下条目对应 **Applications 列表页**与 **Resumes 管理页** 的 JSP 与 `FRONTEND_BACKEND_INTERFACE_CONTRACT.md` 约定，联调前请后端同学按清单实现或确认；细节以合同正文为准。
+
+### 10.1 路由与 HTTP 方法
+
+| 路由 | 方法 | 说明 |
+|------|------|------|
+| `/applications` | `GET` | 渲染申请列表；支持查询参数 `keyword`、`status`、`date`（与合同 §4.2 一致） |
+| `/resumes` | `GET` | 渲染简历列表与管理 UI |
+| `/resumes` | `POST` | 上传简历：`multipart/form-data`，文件字段名必须为 **`resumeFile`**（见 §7.2、合同 §5.2） |
+| `/application` | `POST` | 提交申请（`vacancyId`、`resumeId`）；成功后跳转 `/applications` 等（合同 §4.1，与 vacancies 流程衔接） |
+
+### 10.2 `GET /applications` 需放入的 request attributes
+
+- **`applications`**：`List`，元素字段至少包含合同中的 `applicationId`、`vacancyTitle`、`courseCode`、`status`、`appliedDate`、`resumeName`。
+- **建议补充（合同已写 optional）**：`department`（无则前端显示 `—`）、`vacancyId`（有则「查看职位」链到 `/vacancy?vacancyId=...`，无则链到 `/vacancies`）。
+- **建议 `pageState`**：`empty`（从未申请）、`noFilterResults`（有筛选但结果为空）、`loadError`（加载失败）；未传时前端会用查询参数做启发式判断，易与后端语义不一致，**建议后端显式下发**。
+- **`errorMessage` / `successMessage`**：与其它 portal 页相同，全局统一命名。
+
+### 10.3 `GET /resumes` / `POST /resumes` 需约定行为
+
+- **`GET /resumes`**：`resumes` 列表元素为合同 **`ResumeDetail`**（`resumeId`、`resumeName`、`uploadDate`、`fileSize`、`isDefault`、`tags`、`activeApplicationsCount`）；`tags` 建议永不为 `null`（空则给空列表）。
+- **`pageState`**：`normal`、`empty`、`uploadSuccess`、`uploadFailure`、`loadError` 等与 JSP 一致（见合同 §5.1）。
+- **`POST /resumes` 成功后**：`redirect` 到 `GET /resumes`，并带上 **`successMessage`**（及可选 **`pageState=uploadSuccess`**）；失败则 **`errorMessage`**（及可选 **`pageState=uploadFailure`**）。
+- 下载、删除、设默认、标签编辑等 **前端当前为 disabled**，后端可暂不实现；若提前实现，需另开合同版本再改前端。
+
+### 10.4 与其它同学页面的共享依赖（申请/简历页也会用到）
+
+- 所有已登录页（含 `/applications`、`/resumes`）：为 **header** 提供 `userProfile`（至少 `firstName` / `lastName` / `department`）或合同中的 fallback 字段；为 **sidebar** 提供 **`profileCompletionPercentage`**，避免进度条长期为 `0%`。
+- 未登录访问上述路由时：**重定向到 `/login`**，可带 `errorMessage`（全局规则，见 §2.3）。
