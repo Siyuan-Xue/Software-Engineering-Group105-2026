@@ -37,6 +37,10 @@ public class LoginServlet extends HttpServlet {
         if (errorMessage != null && !errorMessage.isEmpty()) {
             req.setAttribute("errorMessage", errorMessage);
         }
+        String successMessage = req.getParameter("successMessage");
+        if (successMessage != null && !successMessage.isEmpty()) {
+            req.setAttribute("successMessage", successMessage);
+        }
         req.getRequestDispatcher("/login.jsp").forward(req, resp);
     }
 
@@ -51,7 +55,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // 调用刚才写的真实 AuthService 进行验证
+
         Optional<User> userOpt = authService.authenticate(email, password);
 
         if (userOpt.isPresent()) {
