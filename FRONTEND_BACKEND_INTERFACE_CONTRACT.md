@@ -237,6 +237,7 @@ This document outlines the standardized interface contract between the frontend 
    - `date` (String, optional)
 9. **Request Attributes:**
    - `applications` (List<Application>): 申请列表
+   - `pageState` (String, optional): 建议与 JSP 对齐；`empty` 表示无任何申请记录；`noFilterResults` 表示有筛选条件但结果为空；`loadError` 表示加载失败。未设置时 JSP 会根据查询参数做启发式判断
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
 10. **Form Submission:** GET form for search/filter
@@ -252,6 +253,8 @@ This document outlines the standardized interface contract between the frontend 
       - `status` (String)
       - `appliedDate` (String)
       - `resumeName` (String)
+      - `department` (String, optional): 所属院系；未提供时前端显示占位符
+      - `vacancyId` (String, optional): 用于「查看职位」链接跳转至 `/vacancy?vacancyId=...`
 
 ---
 
@@ -270,7 +273,7 @@ This document outlines the standardized interface contract between the frontend 
    - `resumes` (List<ResumeDetail>): 简历详情列表
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** None
+10. **Form Submission:** None（上传见 §5.2）
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
 13. **Supported Page States:** `normal`, `empty`, `uploadSuccess`, `uploadFailure`, `loadError`
@@ -284,6 +287,24 @@ This document outlines the standardized interface contract between the frontend 
       - `isDefault` (Boolean)
       - `tags` (List<String>)
       - `activeApplicationsCount` (Integer)
+
+### 5.2. Resume Upload Action
+1. **Page Name:** Resume Upload Action
+2. **Route URL:** `/resumes`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `ResumesServlet`（或与列表共用控制器，按 HTTP 方法区分）
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 接收用户上传的简历文件。
+8. **Request Parameters:**
+   - `resumeFile` (File / Part, required): multipart 表单中的文件字段名，与 `resumes.jsp` 中 `<input name="resumeFile">` 一致
+9. **Content-Type:** `multipart/form-data`
+10. **Request Attributes:** None（错误/成功信息通过 redirect 的 query 或 flash/session 传递，见下）
+11. **Form Submission:** Yes（页面底部与顶栏「Upload Resume」共用同一 file input）
+12. **Success Behavior:** Redirect 到 `GET /resumes`，建议附带 `successMessage`（例如 URL 编码后作为 query 参数，或使用 session flash），并可设置 `pageState=uploadSuccess` 供 JSP 展示额外提示条
+13. **Failure Behavior:** Redirect 到 `GET /resumes`，附带 `errorMessage`，可选 `pageState=uploadFailure`
+14. **Supported Page States:** N/A（动作本身）；目标页见 §5.1
+15. **Main Functionalities:** 持久化文件并在列表中展示新简历
 
 ---
 

@@ -77,7 +77,7 @@
                                             <h2 class="text-3xl font-black text-slate-900 tracking-tight"><c:out value="${vacancy.title}"/></h2>
                                             <p class="text-lg text-slate-500 mt-1"><c:out value="${vacancy.department}"/></p>
                                         </div>
-                                        <button onclick="document.getElementById('applyModal').classList.remove('hidden')" class="portal-btn portal-btn-primary">
+                                        <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
                                             Apply Now
                                         </button>
                                     </div>
@@ -125,14 +125,30 @@
                             </div>
 
                             <!-- Apply Modal -->
-                            <div id="applyModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                                <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl">
-                                    <h3 class="text-2xl font-black text-slate-900 mb-2">Select Resume</h3>
-                                    <p class="text-slate-500 text-sm mb-6">Choose which resume you want to use for this application.</p>
-                                    
+                            <div id="applyModal" style="display:none" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                                <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl" style="max-height:90vh;overflow-y:auto">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="text-2xl font-black text-slate-900">Select Resume</h3>
+                                        <button type="button" onclick="closeApplyModal()"
+                                                class="text-slate-400 hover:text-slate-600 transition-colors">
+                                            <span class="material-symbols-outlined text-2xl">close</span>
+                                        </button>
+                                    </div>
+                                    <p class="text-slate-500 text-sm mb-1">Choose which resume you want to submit for this application.</p>
+
+                                    <!-- AI recommendation notice -->
+                                    <div id="aiRankStatus" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
+                                        <span class="material-symbols-outlined text-[14px] animate-spin">autorenew</span>
+                                        <span>AI is analysing your resumes for this role…</span>
+                                    </div>
+                                    <div id="aiRankDone" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
+                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                        <span>AI recommendation ready — see scores below</span>
+                                    </div>
+
                                     <form action="${pageContext.request.contextPath}/application" method="POST">
                                         <input type="hidden" name="vacancyId" value="${vacancy.vacancyId}">
-                                        <div class="space-y-3 mb-8">
+                                        <div id="resumeOptionsList" class="space-y-3 mb-8">
                                             <c:choose>
                                                 <c:when test="${empty resumeList}">
                                                     <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
@@ -146,10 +162,15 @@
                                                 </c:when>
                                                 <c:otherwise>
                                                     <c:forEach items="${resumeList}" var="resume" varStatus="status">
-                                                        <label class="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition-all flex items-center gap-4 cursor-pointer hover:border-primary/30 hover:bg-white">
-                                                            <input type="radio" name="resumeId" value="${resume.resumeId}" class="w-5 h-5 text-primary border-slate-300 focus:ring-primary" <c:if test="${status.first}">required="required"</c:if>>
-                                                            <div class="flex-1">
-                                                                <p class="text-sm font-bold text-slate-900"><c:out value="${resume.resumeName}"/></p>
+                                                        <label id="resumeLabel_${resume.resumeId}"
+                                                               class="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition-all flex items-center gap-4 cursor-pointer hover:border-violet-300 hover:bg-white">
+                                                            <input type="radio" name="resumeId" value="${resume.resumeId}"
+                                                                   class="w-5 h-5 text-primary border-slate-300 focus:ring-primary shrink-0"
+                                                                   <c:if test="${status.first}">required="required"</c:if>>
+                                                            <div class="flex-1 min-w-0">
+                                                                <p class="text-sm font-bold text-slate-900 truncate"><c:out value="${resume.resumeName}"/></p>
+                                                                <!-- AI score badge injected here by JS -->
+                                                                <div id="scoreBadge_${resume.resumeId}" class="mt-1"></div>
                                                             </div>
                                                         </label>
                                                     </c:forEach>
@@ -158,7 +179,7 @@
                                         </div>
 
                                         <div class="flex gap-3">
-                                            <button type="button" onclick="document.getElementById('applyModal').classList.add('hidden')" class="portal-btn portal-btn-secondary flex-1">
+                                            <button type="button" onclick="closeApplyModal()" class="portal-btn portal-btn-secondary flex-1">
                                                 Cancel
                                             </button>
                                             <button type="submit" class="portal-btn portal-btn-primary flex-1" <c:if test="${empty resumeList}">disabled="disabled"</c:if>>
@@ -168,6 +189,80 @@
                                     </form>
                                 </div>
                             </div>
+
+                            <script>
+                                var JOB_ID = '${vacancy.vacancyId}';
+                                var CTX    = '${pageContext.request.contextPath}';
+
+                                function openApplyModal() {
+                                    document.getElementById('applyModal').style.display = 'flex';
+                                    fetchAIRankings();
+                                }
+                                function closeApplyModal() {
+                                    document.getElementById('applyModal').style.display = 'none';
+                                }
+
+                                function fetchAIRankings() {
+                                    if (!JOB_ID) return;
+
+                                    var status = document.getElementById('aiRankStatus');
+                                    var done   = document.getElementById('aiRankDone');
+                                    if (status) status.style.setProperty('display', 'flex', 'important');
+                                    if (done)   done.style.setProperty('display', 'none', 'important');
+
+                                    var params = new URLSearchParams();
+                                    params.append('jobId', JOB_ID);
+
+                                    fetch(CTX + '/ai-resume-rank', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                        body: params.toString()
+                                    })
+                                        .then(function(r) { return r.json(); })
+                                        .then(function(data) {
+                                            if (status) status.style.setProperty('display', 'none', 'important');
+                                            if (!data.ok || !data.hasResumes) return;
+
+                                            var hasRecommended = data.rankings.some(function(r) { return r.recommended; });
+                                            data.rankings.forEach(function(r) {
+                                                var badge = document.getElementById('scoreBadge_' + r.resumeId);
+                                                var label = document.getElementById('resumeLabel_' + r.resumeId);
+                                                if (!badge) return;
+
+                                                if (r.score < 0) {
+                                                    badge.innerHTML = '';
+                                                    return;
+                                                }
+
+                                                var color, icon, text;
+                                                if (r.score >= 85) {
+                                                    color = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                                                    icon  = '🌟'; text = r.score + '% match';
+                                                } else if (r.score >= 65) {
+                                                    color = 'text-blue-700 bg-blue-50 border-blue-200';
+                                                    icon  = '✓'; text = r.score + '% match';
+                                                } else {
+                                                    color = 'text-slate-500 bg-slate-50 border-slate-200';
+                                                    icon  = ''; text = r.score + '% match';
+                                                }
+
+                                                var recTag = '';
+                                                if (r.recommended) {
+                                                    recTag = '<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">AI Pick</span>';
+                                                    if (label) label.classList.add('border-violet-300', 'bg-violet-50/40');
+                                                }
+
+                                                badge.innerHTML = '<span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ' + color + '">'
+                                                    + icon + ' ' + text + '</span>' + recTag;
+                                            });
+
+                                            if (done) done.style.setProperty('display', 'flex', 'important');
+                                        })
+                                        .catch(function() {
+                                            if (status) status.style.setProperty('display', 'none', 'important');
+                                        });
+                                }
+                            </script>
                         </c:otherwise>
                     </c:choose>
                 </div>

@@ -1,8 +1,11 @@
 package com.bupt.ta.model;
 
 import com.bupt.ta.model.enums.DegreeLevel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public class Resume extends BaseEntity {
@@ -14,6 +17,8 @@ public class Resume extends BaseEntity {
     private String bio;
     private int maxWeeklyHours = 20;
     private String availabilityJson;
+    private String uploadedFilePath;
+    private String originalFileName;
 
     public UUID getUserId() {
         return userId;
@@ -77,5 +82,30 @@ public class Resume extends BaseEntity {
 
     public void setAvailabilityJson(String availabilityJson) {
         this.availabilityJson = availabilityJson;
+    }
+
+    public String getUploadedFilePath() {
+        return uploadedFilePath;
+    }
+
+    public void setUploadedFilePath(String uploadedFilePath) {
+        this.uploadedFilePath = uploadedFilePath;
+    }
+
+    public String getOriginalFileName() {
+        return originalFileName;
+    }
+
+    public void setOriginalFileName(String originalFileName) {
+        this.originalFileName = originalFileName;
+    }
+
+    /** Formatted updatedAt for display (e.g. "07 Apr 2026, 22:05"). Not persisted. */
+    @JsonIgnore
+    public String getUpdatedAtDisplay() {
+        if (getUpdatedAt() == null) return "N/A";
+        return DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
+                .withZone(ZoneId.systemDefault())
+                .format(getUpdatedAt());
     }
 }

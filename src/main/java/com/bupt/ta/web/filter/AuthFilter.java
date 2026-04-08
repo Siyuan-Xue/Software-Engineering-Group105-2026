@@ -67,22 +67,25 @@ public class AuthFilter implements Filter {
         // 这样你的业务 Servlet (DashboardServlet等) 就不需要再重复写这些代码了！
         // ====================================================================
 
-        // 4.1 组装前端需要的 userProfile 对象 (使用 Map 模拟 DTO，完美适配 JSP 的 ${userProfile.firstName})
+        // 4.1 组装前端需要的 userProfile 对象
         Map<String, Object> userProfile = new HashMap<>();
-        
-        // 拆分 fullName 为 firstName 和 lastName
+
         String fullName = currentUser.getFullName() != null ? currentUser.getFullName() : "Student User";
         String[] nameParts = fullName.split(" ", 2);
         userProfile.put("firstName", nameParts[0]);
         userProfile.put("lastName", nameParts.length > 1 ? nameParts[1] : "");
-        
+        userProfile.put("fullName", fullName);
         userProfile.put("email", currentUser.getEmail());
-        // 应对 User 实体缺失 department 的问题，这里先放一个默认值，防止页面出错
-        userProfile.put("department", "None"); 
-        // fallback 兼容字段
-        req.setAttribute("userName", fullName); 
+        userProfile.put("phone", currentUser.getPhone());
 
-        // 将组装好的 profile 存入当前请求
+        // 直接从 User 对象读取持久化字段（已存入 users.json）
+        String dept = currentUser.getDepartment();
+        userProfile.put("department", (dept == null || dept.isBlank()) ? "None" : dept);
+        userProfile.put("studentId", currentUser.getStudentId());
+        userProfile.put("bio", currentUser.getBio());
+        userProfile.put("notificationsEnabled", currentUser.isNotificationsEnabled());
+
+        req.setAttribute("userName", fullName);
         req.setAttribute("userProfile", userProfile);
 
         // 4.2 动态计算并注入 sidebar 需要的 profileCompletionPercentage
@@ -102,9 +105,12 @@ public class AuthFilter implements Filter {
      * 根据 User 对象的字段是否完善，简单计算资料完整度
      */
     private int calculateProfileCompletion(User user) {
-        int score = 40; // 基础分，因为注册必须有邮箱密码
-        if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) score += 30;
-        if (user.getPhone() != null && !user.getPhone().trim().isEmpty()) score += 30;
-        return score;
+        int score = 20; // 基础分（邮箱必填）
+        if (user.getFullName() != null && !user.getFullName().isBlank()) score += 20;
+        if (user.getPhone()    != null && !user.getPhone().isBlank())    score += 15;
+        if (user.getDepartment() != null && !user.getDepartment().isBlank()) score += 15;
+        if (user.getStudentId()  != null && !user.getStudentId().isBlank())  score += 15;
+        if (user.getBio()        != null && !user.getBio().isBlank())        score += 15;
+        return Math.min(score, 100);
     }
 }

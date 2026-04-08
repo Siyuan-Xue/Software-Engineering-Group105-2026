@@ -10,34 +10,34 @@
 <c:set var="messagesActive" value="${fn:contains(currentPath, 'messages')}" />
 <c:set var="settingsActive" value="${fn:contains(currentPath, 'settings')}" />
 <c:set var="profileCompletion" value="${empty profileCompletionPercentage ? 0 : profileCompletionPercentage}" />
-<aside class="hidden w-64 shrink-0 flex-col border-r border-primary/10 bg-white p-4 lg:flex">
+<aside class="hidden w-64 shrink-0 flex-col border-r border-slate-100 bg-white p-4 lg:flex">
     <nav class="flex flex-col gap-1">
-        <a href="${contextPath}/dashboard" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${dashboardActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${dashboardActive ? '!fill-1' : ''}">dashboard</span>
-            <span class="text-sm font-medium">Dashboard</span>
+        <a href="${contextPath}/dashboard" style="${dashboardActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${dashboardActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            <span class="text-sm font-semibold">Dashboard</span>
         </a>
-        <a href="${contextPath}/applications" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${applicationsActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${applicationsActive ? '!fill-1' : ''}">work_history</span>
-            <span class="text-sm font-medium">Applications</span>
+        <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${applicationsActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">work_history</span>
+            <span class="text-sm font-semibold">Applications</span>
         </a>
-        <a href="${contextPath}/resumes" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${resumesActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${resumesActive ? '!fill-1' : ''}">article</span>
-            <span class="text-sm font-medium">Resumes</span>
+        <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${resumesActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">article</span>
+            <span class="text-sm font-semibold">Resumes</span>
         </a>
-        <a href="${contextPath}/vacancies" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${vacanciesActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${vacanciesActive ? '!fill-1' : ''}">search</span>
-            <span class="text-sm font-medium">Vacancies</span>
+        <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${vacanciesActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">search</span>
+            <span class="text-sm font-semibold">Vacancies</span>
         </a>
-        <a href="${contextPath}/messages" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${messagesActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${messagesActive ? '!fill-1' : ''}">chat</span>
-            <span class="text-sm font-medium">Messages</span>
+        <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${messagesActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">chat</span>
+            <span class="text-sm font-semibold">Messages</span>
         </a>
 
-        <div class="my-4 border-t border-slate-100"></div>
+        <div class="my-3 border-t border-slate-100"></div>
 
-        <a href="${contextPath}/settings" class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${settingsActive ? 'bg-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}">
-            <span class="material-symbols-outlined ${settingsActive ? '!fill-1' : ''}">settings</span>
-            <span class="text-sm font-medium">Settings</span>
+        <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${settingsActive ? 'shadow-sm' : ''}">
+            <span class="material-symbols-outlined text-[20px]">settings</span>
+            <span class="text-sm font-semibold">Settings</span>
         </a>
     </nav>
 

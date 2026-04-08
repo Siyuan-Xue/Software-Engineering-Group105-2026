@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,196 +9,825 @@
     <title>Resumes - QM HIRE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0f172a',
-                        accent: '#3b82f6',
-                        'background-light': '#f8fafc',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
+    <style>
+        /* ── upload zone ──────────────────────────────────────────────── */
+        .upload-zone { transition: all 0.25s ease; border: 2px dashed #e2e8f0; border-radius: 1.25rem; }
+        .upload-zone:hover { border-color: #94a3b8; background: #f8fafc; }
+        .upload-zone.dragover { background: #eff6ff; border-color: #3b82f6; transform: scale(1.01); }
+
+        /* ── modals – use display:flex/none toggled via JS, NOT Tailwind hidden ── */
+        .qm-modal-overlay {
+            display: none;          /* controlled by JS only */
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center;
+            z-index: 9999; padding: 1rem;
+        }
+        .qm-modal-overlay.open { display: flex; }
+        .qm-modal-box {
+            background: #fff; border-radius: 1.5rem;
+            box-shadow: 0 32px 64px -24px rgba(15,23,42,0.4);
+            width: 100%; overflow: hidden;
+            animation: modalPop .28s cubic-bezier(.34,1.4,.64,1) both;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.92) translateY(16px); opacity: 0; }
+            to   { transform: scale(1)    translateY(0);    opacity: 1; }
+        }
+
+        /* ── AI result rendering ──────────────────────────────────────── */
+        .ai-prose h2 { font-size:1rem; font-weight:700; color:#1e293b; margin:1.1rem 0 .35rem; padding-bottom:.25rem; border-bottom:1px solid #f1f5f9; }
+        .ai-prose strong { font-weight:600; color:#1e293b; }
+        .ai-prose ul  { list-style:disc; padding-left:1.4rem; margin:.4rem 0 .6rem; }
+        .ai-prose li  { margin:.3rem 0; color:#475569; line-height:1.6; }
+        .ai-prose p   { color:#475569; line-height:1.65; margin:.4rem 0; }
+
+        /* ── skeleton ─────────────────────────────────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 6px;
+        }
+        @keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+
+        /* ── resume card ──────────────────────────────────────────────── */
+        .resume-card { transition: box-shadow .2s, transform .2s; }
+        .resume-card:hover { box-shadow: 0 8px 30px -12px rgba(15,23,42,.18); transform: translateY(-1px); }
+
+        /* file-type icon colours */
+        .icon-pdf  { background:#fee2e2; color:#dc2626; }
+        .icon-doc  { background:#dbeafe; color:#2563eb; }
+        .icon-img  { background:#d1fae5; color:#059669; }
+        .icon-txt  { background:#fef9c3; color:#ca8a04; }
+        .icon-def  { background:#f1f5f9; color:#64748b; }
+
+        /* card action buttons always visible */
+        .card-action-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 10px;
+            transition: background .15s, color .15s;
+        }
+        .card-action-edit  { color:#3b82f6; background:#eff6ff; }
+        .card-action-edit:hover  { background:#dbeafe; }
+        .card-action-del   { color:#ef4444; background:#fff1f2; }
+        .card-action-del:hover   { background:#fee2e2; }
+    </style>
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
-    <div class="relative flex min-h-screen w-full flex-col">
-        <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
+<body class="bg-background-light font-sans text-slate-900">
+<div class="flex min-h-screen w-full flex-col">
+    <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
-        <div class="flex flex-1 overflow-hidden">
-            <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
+    <div class="flex flex-1 overflow-hidden">
+        <jsp:include page="/WEB-INF/jsp/components/sidebar.jsp" />
 
-            <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
-                <div class="portal-page">
-                    <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
-                        <jsp:param name="containerClass" value="mb-6" />
-                    </jsp:include>
+        <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
+            <div class="portal-page max-w-6xl">
 
-                    <!-- Page Header -->
-                    <div class="portal-page-header mb-2">
-                        <div>
-                            <h2 class="portal-page-title">Resume Management</h2>
-                            <p class="portal-page-copy">Upload, update, and manage your resumes for different TA positions.</p>
-                        </div>
-                        <button class="portal-btn portal-btn-primary">
-                            <span class="material-symbols-outlined text-sm">upload_file</span>
-                            Upload Resume
-                        </button>
+                <%-- flash messages --%>
+                <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
+                    <jsp:param name="containerClass" value="mb-4" />
+                </jsp:include>
+
+                <c:if test="${pageState == 'uploadSuccess'}">
+                    <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 mb-2">
+                        <span class="material-symbols-outlined text-emerald-500">check_circle</span>
+                        <p class="text-sm font-semibold text-emerald-800">Resume uploaded. Review and update the details below.</p>
                     </div>
+                </c:if>
+                <c:if test="${pageState == 'uploadFailure'}">
+                    <div class="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 mb-2">
+                        <span class="material-symbols-outlined text-red-500">error</span>
+                        <p class="text-sm font-semibold text-red-800">Upload failed.<c:if test="${not empty errorMessage}"> <c:out value="${errorMessage}"/></c:if></p>
+                    </div>
+                </c:if>
 
-                    <c:choose>
-                        <c:when test="${pageState == 'loadError'}">
-                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
-                                <jsp:param name="variant" value="error" />
-                                <jsp:param name="icon" value="description" />
-                                <jsp:param name="title" value="Resumes unavailable" />
-                                <jsp:param name="message" value="We couldn't load your saved resumes right now. Please refresh the page and try again." />
-                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
-                                <jsp:param name="actionLabel" value="Try Again" />
-                            </jsp:include>
-                        </c:when>
-                        <c:otherwise>
-                            <!-- Main Content Grid -->
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <!-- Left Column: Resume List -->
-                                <div class="lg:col-span-2 space-y-6">
-                                    
-                                    <c:choose>
-                                        <c:when test="${empty resumes}">
-                                            <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
-                                                <jsp:param name="icon" value="description" />
-                                                <jsp:param name="title" value="No resumes uploaded yet" />
-                                                <jsp:param name="message" value="Upload your first resume to start applying for TA positions." />
-                                            </jsp:include>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:forEach items="${resumes}" var="resume">
-                                                <!-- Resume Card -->
-                                                <div class="portal-panel p-6 hover:shadow-md transition-shadow relative group">
-                                                    <div class="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button class="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-lg transition-colors" title="Download">
-                                                            <span class="material-symbols-outlined text-xl">download</span>
-                                                        </button>
-                                                        <button class="p-2 text-slate-400 hover:text-red-500 bg-slate-50 rounded-lg transition-colors" title="Delete">
-                                                            <span class="material-symbols-outlined text-xl">delete</span>
-                                                        </button>
+                <%-- page header --%>
+                <div class="portal-page-header mb-4">
+                    <div>
+                        <h1 class="portal-page-title">My Resumes</h1>
+                        <p class="portal-page-copy">Upload your CV, get AI coaching, and track your TA applications.</p>
+                    </div>
+                </div>
+
+                <%-- hidden upload form + file input --%>
+                <form id="uploadForm" action="${pageContext.request.contextPath}/resumes"
+                      method="POST" enctype="multipart/form-data" class="hidden">
+                    <input type="hidden" name="action" value="upload"/>
+                </form>
+                <input type="file" id="resumeFileInput" name="resumeFile" form="uploadForm"
+                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                       class="sr-only"/>
+
+                <c:choose>
+                    <c:when test="${pageState == 'loadError'}">
+                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                            <jsp:param name="variant" value="error"/>
+                            <jsp:param name="icon" value="description"/>
+                            <jsp:param name="title" value="Resumes unavailable"/>
+                            <jsp:param name="message" value="We couldn't load your resumes. Please refresh and try again."/>
+                            <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes"/>
+                            <jsp:param name="actionLabel" value="Try Again"/>
+                        </jsp:include>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                            <%-- ── LEFT: resume list + upload zone ─────────────── --%>
+                            <div class="lg:col-span-2 space-y-4">
+
+                                <c:choose>
+                                    <c:when test="${empty resumes}">
+                                        <div class="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-white/60 py-20 text-center">
+                                            <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-5">
+                                                <span class="material-symbols-outlined text-4xl text-slate-300">description</span>
+                                            </div>
+                                            <p class="text-lg font-bold text-slate-700 mb-1">No resumes yet</p>
+                                            <p class="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">Upload your first resume to start matching with TA positions.</p>
+                                            <label for="resumeFileInput" class="portal-btn portal-btn-primary cursor-pointer">
+                                                <span class="material-symbols-outlined text-sm">upload_file</span>
+                                                Upload Your First Resume
+                                            </label>
+                                        </div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:forEach items="${resumes}" var="r">
+                                            <%-- determine file type for icon --%>
+                                            <c:set var="iconCls" value="icon-def"/>
+                                            <c:set var="iconName" value="description"/>
+                                            <c:if test="${not empty r.originalFileName}">
+                                                <c:choose>
+                                                    <c:when test="${fn:containsIgnoreCase(r.originalFileName,'.pdf')}">
+                                                        <c:set var="iconCls" value="icon-pdf"/>
+                                                        <c:set var="iconName" value="picture_as_pdf"/>
+                                                    </c:when>
+                                                    <c:when test="${fn:containsIgnoreCase(r.originalFileName,'.jpg') or fn:containsIgnoreCase(r.originalFileName,'.jpeg') or fn:containsIgnoreCase(r.originalFileName,'.png')}">
+                                                        <c:set var="iconCls" value="icon-img"/>
+                                                        <c:set var="iconName" value="image"/>
+                                                    </c:when>
+                                                    <c:when test="${fn:containsIgnoreCase(r.originalFileName,'.doc')}">
+                                                        <c:set var="iconCls" value="icon-doc"/>
+                                                        <c:set var="iconName" value="article"/>
+                                                    </c:when>
+                                                    <c:when test="${fn:containsIgnoreCase(r.originalFileName,'.txt')}">
+                                                        <c:set var="iconCls" value="icon-txt"/>
+                                                        <c:set var="iconName" value="text_snippet"/>
+                                                    </c:when>
+                                                </c:choose>
+                                            </c:if>
+
+                                            <div class="portal-panel resume-card">
+                                                <%-- card body --%>
+                                                <div class="p-5 flex items-start gap-4">
+                                                    <%-- file-type icon --%>
+                                                    <div class="w-13 h-13 shrink-0 rounded-2xl ${iconCls} flex items-center justify-center"
+                                                         style="width:52px;height:52px">
+                                                        <span class="material-symbols-outlined text-2xl"
+                                                              style="font-variation-settings:'FILL' 1"><c:out value="${iconName}"/></span>
                                                     </div>
-                                                    
-                                                    <div class="flex items-start gap-4">
-                                                        <div class="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0">
-                                                            <span class="material-symbols-outlined text-3xl">description</span>
-                                                        </div>
-                                                        <div class="flex-1">
-                                                            <div class="flex items-center gap-3 mb-1">
-                                                                <h3 class="text-lg font-bold text-slate-900"><c:out value="${resume.resumeName}"/></h3>
-                                                                <c:if test="${resume.isDefault}">
-                                                                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider">Default</span>
-                                                                </c:if>
+
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-start justify-between gap-3">
+                                                            <div class="min-w-0">
+                                                                <h3 class="text-base font-bold text-slate-900 leading-tight truncate">
+                                                                    <c:out value="${r.title}"/>
+                                                                </h3>
+                                                                <%-- badges --%>
+                                                                <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                                                    <c:if test="${not empty r.degreeLevel}">
+                                                                        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                                                                            <c:out value="${r.degreeLevel}"/>
+                                                                        </span>
+                                                                    </c:if>
+                                                                    <c:if test="${not empty r.department}">
+                                                                        <span class="text-[11px] font-semibold text-slate-500">
+                                                                            <c:out value="${r.department}"/>
+                                                                        </span>
+                                                                    </c:if>
+                                                                    <c:if test="${not empty r.gpa}">
+                                                                        <span class="text-[11px] font-semibold text-slate-400">
+                                                                            GPA <strong class="text-slate-600"><c:out value="${r.gpa}"/></strong>
+                                                                        </span>
+                                                                    </c:if>
+                                                                </div>
                                                             </div>
-                                                            <p class="text-sm text-slate-500 mb-4">Uploaded on <c:out value="${resume.uploadDate}"/> • <c:out value="${resume.fileSize}"/></p>
-                                                            
-                                                            <div class="flex flex-wrap gap-2">
-                                                                <c:forEach items="${resume.tags}" var="tag">
-                                                                    <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md"><c:out value="${tag}"/></span>
-                                                                </c:forEach>
-                                                                <button class="text-xs font-bold text-primary hover:underline px-2.5 py-1 flex items-center gap-1">
-                                                                    <span class="material-symbols-outlined text-[14px]">add</span>
-                                                                    Add Tag
+                                                            <%-- action buttons – always visible --%>
+                                                            <div class="flex gap-1.5 shrink-0">
+                                                                <button type="button"
+                                                                        class="card-action-btn card-action-edit"
+                                                                        title="Edit resume"
+                                                                        data-resume-id="${r.id}"
+                                                                        data-title="${fn:escapeXml(r.title)}"
+                                                                        data-dept="${fn:escapeXml(r.department)}"
+                                                                        data-degree="${r.degreeLevel}"
+                                                                        data-gpa="${r.gpa}"
+                                                                        data-hours="${r.maxWeeklyHours}"
+                                                                        data-bio="${fn:escapeXml(r.bio)}"
+                                                                        onclick="openEditModalFromBtn(this)">
+                                                                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                                                                </button>
+                                                                <button type="button"
+                                                                        class="card-action-btn card-action-del"
+                                                                        title="Delete resume"
+                                                                        onclick="deleteResume('${r.id}')">
+                                                                    <span class="material-symbols-outlined text-[18px]">delete</span>
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    
-                                                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                                                        <span class="text-slate-500">Used in <strong class="text-slate-900"><c:out value="${resume.activeApplicationsCount}"/></strong> active application(s)</span>
-                                                        <c:choose>
-                                                            <c:when test="${resume.isDefault}">
-                                                                <button class="text-primary font-bold hover:underline">View Applications</button>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <button class="text-primary font-bold hover:underline">Set as Default</button>
-                                                            </c:otherwise>
-                                                        </c:choose>
+
+                                                        <c:if test="${not empty r.bio}">
+                                                            <p class="text-sm text-slate-500 mt-2.5 line-clamp-2 leading-relaxed">
+                                                                <c:out value="${r.bio}"/>
+                                                            </p>
+                                                        </c:if>
+
+                                                        <c:if test="${not empty r.originalFileName}">
+                                                            <div class="mt-2 flex items-center gap-1 text-[11px] text-slate-400">
+                                                                <span class="material-symbols-outlined text-[13px]">attach_file</span>
+                                                                <span><c:out value="${r.originalFileName}"/></span>
+                                                            </div>
+                                                        </c:if>
                                                     </div>
                                                 </div>
-                                            </c:forEach>
-                                        </c:otherwise>
-                                    </c:choose>
 
-                                    <!-- Upload Area -->
-                                    <div class="portal-upload-surface cursor-pointer group">
-                                        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                            <span class="material-symbols-outlined text-3xl">cloud_upload</span>
-                                        </div>
-                                        <h3 class="text-lg font-bold text-slate-900 mb-2">Drag & drop your resume here</h3>
-                                        <p class="text-sm text-slate-500 mb-6">Supported formats: PDF, DOCX, DOC (Max 5MB)</p>
-                                        <button class="portal-btn portal-btn-secondary">
-                                            Browse Files
-                                        </button>
-                                    </div>
-                                </div>
+                                                <%-- card footer --%>
+                                                <div class="border-t border-slate-100 px-5 py-3 flex items-center justify-between bg-slate-50/60 rounded-b-2xl">
+                                                    <div class="flex items-center gap-4 text-xs text-slate-400">
+                                                        <span class="flex items-center gap-1">
+                                                            <span class="material-symbols-outlined text-[13px]">schedule</span>
+                                                            Max <strong class="text-slate-600"><c:out value="${r.maxWeeklyHours}"/></strong> hrs/wk
+                                                        </span>
+                                                        <span>Updated: <c:out value="${r.updatedAtDisplay}"/></span>
+                                                    </div>
+                                                    <%-- card AI button: pass this specific resume's ID --%>
+                                                    <button type="button"
+                                                            data-resume-id="${r.id}"
+                                                            data-resume-title="${fn:escapeXml(r.title)}"
+                                                            onclick="openDisclaimerModal(this.dataset.resumeId, this.dataset.resumeTitle)"
+                                                            class="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors">
+                                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                                        AI Review
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </c:forEach>
+                                    </c:otherwise>
+                                </c:choose>
 
-                                <!-- Right Column: Tips & Info -->
-                                <div class="space-y-6">
-                                    <!-- AI Resume Review (Placeholder) -->
-                                    <div class="portal-panel portal-panel--accent p-6 relative overflow-hidden">
-                                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl"></div>
-                                        <div class="flex items-center gap-2 mb-4 relative z-10">
-                                            <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                                            <h3 class="font-bold text-lg text-slate-900">AI Resume Review</h3>
-                                        </div>
-                                        <p class="text-sm text-slate-600 mb-6 relative z-10 leading-relaxed">
-                                            Get instant feedback on your resume tailored for TA positions. Our AI analyzes keywords, formatting, and impact.
-                                        </p>
-                                        <button class="portal-btn portal-btn-primary relative z-10 w-full">
-                                            Analyze Default Resume
-                                        </button>
+                                <%-- drag-and-drop upload zone --%>
+                                <div id="dropZone" class="upload-zone cursor-pointer group p-10 text-center"
+                                     onclick="document.getElementById('resumeFileInput').click()">
+                                    <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <span class="material-symbols-outlined text-3xl">cloud_upload</span>
                                     </div>
-
-                                    <!-- Tips Card -->
-                                    <div class="portal-panel p-6">
-                                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-amber-500">lightbulb</span>
-                                            Resume Tips for TAs
-                                        </h3>
-                                        <ul class="space-y-4">
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Highlight Teaching Experience</strong>
-                                                    Include any tutoring, mentoring, or previous TA roles prominently.
-                                                </p>
-                                            </li>
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Relevant Coursework</strong>
-                                                    List advanced courses related to the module you're applying for.
-                                                </p>
-                                            </li>
-                                            <li class="flex gap-3">
-                                                <span class="material-symbols-outlined text-green-500 text-lg shrink-0">check_circle</span>
-                                                <p class="text-sm text-slate-600 leading-relaxed">
-                                                    <strong class="text-slate-900 block mb-0.5">Keep it Concise</strong>
-                                                    Aim for 1-2 pages maximum. Academic CVs can be longer if necessary.
-                                                </p>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    <p class="font-bold text-slate-800 mb-1">Drag &amp; drop or click to upload</p>
+                                    <p class="text-sm text-slate-400 mb-4">PDF · DOCX · JPG · PNG · TXT &nbsp;·&nbsp; Max 15 MB</p>
+                                    <label for="resumeFileInput"
+                                           class="portal-btn portal-btn-primary text-sm pointer-events-none inline-flex cursor-pointer">
+                                        <span class="material-symbols-outlined text-sm">upload_file</span>
+                                        Upload Resume
+                                    </label>
                                 </div>
                             </div>
-                        </c:otherwise>
-                    </c:choose>
+
+                            <%-- ── RIGHT: sidebar ───────────────────────────────── --%>
+                            <div class="space-y-5">
+
+                                <%-- AI review card --%>
+                                <div class="portal-panel portal-panel--accent p-6 relative overflow-hidden">
+                                    <div class="absolute -right-8 -top-8 w-32 h-32 bg-violet-400/10 rounded-full blur-3xl pointer-events-none"></div>
+                                    <div class="relative flex items-center gap-2 mb-3">
+                                        <span class="material-symbols-outlined text-violet-600"
+                                              style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                        <h3 class="font-bold text-slate-900">AI Resume Review</h3>
+                                        <c:if test="${not qwenConfigured}">
+                                            <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">KEY REQUIRED</span>
+                                        </c:if>
+                                    </div>
+                                    <p class="text-sm text-slate-500 mb-5 leading-relaxed relative">
+                                        Get personalised coaching on how to <strong class="text-slate-700">improve your resume</strong> for TA roles.
+                                        Upload a <strong class="text-slate-700">PDF or image</strong> for the best multimodal analysis.
+                                    </p>
+                                    <%-- sidebar: no resumeId = analyse latest uploaded file --%>
+                                    <button type="button" id="aiReviewSidebarBtn"
+                                            onclick="openDisclaimerModal(null, 'Latest Uploaded File')"
+                                            class="portal-btn portal-btn-primary w-full justify-center relative">
+                                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                                        Analyse &amp; Improve My Resume
+                                    </button>
+                                </div>
+
+                                <%-- tips card --%>
+                                <div class="portal-panel p-5">
+                                    <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm">
+                                        <span class="material-symbols-outlined text-amber-500"
+                                              style="font-variation-settings:'FILL' 1">lightbulb</span>
+                                        Resume Tips for TAs
+                                    </h3>
+                                    <ul class="space-y-3.5">
+                                        <li class="flex gap-3">
+                                            <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
+                                                  style="font-variation-settings:'FILL' 1">check_circle</span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800">Highlight Teaching Experience</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Tutoring, mentoring, or previous TA roles — put these at the top.</p>
+                                            </div>
+                                        </li>
+                                        <li class="flex gap-3">
+                                            <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
+                                                  style="font-variation-settings:'FILL' 1">check_circle</span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800">List Relevant Coursework</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Advanced courses related to the module you're applying for.</p>
+                                            </div>
+                                        </li>
+                                        <li class="flex gap-3">
+                                            <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
+                                                  style="font-variation-settings:'FILL' 1">check_circle</span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800">Quantify Achievements</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">"Tutored 12 students, improved average grade by 8%".</p>
+                                            </div>
+                                        </li>
+                                        <li class="flex gap-3">
+                                            <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5 text-lg"
+                                                  style="font-variation-settings:'FILL' 1">tips_and_updates</span>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800">Upload a File for Best AI Results</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">PDF or image lets the AI analyse your actual document visually.</p>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <%-- formats card --%>
+                                <div class="portal-panel p-5">
+                                    <h3 class="font-semibold text-slate-800 mb-3 text-sm">Supported Formats</h3>
+                                    <div class="grid grid-cols-3 gap-1.5 text-center text-xs font-bold">
+                                        <span class="rounded-xl icon-pdf py-2">PDF</span>
+                                        <span class="rounded-xl icon-doc py-2">DOCX</span>
+                                        <span class="rounded-xl icon-doc py-2">DOC</span>
+                                        <span class="rounded-xl icon-img py-2">JPG</span>
+                                        <span class="rounded-xl icon-img py-2">PNG</span>
+                                        <span class="rounded-xl icon-txt py-2">TXT</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 mt-3 text-center">Max file size: 15 MB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<%-- ═══════════════════════════════════════════════════════
+     MODAL 1 — AI Disclaimer
+     Use qm-modal-overlay + JS to toggle — NOT Tailwind hidden
+     ═══════════════════════════════════════════════════════ --%>
+
+<%-- ── Rename-after-upload modal ──────────────────────────────────────────── --%>
+<div id="renameModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeRenameModal()">
+    <div class="qm-modal-box max-w-md">
+        <div class="px-7 pt-7 pb-4">
+            <div class="flex items-start gap-4 mb-5">
+                <div class="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl text-blue-600"
+                          style="font-variation-settings:'FILL' 1">drive_file_rename_outline</span>
                 </div>
-            </main>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Name Your Resume</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">
+                        File uploaded successfully. Give it a meaningful name.
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">Source file</p>
+            <p id="renameFileInfo" class="text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2 mb-5
+                                          border border-slate-200 truncate font-mono"></p>
+
+            <label class="block text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide"
+                   for="renameInput">Resume title</label>
+            <input id="renameInput" type="text" placeholder="Untitled"
+                   class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
+                          text-slate-800 placeholder-slate-400" />
+            <p class="text-xs text-slate-400 mt-1.5">Leave blank to keep "Untitled".</p>
+        </div>
+
+        <div class="px-7 py-5 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+            <button type="button" onclick="closeRenameModal()"
+                    class="portal-btn portal-btn-secondary text-sm">
+                Skip
+            </button>
+            <button type="button" onclick="saveRename()"
+                    class="portal-btn portal-btn-primary text-sm">
+                <span class="material-symbols-outlined text-sm">check</span>
+                Save Name
+            </button>
         </div>
     </div>
+</div>
+
+<div id="disclaimerModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeDisclaimerModal()">
+    <div class="qm-modal-box max-w-lg">
+        <div class="px-7 pt-7 pb-5">
+            <div class="flex items-start gap-4 mb-5">
+                <div class="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-2xl text-violet-600"
+                          style="font-variation-settings:'FILL' 1">policy</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">AI Resume Review</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Please read the disclaimer before continuing</p>
+                    <p id="disclaimerResumeLabel" class="text-xs font-semibold text-violet-600 mt-1 hidden"></p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-sm text-amber-900 leading-relaxed">
+                <p class="font-bold mb-2">⚠️ Disclaimer — Read carefully:</p>
+                <ul class="list-disc pl-4 space-y-1.5 text-amber-800">
+                    <li>This analysis is generated by an AI model (<strong>Qwen VL</strong>) and is for <strong>reference only</strong>.</li>
+                    <li>Results may be incomplete, inaccurate, or contain hallucinations.</li>
+                    <li>AI suggestions <strong>do not</strong> represent official hiring decisions or guarantees.</li>
+                    <li>Uploaded files are processed transiently for analysis purposes only.</li>
+                    <li>Upload a <strong>PDF or image</strong> of your resume for the best visual analysis.</li>
+                </ul>
+            </div>
+            <p class="text-sm text-slate-500">
+                By clicking <strong>"I Agree &amp; Analyse"</strong> you confirm you have read and understood the above.
+            </p>
+        </div>
+        <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+            <button type="button" onclick="closeDisclaimerModal()" class="portal-btn portal-btn-secondary">
+                Cancel
+            </button>
+            <button type="button" onclick="startAIReview()" class="portal-btn portal-btn-primary">
+                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                I Agree &amp; Analyse
+            </button>
+        </div>
+    </div>
+</div>
+
+<%-- ═══════════════════════════════════════════════════════
+     MODAL 2 — AI Result
+     ═══════════════════════════════════════════════════════ --%>
+<div id="aiResultModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeAIModal()">
+    <div class="qm-modal-box max-w-2xl">
+        <div class="px-7 pt-7 pb-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-2xl text-violet-600"
+                      style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">AI Resume Analysis</h2>
+                    <p id="aiModelLabel" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+            </div>
+            <button onclick="closeAIModal()" class="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+        </div>
+
+        <%-- loading skeleton --%>
+        <div id="aiLoadingState" class="p-7 space-y-3">
+            <div class="skeleton h-4 w-2/3"></div>
+            <div class="skeleton h-3.5 w-full"></div>
+            <div class="skeleton h-3.5 w-5/6"></div>
+            <div class="skeleton h-3.5 w-4/5"></div>
+            <div class="skeleton h-3.5 w-full"></div>
+            <div class="skeleton h-3.5 w-3/4 mt-4"></div>
+            <div class="skeleton h-3.5 w-full"></div>
+            <div class="skeleton h-3.5 w-5/6"></div>
+            <p class="text-center text-xs text-slate-400 mt-4 animate-pulse">
+                AI is analysing your resume… this may take 15-30 seconds.
+            </p>
+        </div>
+
+        <%-- result --%>
+        <div id="aiResultContent" class="ai-prose px-7 py-6 overflow-y-auto"
+             style="display:none; max-height:60vh"></div>
+
+        <%-- error --%>
+        <div id="aiErrorState" class="p-7 text-center" style="display:none">
+            <span class="material-symbols-outlined text-5xl text-red-300 mb-3 block"
+                  style="font-variation-settings:'FILL' 1">error_circle</span>
+            <p class="text-sm font-bold text-red-700 mb-1" id="aiErrorMessage"></p>
+            <p class="text-xs text-slate-400">Check your API configuration or try again later.</p>
+        </div>
+
+        <div class="px-7 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <p class="text-[11px] text-slate-400">AI-generated content · for reference only</p>
+            <button onclick="closeAIModal()" class="portal-btn portal-btn-secondary text-sm">Close</button>
+        </div>
+    </div>
+</div>
+
+<%-- ═══════════════════════════════════════════════════════
+     MODAL 3 — Edit Resume
+     ═══════════════════════════════════════════════════════ --%>
+<div id="editModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeEditModal()">
+    <div class="qm-modal-box max-w-lg">
+        <div class="px-7 pt-7 pb-5 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-900">Edit Resume Details</h2>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+        </div>
+        <form method="POST" action="${pageContext.request.contextPath}/resumes"
+              class="px-7 py-6 space-y-4 overflow-y-auto" style="max-height:72vh">
+            <input type="hidden" name="action" value="save"/>
+            <input type="hidden" name="resumeId" id="editResumeId"/>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Title</label>
+                <input type="text" name="title" id="editTitle" required
+                       class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Department</label>
+                    <input type="text" name="department" id="editDept"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Degree Level</label>
+                    <select name="degreeLevel" id="editDegree"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300">
+                        <option value="BACHELOR">Bachelor</option>
+                        <option value="MASTER">Master</option>
+                        <option value="PHD">PhD</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">GPA</label>
+                    <input type="number" name="gpa" id="editGpa" step="0.01" min="0" max="4"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Max Hours / Week</label>
+                    <input type="number" name="maxWeeklyHours" id="editHours" min="1" max="40"
+                           class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Personal Statement / Bio</label>
+                <textarea name="bio" id="editBio" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 resize-y"></textarea>
+            </div>
+            <div class="pt-1 flex justify-end gap-3">
+                <button type="button" onclick="closeEditModal()" class="portal-btn portal-btn-secondary">Cancel</button>
+                <button type="submit" class="portal-btn portal-btn-primary">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════ --%>
+<script>
+    // ── file upload via fetch → JSON response → rename modal ──────────────────
+    (function () {
+        var input = document.getElementById('resumeFileInput');
+        var zone  = document.getElementById('dropZone');
+        if (!input || !zone) return;
+
+        // Save original dropzone HTML so we can restore it on error
+        var zoneOriginalHTML = zone.innerHTML;
+
+        function showZoneLoading(fileName) {
+            zone.innerHTML = '<div class="py-6 text-center">'
+                + '<div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>'
+                + '<p class="text-sm font-semibold text-slate-700">Uploading <em>' + fileName + '</em>…</p>'
+                + '<p class="text-xs text-slate-400 mt-1">Please wait</p>'
+                + '</div>';
+        }
+
+        function restoreZone() {
+            zone.innerHTML = zoneOriginalHTML;
+        }
+
+        function uploadFile(file) {
+            if (!file) return;
+            showZoneLoading(file.name);
+
+            var fd = new FormData();
+            fd.append('action', 'upload');
+            fd.append('resumeFile', file);
+
+            fetch('${pageContext.request.contextPath}/resumes', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    restoreZone();
+                    // Reset input so the same file can be re-selected if needed
+                    input.value = '';
+                    if (!data.ok) {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        return;
+                    }
+                    // Show rename modal so user can give the resume a meaningful name
+                    openRenameModal(data.resumeId, data.originalFileName);
+                })
+                .catch(function (err) {
+                    restoreZone();
+                    input.value = '';
+                    alert('Upload failed (network error). Please try again.');
+                });
+        }
+
+        input.addEventListener('change', function () {
+            if (input.files && input.files.length > 0) uploadFile(input.files[0]);
+        });
+
+        ['dragenter', 'dragover'].forEach(function (evt) {
+            zone.addEventListener(evt, function (e) {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+        });
+        zone.addEventListener('dragleave', function () { zone.classList.remove('dragover'); });
+        zone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) uploadFile(files[0]);
+        });
+    })();
+
+    // ── Rename modal (shown right after a successful file upload) ────────────────
+    var _renameResumeId = null;
+
+    function openRenameModal(resumeId, originalFileName) {
+        _renameResumeId = resumeId;
+        var nameInput   = document.getElementById('renameInput');
+        var fileInfo    = document.getElementById('renameFileInfo');
+        if (nameInput)  { nameInput.value = 'Untitled'; }
+        if (fileInfo)   { fileInfo.textContent = originalFileName || ''; }
+        document.getElementById('renameModal').classList.add('open');
+        if (nameInput) { nameInput.focus(); nameInput.select(); }
+    }
+
+    function closeRenameModal() {
+        document.getElementById('renameModal').classList.remove('open');
+        // Resume already saved with title "Untitled" — just reload to show the card
+        window.location.href = '${pageContext.request.contextPath}/resumes';
+    }
+
+    function saveRename() {
+        if (!_renameResumeId) { closeRenameModal(); return; }
+        var title = (document.getElementById('renameInput').value || '').trim() || 'Untitled';
+        var form  = document.createElement('form');
+        form.method = 'POST';
+        form.action = '${pageContext.request.contextPath}/resumes';
+        function addHidden(name, val) {
+            var i = document.createElement('input');
+            i.type = 'hidden'; i.name = name; i.value = val;
+            form.appendChild(i);
+        }
+        addHidden('action',   'rename');
+        addHidden('resumeId', _renameResumeId);
+        addHidden('title',    title);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    document.getElementById('renameInput') &&
+        document.getElementById('renameInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') saveRename();
+        });
+
+    // ── Modal helpers (use qm-modal-overlay.open, NOT Tailwind hidden) ─────────
+    var _currentReviewResumeId = null;  // null = sidebar (latest file), string = specific card
+
+    function openDisclaimerModal(resumeId, resumeTitle) {
+        _currentReviewResumeId = resumeId || null;
+        var lbl = document.getElementById('disclaimerResumeLabel');
+        if (lbl) {
+            if (resumeTitle) {
+                lbl.textContent = 'Analysing: ' + resumeTitle;
+                lbl.classList.remove('hidden');
+            } else {
+                lbl.classList.add('hidden');
+            }
+        }
+        document.getElementById('disclaimerModal').classList.add('open');
+    }
+    function closeDisclaimerModal() {
+        document.getElementById('disclaimerModal').classList.remove('open');
+    }
+    function openAIModal() {
+        var m = document.getElementById('aiResultModal');
+        m.classList.add('open');
+        document.getElementById('aiLoadingState').style.display  = '';
+        document.getElementById('aiResultContent').style.display = 'none';
+        document.getElementById('aiErrorState').style.display    = 'none';
+    }
+    function closeAIModal() {
+        document.getElementById('aiResultModal').classList.remove('open');
+    }
+    function openEditModal(id, title, dept, degree, gpa, hours, bio) {
+        document.getElementById('editResumeId').value = id;
+        document.getElementById('editTitle').value    = title  || '';
+        document.getElementById('editDept').value     = dept   || '';
+        document.getElementById('editDegree').value   = degree || 'BACHELOR';
+        document.getElementById('editGpa').value      = gpa    || '';
+        document.getElementById('editHours').value    = hours  || '15';
+        document.getElementById('editBio').value      = bio    || '';
+        document.getElementById('editModal').classList.add('open');
+    }
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    // ── Edit from data-* attributes (safe with special chars) ─────────────────
+    function openEditModalFromBtn(btn) {
+        var d = btn.dataset;
+        openEditModal(d.resumeId, d.title, d.dept, d.degree, d.gpa, d.hours, d.bio);
+    }
+
+    // ── AI Review ─────────────────────────────────────────────────────────────
+    function startAIReview() {
+        closeDisclaimerModal();
+        openAIModal();
+        callAIReview();
+    }
+
+    function callAIReview() {
+        var fd = new FormData();
+        fd.append('action', 'aiReview');
+        if (_currentReviewResumeId) {
+            fd.append('resumeId', _currentReviewResumeId);
+        }
+
+        fetch('${pageContext.request.contextPath}/resumes', { method: 'POST', body: fd })
+            .then(function(r) {
+                if (!r.ok && r.status !== 200) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function(data) {
+                document.getElementById('aiLoadingState').style.display = 'none';
+                if (!data.ok) {
+                    showAIError(data.error || 'Unknown error from server.');
+                    return;
+                }
+                if (data.model) {
+                    var modeStr = data.hasFile ? ' · multimodal analysis' : ' · text analysis';
+                    var resumeStr = data.resumeTitle ? ' · ' + data.resumeTitle : '';
+                    document.getElementById('aiModelLabel').textContent =
+                        'Model: ' + data.model + modeStr + resumeStr;
+                }
+                var content = document.getElementById('aiResultContent');
+                content.innerHTML = mdToHtml(data.analysis || '');
+                content.style.display = '';
+            })
+            .catch(function(err) {
+                document.getElementById('aiLoadingState').style.display = 'none';
+                showAIError('Network or server error: ' + err.message);
+            });
+    }
+
+    function showAIError(msg) {
+        document.getElementById('aiErrorMessage').textContent = msg;
+        document.getElementById('aiErrorState').style.display = '';
+    }
+
+    // Lightweight markdown → HTML
+    function mdToHtml(text) {
+        return text
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/^[#]{1,3}\s+(.+)$/gm,'<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/^[-•*]\s+(.+)$/gm,'<li>$1</li>')
+            .replace(/^\d+\.\s+(.+)$/gm,'<li>$1</li>')
+            .replace(/(<li>[^]*?<\/li>\n?)+/g, function(m){ return '<ul>'+m+'</ul>'; })
+            .replace(/\n{2,}/g,'</p><p>')
+            .replace(/^(?!<[hup])(.+)$/gm,'<p>$1</p>');
+    }
+
+    // ── Delete ─────────────────────────────────────────────────────────────────
+    function deleteResume(id) {
+        if (!confirm('Delete this resume? This action cannot be undone.')) return;
+        var f = document.createElement('form');
+        f.method = 'POST';
+        f.action = '${pageContext.request.contextPath}/resumes';
+        f.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="resumeId" value="' + id + '">';
+        document.body.appendChild(f);
+        f.submit();
+    }
+</script>
 </body>
 </html>

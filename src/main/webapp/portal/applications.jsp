@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,6 +37,10 @@
 
             <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
                 <div class="portal-page">
+                    <c:set var="applicationsState" value="${empty pageState ? 'normal' : pageState}" />
+                    <c:set var="applicationsActiveFilters" value="${not empty param.keyword or not empty param.status or param.date == 'oldest'}" />
+                    <c:set var="applicationsFilterNoResults" value="${applicationsState == 'noFilterResults' or applicationsActiveFilters}" />
+
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
                         <jsp:param name="containerClass" value="mb-6" />
                     </jsp:include>
@@ -46,10 +51,10 @@
                             <h2 class="portal-page-title">My Applications</h2>
                             <p class="portal-page-copy">Track the progress of your submitted module and program applications.</p>
                         </div>
-                        <button class="portal-btn portal-btn-primary">
+                        <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
                             <span class="material-symbols-outlined text-sm">add</span>
                             New Application
-                        </button>
+                        </a>
                     </div>
 
                     <!-- Search and Filters -->
@@ -75,7 +80,7 @@
                                 </div>
                                 <div class="relative group">
                                     <select name="date" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none pr-8">
-                                        <option value="latest" ${param.date == 'latest' ? 'selected' : ''}>Date: Latest</option>
+                                        <option value="latest" ${param.date == 'latest' || empty param.date ? 'selected' : ''}>Date: Latest</option>
                                         <option value="oldest" ${param.date == 'oldest' ? 'selected' : ''}>Date: Oldest</option>
                                     </select>
                                     <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">calendar_today</span>
@@ -90,7 +95,7 @@
 
                     <!-- Applications Table -->
                     <c:choose>
-                        <c:when test="${pageState == 'loadError'}">
+                        <c:when test="${applicationsState == 'loadError'}">
                             <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                 <jsp:param name="variant" value="error" />
                                 <jsp:param name="icon" value="work_history" />
@@ -119,13 +124,35 @@
                                                 <c:when test="${empty applications}">
                                                     <tr>
                                                         <td colspan="6" class="px-6 py-8 text-center text-slate-500">
-                                                            <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
-                                                                <jsp:param name="icon" value="inbox" />
-                                                                <jsp:param name="title" value="No applications found" />
-                                                                <jsp:param name="message" value="You haven't applied to any vacancies yet or no applications match your current filters." />
-                                                                <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                                                                <jsp:param name="actionLabel" value="Browse Vacancies" />
-                                                            </jsp:include>
+                                                            <c:choose>
+                                                                <c:when test="${applicationsState == 'empty'}">
+                                                                    <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                                        <jsp:param name="icon" value="inbox" />
+                                                                        <jsp:param name="title" value="No applications yet" />
+                                                                        <jsp:param name="message" value="You have not submitted any applications. Browse open vacancies to get started." />
+                                                                        <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                                                        <jsp:param name="actionLabel" value="Browse Vacancies" />
+                                                                    </jsp:include>
+                                                                </c:when>
+                                                                <c:when test="${applicationsFilterNoResults}">
+                                                                    <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                                        <jsp:param name="icon" value="filter_alt_off" />
+                                                                        <jsp:param name="title" value="No applications match your filters" />
+                                                                        <jsp:param name="message" value="Try clearing filters or adjusting your search to see more results." />
+                                                                        <jsp:param name="actionHref" value="${pageContext.request.contextPath}/applications" />
+                                                                        <jsp:param name="actionLabel" value="Clear filters" />
+                                                                    </jsp:include>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                                        <jsp:param name="icon" value="inbox" />
+                                                                        <jsp:param name="title" value="No applications yet" />
+                                                                        <jsp:param name="message" value="You have not submitted any applications. Browse open vacancies to get started." />
+                                                                        <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
+                                                                        <jsp:param name="actionLabel" value="Browse Vacancies" />
+                                                                    </jsp:include>
+                                                                </c:otherwise>
+                                                            </c:choose>
                                                         </td>
                                                     </tr>
                                                 </c:when>
@@ -136,7 +163,12 @@
                                                                 <div class="font-bold text-slate-900"><c:out value="${app.vacancyTitle}"/></div>
                                                                 <div class="text-xs text-slate-400 font-medium"><c:out value="${app.courseCode}"/> (Ref: #<c:out value="${app.applicationId}"/>)</div>
                                                             </td>
-                                                            <td class="px-6 py-5 text-sm text-slate-600 font-medium">Engineering & Tech</td> <%-- Assuming department isn't in Application object, or we can add it later --%>
+                                                            <td class="px-6 py-5 text-sm text-slate-600 font-medium">
+                                                                <c:choose>
+                                                                    <c:when test="${empty app.department}"><span class="text-slate-400">—</span></c:when>
+                                                                    <c:otherwise><c:out value="${app.department}"/></c:otherwise>
+                                                                </c:choose>
+                                                            </td>
                                                             <td class="px-6 py-5 text-sm text-slate-600"><c:out value="${app.appliedDate}"/></td>
                                                             <td class="px-6 py-5">
                                                                 <div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded w-fit">
@@ -164,9 +196,14 @@
                                                                 </c:choose>
                                                             </td>
                                                             <td class="px-6 py-5 text-right">
-                                                                <button class="text-slate-400 hover:text-primary transition-colors">
-                                                                    <span class="material-symbols-outlined">more_vert</span>
-                                                                </button>
+                                                                <c:choose>
+                                                                    <c:when test="${not empty app.vacancyId}">
+                                                                        <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${app.vacancyId}" class="text-sm font-bold text-primary hover:underline">View vacancy</a>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <a href="${pageContext.request.contextPath}/vacancies" class="text-sm font-bold text-slate-600 hover:text-primary hover:underline">Browse vacancies</a>
+                                                                    </c:otherwise>
+                                                                </c:choose>
                                                             </td>
                                                         </tr>
                                                     </c:forEach>
@@ -175,19 +212,10 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                
-                                <!-- Pagination -->
+
                                 <c:if test="${not empty applications}">
-                                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                                        <p class="text-sm text-slate-500">Showing applications</p>
-                                        <div class="flex gap-2">
-                                            <button class="p-1 rounded border border-slate-200 bg-white text-slate-400 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                                                <span class="material-symbols-outlined">chevron_left</span>
-                                            </button>
-                                            <button class="p-1 rounded border border-slate-200 bg-white text-slate-600 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                                                <span class="material-symbols-outlined">chevron_right</span>
-                                            </button>
-                                        </div>
+                                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+                                        <p class="text-sm text-slate-500">Showing <strong class="text-slate-800">${fn:length(applications)}</strong> application<c:if test="${fn:length(applications) != 1}">s</c:if></p>
                                     </div>
                                 </c:if>
                             </div>

@@ -31,6 +31,14 @@ target/
 .DS_Store
 
 /.idea/
-
+/target
+/docs
 # Local startup script (not for repo)
 init.txt
+
+# Local analysis / generated result files
+*_analysis_results.json
+*_results.json
+
+API-KEY
+data/resumes/uploads/
