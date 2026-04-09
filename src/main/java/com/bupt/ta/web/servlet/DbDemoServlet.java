@@ -12,6 +12,7 @@ import com.bupt.ta.model.enums.JobType;
 import com.bupt.ta.model.enums.UserRole;
 import com.bupt.ta.persistence.DatabaseProvider;
 import com.bupt.ta.service.DbDemoService;
+import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -30,6 +31,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @WebServlet("/db-demo")
@@ -286,17 +288,26 @@ public class DbDemoServlet extends HttpServlet {
 
     private User readUserFromRequest(HttpServletRequest request) {
         UUID id = optionalUuid(request.getParameter("id"));
-        User user = id == null ? new User() : dbDemoService.findUser(id).orElseGet(User::new);
+        Optional<User> existingUser = id == null ? Optional.empty() : dbDemoService.findUser(id);
+        User user = existingUser.orElseGet(User::new);
         user.setId(id);
         user.setEmail(normalize(request.getParameter("email")));
-        user.setPasswordHash(normalize(request.getParameter("passwordHash")));
+        applyPasswordFromRequest(request, user, existingUser);
         user.setFullName(normalize(request.getParameter("fullName")));
         user.setPhone(normalize(request.getParameter("phone")));
         user.setRole(parseEnum(request.getParameter("role"), UserRole.class, "User role is invalid"));
-        if (id != null) {
-            dbDemoService.findUser(id).ifPresent(existing -> user.setActive(existing.isActive()));
-        }
+        existingUser.ifPresent(existing -> user.setActive(existing.isActive()));
         return user;
+    }
+
+    private void applyPasswordFromRequest(HttpServletRequest request, User user, Optional<User> existingUser) {
+        String plainPassword = normalize(request.getParameter("password"));
+        if (plainPassword != null) {
+            user.setPasswordHash(PasswordUtil.hashPassword(plainPassword));
+            return;
+        }
+
+        user.setPasswordHash(existingUser.map(User::getPasswordHash).orElse(null));
     }
 
     private Resume readResumeFromRequest(HttpServletRequest request) {

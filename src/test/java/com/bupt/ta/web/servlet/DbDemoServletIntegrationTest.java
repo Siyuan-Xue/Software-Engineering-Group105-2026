@@ -11,6 +11,7 @@ import com.bupt.ta.model.enums.JobType;
 import com.bupt.ta.model.enums.UserRole;
 import com.bupt.ta.persistence.TaDatabase;
 import com.bupt.ta.service.DbDemoService;
+import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,7 +68,7 @@ class DbDemoServletIntegrationTest {
                 "entity", "user",
                 "operation", "create",
                 "email", "created@example.com",
-                "passwordHash", "hash",
+                "password", "plain-password",
                 "fullName", "Created User",
                 "role", "TA"
         ));
@@ -74,7 +76,36 @@ class DbDemoServletIntegrationTest {
         new TestableDbDemoServlet(service).handlePost(exchange.request, exchange.response);
 
         assertTrue(exchange.redirectedUrl.startsWith("/ta105/db-demo?successMessage="));
-        assertTrue(service.listUsers().stream().anyMatch(user -> "created@example.com".equals(user.getEmail())));
+        User savedUser = service.listUsers().stream()
+                .filter(user -> "created@example.com".equals(user.getEmail()))
+                .findFirst()
+                .orElseThrow();
+        assertNotEquals("plain-password", savedUser.getPasswordHash());
+        assertTrue(PasswordUtil.checkPassword("plain-password", savedUser.getPasswordHash()));
+    }
+
+    @Test
+    void doPostShouldPreserveExistingPasswordHashWhenUpdatePasswordIsBlank() throws Exception {
+        DbDemoService service = createService();
+        User user = service.saveUser(user("ta@example.com", UserRole.TA, "TA User"));
+        String originalPasswordHash = user.getPasswordHash();
+
+        TestExchange exchange = new TestExchange(Map.of(
+                "entity", "user",
+                "operation", "update",
+                "id", user.getId().toString(),
+                "email", "updated@example.com",
+                "password", " ",
+                "fullName", "Updated User",
+                "role", "TA"
+        ));
+
+        new TestableDbDemoServlet(service).handlePost(exchange.request, exchange.response);
+
+        assertTrue(exchange.redirectedUrl.startsWith("/ta105/db-demo?successMessage="));
+        User updatedUser = service.findUser(user.getId()).orElseThrow();
+        assertEquals("updated@example.com", updatedUser.getEmail());
+        assertEquals(originalPasswordHash, updatedUser.getPasswordHash());
     }
 
     @Test

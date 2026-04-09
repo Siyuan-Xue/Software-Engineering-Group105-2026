@@ -79,7 +79,7 @@ public class DbDemoService {
             requireExistingUser(user.getId(), "User not found");
         }
         requireNonBlank(user.getEmail(), "User email must not be blank");
-        requireNonBlank(user.getPasswordHash(), "User passwordHash must not be blank");
+        requireNonBlank(user.getPasswordHash(), "User password must not be blank");
         requireNonBlank(user.getFullName(), "User fullName must not be blank");
         requireNonNull(user.getRole(), "User role must not be null");
 

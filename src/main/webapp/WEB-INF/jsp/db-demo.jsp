@@ -87,8 +87,9 @@
                                 <input type="email" name="email" value="${editingUser.email}" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30" />
                             </div>
                             <div>
-                                <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Password Hash</label>
-                                <input type="text" name="passwordHash" value="${editingUser.passwordHash}" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30" />
+                                <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Password</label>
+                                <input type="password" name="password" autocomplete="new-password" placeholder="${editEntity == 'user' ? 'Leave blank to keep current password' : 'Enter a plain password'}" <c:if test="${editEntity != 'user'}">required="required"</c:if> class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30" />
+                                <p class="mt-2 text-xs text-slate-400">The demo hashes this plain password before saving it to the JSON database.</p>
                             </div>
                             <div>
                                 <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Full Name</label>
