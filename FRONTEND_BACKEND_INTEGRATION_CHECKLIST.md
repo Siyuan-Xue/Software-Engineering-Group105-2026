@@ -33,8 +33,8 @@
 | Submit application | `POST` | `/application` | 合同已定义，后端待实现 |
 | Applications | `GET` | `/applications` | 合同已定义，后端待实现 |
 | Resumes | `GET` | `/resumes` | 合同已定义，后端待实现 |
-| Messages page | `GET` | `/messages` | 当前分支已实现，等待联调验证 |
-| Messages send action | `POST` | `/messages` | 当前分支已实现，合同已补充 |
+| Messages page | `GET` | `/messages` | 合同已定义，后端待实现 |
+| Messages send action | `POST` | `/messages` | 前端已使用，合同已补充，后端待实现 |
 | Settings | `GET` | `/settings` | 合同已定义，后端待实现 |
 
 ### 2.2 全局提示信息
@@ -187,11 +187,11 @@ Sidebar 会读取：
 
 ### 5.3 当前动作约定
 
-1. `GET /messages` 现在由 `MessagesServlet` 提供 `conversations`、`activeConversation` 和 `pageState`
-2. `POST /messages` 已落地：
+1. `GET /messages` 仍需后端按 canonical 字段提供 `conversations`、`activeConversation` 和 `pageState`
+2. `POST /messages` 已补进合同：
    - 路由：`POST /messages`
    - 参数：`conversationId`、`messageContent`
-3. 返回策略已固定：
+3. 返回策略建议固定为：
    - 成功后 redirect 到 `/messages?conversationId=...&successMessage=...`
    - 失败时 redirect 到 `/messages?conversationId=...&errorMessage=...`
 
