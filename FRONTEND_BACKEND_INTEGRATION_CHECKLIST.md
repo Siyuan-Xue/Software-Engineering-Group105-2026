@@ -249,7 +249,7 @@ Sidebar 会读取：
 - `pwdFailure`
 - `loadError`
 
-### 6.4 当前实现与待确认范围
+### 6.4 当前实现范围（已确认保留）
 
 当前代码实现已经包含：
 
@@ -260,9 +260,9 @@ Sidebar 会读取：
 
 联调建议：
 
-- 这部分需要前后端和页面 owner 先确认：这一轮是否接受保留“可编辑资料 + 改密码”
-- 如果接受，就继续按当前实现联调，并把合同补齐到和现状一致
-- 如果不接受，就要把页面和 servlet 一起回退到只读 baseline，而不是只改文档
+- 这一轮已经确认保留“可编辑资料 + 改密码”
+- 前后端联调时直接按当前实现对齐，不再按只读 baseline 理解
+- 合同需要同步覆盖 `POST /settings`、`changePassword` 和新增状态，避免后续再出现范围误解
 
 ## 7. 额外合同缺口
 
@@ -306,7 +306,7 @@ Sidebar 会读取：
 - [ ] 所有已登录页面统一提供 header 所需用户展示字段
 - [ ] 所有已登录页面统一提供 `profileCompletionPercentage`，避免 sidebar 退回 `0%`
 - [ ] Messages 最终字段命名不再使用旧 fallback 字段名
-- [ ] Settings 本轮范围已确认：保留当前可编辑实现，或明确回退到只读 baseline
+- [x] Settings 本轮范围已确认：保留当前可编辑实现
 - [ ] Applications 列表已按合同提供 `department`（可空）、`vacancyId`（可空）及 `pageState`（建议）
 - [ ] 未登录访问 portal 页面时的 redirect 行为已实现
 

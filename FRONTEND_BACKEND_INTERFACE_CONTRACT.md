@@ -447,22 +447,68 @@ This document outlines the standardized interface contract between the frontend 
 8. **Request Parameters:** None
 9. **Request Attributes:**
    - `userProfile` (UserProfile): 用户个人资料
+   - `pageState` (String, optional): 页面状态，支持 `normal`、`updateSuccess`、`updateFailure`、`pwdSuccess`、`pwdFailure`、`loadError`
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** None
+10. **Form Submission:** 页面包含资料更新表单和密码更新表单，均提交到 `POST /settings`
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
-13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `loadError`
+13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `pwdSuccess`, `pwdFailure`, `loadError`
 14. **Main Functionalities:** 查看和更新个人资料及偏好设置。
 15. **Object Structure:**
     - **`UserProfile`**
       - `firstName` (String)
       - `lastName` (String)
+      - `fullName` (String)
       - `email` (String)
+      - `phone` (String)
       - `studentId` (String)
       - `department` (String)
       - `bio` (String)
       - `notificationsEnabled` (Boolean)
+
+### 7.2. Update Profile Action
+1. **Page Name:** Settings Update Profile Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 更新用户的基本资料和通知偏好。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `updateProfile`
+   - `fullName` (String, required)
+   - `phone` (String, optional)
+   - `department` (String, optional)
+   - `studentId` (String, optional)
+   - `bio` (String, optional)
+   - `notificationsEnabled` (String, optional): 选中时传 `on`
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=updateSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=updateFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 更新资料卡片和 Preferences 所依赖的用户信息。
+
+### 7.3. Change Password Action
+1. **Page Name:** Settings Change Password Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 校验当前密码并更新用户密码。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `changePassword`
+   - `currentPassword` (String, required)
+   - `newPassword` (String, required)
+   - `confirmPassword` (String, required)
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=pwdSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=pwdFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 校验密码并在成功后刷新当前会话用户数据。
 
 ---
 
