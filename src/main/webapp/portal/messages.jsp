@@ -40,7 +40,7 @@
                     <c:set var="messagesState" value="${empty pageState ? 'normal' : pageState}" />
                     <c:set var="showConversationEmpty" value="${messagesState == 'empty' or empty conversations}" />
                     <c:set var="showNoActiveConversation" value="${messagesState == 'noActiveConversation' or (not showConversationEmpty and empty activeConversation)}" />
-                    <c:set var="selectedConversationId" value="${empty activeConversation.conversationId ? (empty activeConversation.id ? param.conversationId : activeConversation.id) : activeConversation.conversationId}" />
+                    <c:set var="selectedConversationId" value="${empty activeConversation.conversationId ? param.conversationId : activeConversation.conversationId}" />
                     <c:set var="noActiveMessage" value="${empty param.conversationId ? 'Choose a conversation from the left to read messages and send replies.' : 'We could not open that conversation. Choose another thread from the list.'}" />
 
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
@@ -112,11 +112,11 @@
                                             </c:when>
                                             <c:otherwise>
                                                 <c:forEach items="${conversations}" var="conv">
-                                                    <c:set var="conversationId" value="${empty conv.conversationId ? conv.id : conv.conversationId}" />
-                                                    <c:set var="contactName" value="${empty conv.contactName ? (empty conv.otherUserName ? 'Contact' : conv.otherUserName) : conv.contactName}" />
+                                                    <c:set var="conversationId" value="${conv.conversationId}" />
+                                                    <c:set var="contactName" value="${empty conv.contactName ? 'Contact' : conv.contactName}" />
                                                     <c:set var="contactRole" value="${empty conv.contactRole ? 'Department Contact' : conv.contactRole}" />
                                                     <c:set var="contactAvatar" value="${conv.contactAvatar}" />
-                                                    <c:set var="lastMessage" value="${empty conv.lastMessage ? (empty conv.lastMessagePreview ? 'No messages yet' : conv.lastMessagePreview) : conv.lastMessage}" />
+                                                    <c:set var="lastMessage" value="${empty conv.lastMessage ? 'No messages yet' : conv.lastMessage}" />
                                                     <c:set var="lastMessageTime" value="${conv.lastMessageTime}" />
                                                     <c:set var="contactInitial" value="${fn:toUpperCase(fn:substring(contactName, 0, 1))}" />
                                                     <a href="${pageContext.request.contextPath}/messages?conversationId=${conversationId}" class="flex w-full gap-3 border-r-4 p-4 text-left transition-colors hover:bg-slate-50 ${conversationId == selectedConversationId ? 'border-primary bg-primary/5' : 'border-transparent'}">
@@ -173,8 +173,8 @@
                                             </jsp:include>
                                         </c:when>
                                         <c:otherwise>
-                                            <c:set var="activeConversationId" value="${empty activeConversation.conversationId ? activeConversation.id : activeConversation.conversationId}" />
-                                            <c:set var="activeContactName" value="${empty activeConversation.contactName ? (empty activeConversation.otherUserName ? 'Contact' : activeConversation.otherUserName) : activeConversation.contactName}" />
+                                            <c:set var="activeConversationId" value="${activeConversation.conversationId}" />
+                                            <c:set var="activeContactName" value="${empty activeConversation.contactName ? 'Contact' : activeConversation.contactName}" />
                                             <c:set var="activeContactRole" value="${empty activeConversation.contactRole ? 'Department Contact' : activeConversation.contactRole}" />
                                             <c:set var="activeContactAvatar" value="${activeConversation.contactAvatar}" />
                                             <c:set var="activeContactInitial" value="${fn:toUpperCase(fn:substring(activeContactName, 0, 1))}" />
@@ -211,8 +211,8 @@
                                                     </c:when>
                                                     <c:otherwise>
                                                         <c:forEach items="${activeConversation.messages}" var="msg">
-                                                            <c:set var="messageTimestamp" value="${empty msg.timestamp ? msg.time : msg.timestamp}" />
-                                                            <c:set var="isMine" value="${empty msg.isMine ? msg.isFromCurrentUser : msg.isMine}" />
+                                                            <c:set var="messageTimestamp" value="${msg.timestamp}" />
+                                                            <c:set var="isMine" value="${msg.isMine}" />
                                                             <c:choose>
                                                                 <c:when test="${msg.isSystemMessage}">
                                                                     <div class="flex gap-3">

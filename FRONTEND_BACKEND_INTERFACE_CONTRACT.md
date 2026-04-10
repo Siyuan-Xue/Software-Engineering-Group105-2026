@@ -392,7 +392,7 @@ This document outlines the standardized interface contract between the frontend 
    - `activeConversation` (Conversation): 当前激活的会话详情（包含消息）
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** None
+10. **Form Submission:** 页面底部发送消息表单会提交到 `POST /messages`
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
 13. **Supported Page States:** `normal`, `empty`, `noActiveConversation`, `loadError`
@@ -412,6 +412,25 @@ This document outlines the standardized interface contract between the frontend 
       - `content` (String)
       - `timestamp` (String)
       - `isMine` (Boolean)
+      - `isSystemMessage` (Boolean, optional)
+
+### 6.2. Send Message Action
+1. **Page Name:** Messages Send Action
+2. **Route URL:** `/messages`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `MessagesServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 在当前会话中发送一条消息，并回到对应消息页。
+8. **Request Parameters:**
+   - `conversationId` (String, required): 当前回复的会话 ID
+   - `messageContent` (String, required): 发送的消息内容
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /messages?conversationId=...&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /messages?conversationId=...&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §6.1
+14. **Main Functionalities:** 校验会话访问权限，提交消息并刷新当前线程视图。
 
 ---
 
@@ -478,4 +497,3 @@ This document outlines the standardized interface contract between the frontend 
       - `activeJobsCount` (Integer)
       - `totalHoursPerWeek` (Integer)
       - `status` (String): e.g., 'Normal', 'Overloaded'
-

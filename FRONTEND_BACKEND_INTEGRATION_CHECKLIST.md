@@ -33,8 +33,8 @@
 | Submit application | `POST` | `/application` | 合同已定义，后端待实现 |
 | Applications | `GET` | `/applications` | 合同已定义，后端待实现 |
 | Resumes | `GET` | `/resumes` | 合同已定义，后端待实现 |
-| Messages page | `GET` | `/messages` | 合同已定义，后端待实现 |
-| Messages send action | `POST` | `/messages` | 前端已使用，但合同未定义，必须补充 |
+| Messages page | `GET` | `/messages` | 当前分支已实现，等待联调验证 |
+| Messages send action | `POST` | `/messages` | 当前分支已实现，合同已补充 |
 | Settings | `GET` | `/settings` | 合同已定义，后端待实现 |
 
 ### 2.2 全局提示信息
@@ -185,14 +185,14 @@ Sidebar 会读取：
 - `noActiveConversation`
 - `loadError`
 
-### 5.3 当前必须在合同里补充的缺口
+### 5.3 当前动作约定
 
-1. `POST /messages` 发送消息动作还没写进合同
-2. 当前 JSP 已有发送表单：
+1. `GET /messages` 现在由 `MessagesServlet` 提供 `conversations`、`activeConversation` 和 `pageState`
+2. `POST /messages` 已落地：
    - 路由：`POST /messages`
    - 参数：`conversationId`、`messageContent`
-3. 需要补充成功/失败后的返回策略：
-   - 建议成功后 redirect 到 `/messages?conversationId=...&successMessage=...`
+3. 返回策略已固定：
+   - 成功后 redirect 到 `/messages?conversationId=...&successMessage=...`
    - 失败时 redirect 到 `/messages?conversationId=...&errorMessage=...`
 
 ### 5.4 当前页面里的兼容 fallback
