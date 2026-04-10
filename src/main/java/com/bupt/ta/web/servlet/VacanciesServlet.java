@@ -57,14 +57,16 @@ public class VacanciesServlet extends HttpServlet {
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 
-            Set<UUID> savedIds = resolveSavedIds(req.getSession(false));
+            HttpSession session = req.getSession(false);
+            User currentUser = session != null ? (User) session.getAttribute("currentUser") : null;
+            Set<UUID> savedIds = resolveSavedIds(session);
 
             List<VacancyCardView> allCards = jobService.listOpen(Instant.now())
                     .stream()
                     .filter(job -> matchesKeyword(job, keyword))
                     .filter(job -> matchesDepartment(job, department))
                     .filter(job -> matchesTerm(job, term))
-                    .map(job -> toCard(job, userById, savedIds))
+                    .map(job -> toCard(job, userById, savedIds, currentUser))
                     .toList();
 
             int totalCount = allCards.size();
@@ -93,7 +95,7 @@ public class VacanciesServlet extends HttpServlet {
 
     // ── View mapping ─────────────────────────────────────────────────────────
 
-    private VacancyCardView toCard(Job job, Map<UUID, User> userById, Set<UUID> savedIds) {
+    private VacancyCardView toCard(Job job, Map<UUID, User> userById, Set<UUID> savedIds, User currentUser) {
         String department  = resolveDepartment(job);
         String deadline    = job.getDeadline() == null ? "TBD" : DEADLINE_FORMATTER.format(job.getDeadline());
         String courseCode  = safe(job.getModuleCode(), "N/A");
@@ -105,6 +107,7 @@ public class VacanciesServlet extends HttpServlet {
             moduleOwner = safe(userById.get(job.getPostedBy()).getFullName(), moduleOwner);
         }
         boolean saved = savedIds.contains(job.getId());
+        boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
 
         return new VacancyCardView(
                 job.getId().toString(),
@@ -116,7 +119,8 @@ public class VacanciesServlet extends HttpServlet {
                 hourlyRate,
                 deadline,
                 moduleOwner,
-                saved
+                saved,
+                isOwner
         );
     }
 
@@ -239,11 +243,12 @@ public class VacanciesServlet extends HttpServlet {
         private final String deadline;
         private final String moduleOwner;
         private final boolean saved;
+        private final boolean isOwner;
 
         public VacancyCardView(String vacancyId, String courseCode, String title,
                                String description, String department, int hoursPerWeek,
                                String hourlyRate, String deadline, String moduleOwner,
-                               boolean saved) {
+                               boolean saved, boolean isOwner) {
             this.vacancyId   = vacancyId;
             this.courseCode  = courseCode;
             this.title       = title;
@@ -254,6 +259,7 @@ public class VacanciesServlet extends HttpServlet {
             this.deadline    = deadline;
             this.moduleOwner = moduleOwner;
             this.saved       = saved;
+            this.isOwner     = isOwner;
         }
 
         public String getVacancyId()    { return vacancyId; }
@@ -266,5 +272,6 @@ public class VacanciesServlet extends HttpServlet {
         public String getDeadline()     { return deadline; }
         public String getModuleOwner()  { return moduleOwner; }
         public boolean isSaved()        { return saved; }
+        public boolean isOwner()        { return isOwner; }
     }
 }

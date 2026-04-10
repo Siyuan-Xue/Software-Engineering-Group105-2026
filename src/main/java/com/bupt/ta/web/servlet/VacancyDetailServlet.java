@@ -55,12 +55,12 @@ public class VacancyDetailServlet extends HttpServlet {
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 
+            User currentUser = resolveCurrentUser(req.getSession(false));
             Job job = database.jobs().findById(vacancyId).orElse(null);
             if (job != null) {
-                req.setAttribute("vacancy", toView(job, userById));
+                req.setAttribute("vacancy", toView(job, userById, currentUser));
             }
 
-            User currentUser = resolveCurrentUser(req.getSession(false));
             List<ResumeSelectionView> resumeViews = currentUser == null
                     ? List.of()
                     : resumeService.listByUserId(currentUser.getId())
@@ -81,7 +81,7 @@ public class VacancyDetailServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
-    private VacancyDetailView toView(Job job, Map<UUID, User> userById) {
+    private VacancyDetailView toView(Job job, Map<UUID, User> userById, User currentUser) {
         String moduleCode = safe(job.getModuleCode(), "N/A");
         String department = resolveDepartment(moduleCode);
         String title = safe(job.getTitle(), "Untitled Vacancy");
@@ -95,6 +95,7 @@ public class VacancyDetailServlet extends HttpServlet {
         if (job.getPostedBy() != null && userById.containsKey(job.getPostedBy())) {
             moduleOwner = safe(userById.get(job.getPostedBy()).getFullName(), moduleOwner);
         }
+        boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
 
         List<String> requirements = buildRequirements(job);
         return new VacancyDetailView(
@@ -107,7 +108,8 @@ public class VacancyDetailServlet extends HttpServlet {
                 hourlyRate,
                 deadline,
                 moduleOwner,
-                requirements
+                requirements,
+                isOwner
         );
     }
 
@@ -178,6 +180,7 @@ public class VacancyDetailServlet extends HttpServlet {
         private final String deadline;
         private final String moduleOwner;
         private final List<String> requirements;
+        private final boolean isOwner;
 
         public VacancyDetailView(String vacancyId,
                                  String courseCode,
@@ -188,7 +191,8 @@ public class VacancyDetailServlet extends HttpServlet {
                                  String hourlyRate,
                                  String deadline,
                                  String moduleOwner,
-                                 List<String> requirements) {
+                                 List<String> requirements,
+                                 boolean isOwner) {
             this.vacancyId = vacancyId;
             this.courseCode = courseCode;
             this.title = title;
@@ -199,6 +203,7 @@ public class VacancyDetailServlet extends HttpServlet {
             this.deadline = deadline;
             this.moduleOwner = moduleOwner;
             this.requirements = requirements;
+            this.isOwner = isOwner;
         }
 
         public String getVacancyId() {
@@ -239,6 +244,10 @@ public class VacancyDetailServlet extends HttpServlet {
 
         public List<String> getRequirements() {
             return requirements;
+        }
+
+        public boolean isOwner() {
+            return isOwner;
         }
     }
 

@@ -106,7 +106,7 @@
                     </div>
                     <div class="flex gap-3">
                         <c:if test="${userRole == 'MO'}">
-                            <button class="portal-btn portal-btn-primary" title="Post a new vacancy">
+                            <button class="portal-btn portal-btn-primary" title="Post a new vacancy" onclick="openCreateVacancyModal()">
                                 <span class="material-symbols-outlined text-sm">add</span>
                                 Post Vacancy
                             </button>
@@ -418,8 +418,89 @@
     </div>
 </div>
 
+<%-- ═══════════════════════════════════════════════════════
+     Create Vacancy Modal (MO Only)
+     ═══════════════════════════════════════════════════════ --%>
+<c:if test="${userRole == 'MO'}">
+<div id="createVacancyModal" class="qm-modal-overlay"
+     onclick="if(event.target===this) closeCreateVacancyModal()">
+    <div class="qm-modal-box max-w-2xl">
+        <form action="${pageContext.request.contextPath}/vacancy/create" method="POST">
+            <div class="px-7 pt-7 pb-5">
+                <div class="flex items-start gap-4 mb-5">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl text-blue-600"
+                              style="font-variation-settings:'FILL' 1">add_circle</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Post a New Vacancy</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">Fill in the details for the new teaching assistant position.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Title <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="e.g. Teaching Assistant for Intro to Java">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Course Code</label>
+                            <input type="text" name="courseCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="e.g. ECS414U">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Term</label>
+                            <select name="term" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                <c:forEach items="${termOptions}" var="termOpt">
+                                    <option value="${fn:escapeXml(termOpt)}"><c:out value="${termOpt}"/></option>
+                                </c:forEach>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="Brief description of the role..."></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Hours/Week</label>
+                            <input type="number" name="hoursPerWeek" min="1" value="10" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Hourly Rate (£)</label>
+                            <input type="number" step="0.01" name="hourlyRate" min="0" value="20.00" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Deadline</label>
+                            <input type="datetime-local" name="deadline" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button type="button" onclick="closeCreateVacancyModal()" class="portal-btn portal-btn-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="portal-btn portal-btn-primary">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    Create Vacancy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</c:if>
+
 <script>
     const CTX = '${pageContext.request.contextPath}';
+
+    // ── Create Vacancy Modal ──────────────────────────────────────────────────
+    function openCreateVacancyModal() {
+        document.getElementById('createVacancyModal').classList.add('open');
+    }
+    function closeCreateVacancyModal() {
+        document.getElementById('createVacancyModal').classList.remove('open');
+    }
 
     // ── AI Match Disclaimer ───────────────────────────────────────────────────
     function openAIMatchDisclaimer() {

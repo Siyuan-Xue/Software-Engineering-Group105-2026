@@ -1,10 +1,10 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.model.Application;
 import com.bupt.ta.model.User;
 import com.bupt.ta.model.enums.ApplicationStatus;
-import com.bupt.ta.persistence.json.JsonApplicationRepository;
+import com.bupt.ta.persistence.DatabaseProvider;
+import com.bupt.ta.persistence.TaDatabase;
 import com.bupt.ta.service.ApplicationService;
 
 import jakarta.servlet.ServletException;
@@ -24,9 +24,8 @@ public class ApplicationSubmitServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        DatabaseConfig config = DatabaseConfig.defaultConfig();
-        JsonApplicationRepository applicationRepository = new JsonApplicationRepository(config);
-        this.applicationService = new ApplicationService(applicationRepository);
+        TaDatabase database = DatabaseProvider.get(getServletContext());
+        this.applicationService = new ApplicationService(database.applications());
     }
 
     @Override
