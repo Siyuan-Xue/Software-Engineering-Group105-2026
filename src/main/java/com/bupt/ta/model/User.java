@@ -19,6 +19,8 @@ public class User extends BaseEntity {
     private String studentId;
     private String bio;
     private boolean notificationsEnabled = true;
+    private String preferredLanguage = "en";
+    private String preferredAppearance = "light";
     private Set<UUID> savedJobIds = new HashSet<>();
 
     public String getEmail() {
@@ -80,6 +82,12 @@ public class User extends BaseEntity {
 
     public boolean isNotificationsEnabled() { return notificationsEnabled; }
     public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+
+    public String getPreferredLanguage() { return preferredLanguage; }
+    public void setPreferredLanguage(String preferredLanguage) { this.preferredLanguage = preferredLanguage; }
+
+    public String getPreferredAppearance() { return preferredAppearance; }
+    public void setPreferredAppearance(String preferredAppearance) { this.preferredAppearance = preferredAppearance; }
 
     public Set<UUID> getSavedJobIds() {
         return savedJobIds == null ? new HashSet<>() : savedJobIds;

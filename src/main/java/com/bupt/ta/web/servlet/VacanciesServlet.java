@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.model.Job;
 import com.bupt.ta.model.User;
 import com.bupt.ta.persistence.DatabaseProvider;
@@ -87,7 +88,7 @@ public class VacanciesServlet extends HttpServlet {
             req.setAttribute("pageState", "normal");
         } catch (RuntimeException ex) {
             req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", "Failed to load vacancies. Please try again.");
+            req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyLoadFailed"));
         }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);

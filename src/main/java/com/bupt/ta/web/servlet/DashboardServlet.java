@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.model.Activity;
 import com.bupt.ta.model.Application;
@@ -86,8 +87,10 @@ public class DashboardServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
         
         String userRole = (String) req.getAttribute("userRole");
+        String language = I18n.resolveLanguage(req);
+        boolean zh = I18n.isChinese(language);
 
-        if (userRole == "TA"){
+        if ("TA".equals(userRole)){
             List<Resume> myResumes = this.resumeRepository.listByUserId(currentUser.getId());
 
             List<Application> all_applications = listMyApplicationsByResumes(myResumes);
@@ -101,7 +104,7 @@ public class DashboardServlet extends HttpServlet {
             req.setAttribute("submittedApplicationsCount", all_applications.size());
             req.setAttribute("underReviewApplicationsCount", count);
         }
-        else if (userRole == "MO"){
+        else if ("MO".equals(userRole)){
             List<Job> myJobs = this.jobRepository.listByPoster(currentUser.getId());
 
             List<Application> all_applications = listMyApplicationsByJobs(myJobs);
@@ -115,7 +118,7 @@ public class DashboardServlet extends HttpServlet {
             req.setAttribute("postedVacanciesCount", myJobs.size());
             req.setAttribute("receivedApplicationsCount", count);
         }
-        else if (userRole == "ADMIN"){
+        else if ("ADMIN".equals(userRole)){
             List<User> users = this.userRepository.listAll();
 
             int totalTAsCount = 0;
@@ -143,18 +146,18 @@ public class DashboardServlet extends HttpServlet {
         List<Activity> activities = new ArrayList<>();
         // TODO: 真实活动列表
         activities.add(new Activity(
-                "更新了简历", 
-                "你修改了主修专业和联系方式", 
-                "2 小时前", 
+                zh ? "更新了简历" : "Resume updated",
+                zh ? "你修改了主修专业和联系方式" : "You updated your major and contact information",
+                zh ? "2 小时前" : "2 hours ago",
                 "", "", "", 
                 null, null
         ));
         activities.add(new Activity(
-                "提交了 TA 申请", 
-                "申请了《计算机科学导论》的助教岗位", 
-                "1 天前", 
+                zh ? "提交了 TA 申请" : "TA application submitted",
+                zh ? "申请了《计算机科学导论》的助教岗位" : "Applied for the Teaching Assistant role in Introduction to Computer Science",
+                zh ? "1 天前" : "1 day ago",
                 "", "", "", 
-                "已提交", "bg-success"
+                zh ? "已提交" : "Submitted", "bg-success"
         ));
         req.setAttribute("recentActivities", activities);
 
@@ -162,8 +165,14 @@ public class DashboardServlet extends HttpServlet {
         List<Deadline> deadlines = new ArrayList<>();
         // TODO: 真实的ddl列表
 
-        deadlines.add(new Deadline("《数据结构》助教申请截止", "只剩 2 天", "bg-danger", "text-white"));
-        deadlines.add(new Deadline("提交本学期成绩单", "还有 1 周", "bg-warning", "text-dark"));
+        deadlines.add(new Deadline(
+                zh ? "《数据结构》助教申请截止" : "Data Structures TA application deadline",
+                zh ? "只剩 2 天" : "2 days left",
+                "bg-danger", "text-white"));
+        deadlines.add(new Deadline(
+                zh ? "提交本学期成绩单" : "Submit this term's transcript",
+                zh ? "还有 1 周" : "1 week left",
+                "bg-warning", "text-dark"));
         req.setAttribute("upcomingDeadlines", deadlines);
 
         // 6. 转发到控制台页面 (注意这里的路径要和前端文件的存放位置完全一致)

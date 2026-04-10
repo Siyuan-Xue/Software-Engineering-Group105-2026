@@ -2,11 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TA Workloads - QM HIRE</title>
+    <title>${language == 'zh' ? '助教工作量 - QM HIRE' : 'TA Workloads - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -26,7 +26,7 @@
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
 <div class="relative flex min-h-screen w-full flex-col">
     <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -37,8 +37,8 @@
             <div class="portal-page">
                 <div class="portal-page-header mb-6">
                     <div>
-                        <h2 class="portal-page-title">TA Workloads</h2>
-                        <p class="portal-page-copy">Monitor Teaching Assistant assignments and hours across all departments.</p>
+                        <h2 class="portal-page-title">${language == 'zh' ? '助教工作量' : 'TA Workloads'}</h2>
+                        <p class="portal-page-copy">${language == 'zh' ? '查看各院系助教岗位分配和工时情况。' : 'Monitor Teaching Assistant assignments and hours across all departments.'}</p>
                     </div>
                 </div>
 
@@ -46,11 +46,11 @@
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 border-b border-slate-100 text-slate-500">
                             <tr>
-                                <th class="px-6 py-4 font-semibold">TA Name</th>
-                                <th class="px-6 py-4 font-semibold">Department</th>
-                                <th class="px-6 py-4 font-semibold">Active Jobs</th>
-                                <th class="px-6 py-4 font-semibold">Total Hours/Week</th>
-                                <th class="px-6 py-4 font-semibold">Status</th>
+                                <th class="px-6 py-4 font-semibold">${language == 'zh' ? '助教姓名' : 'TA Name'}</th>
+                                <th class="px-6 py-4 font-semibold">${language == 'zh' ? '院系' : 'Department'}</th>
+                                <th class="px-6 py-4 font-semibold">${language == 'zh' ? '在岗岗位数' : 'Active Jobs'}</th>
+                                <th class="px-6 py-4 font-semibold">${language == 'zh' ? '每周总工时' : 'Total Hours/Week'}</th>
+                                <th class="px-6 py-4 font-semibold">${language == 'zh' ? '状态' : 'Status'}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -59,7 +59,7 @@
                                     <td class="px-6 py-4 font-medium text-slate-900"><c:out value="${wl.taName}"/></td>
                                     <td class="px-6 py-4 text-slate-600"><c:out value="${wl.department}"/></td>
                                     <td class="px-6 py-4 text-slate-600"><c:out value="${wl.activeJobsCount}"/></td>
-                                    <td class="px-6 py-4 text-slate-600"><c:out value="${wl.totalHoursPerWeek}"/> hrs</td>
+                                    <td class="px-6 py-4 text-slate-600"><c:out value="${wl.totalHoursPerWeek}"/> ${language == 'zh' ? '小时' : 'hrs'}</td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                             <c:out value="${wl.status}"/>
@@ -69,7 +69,7 @@
                             </c:forEach>
                             <c:if test="${empty workloads}">
                                 <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">No workload data available.</td>
+                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">${language == 'zh' ? '暂无工作量数据。' : 'No workload data available.'}</td>
                                 </tr>
                             </c:if>
                         </tbody>

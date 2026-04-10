@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.dto.ApplicationDTO;
 import com.bupt.ta.model.Application;
@@ -21,6 +22,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +53,8 @@ public class ApplicationsServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
         if (currentUser == null) {
-            resp.sendRedirect(req.getContextPath() + "/login?errorMessage=Please log in to access this page");
+            resp.sendRedirect(req.getContextPath() + "/login?errorMessage="
+                    + URLEncoder.encode(I18n.message(req, "auth.loginRequired"), StandardCharsets.UTF_8));
             return;
         }
 
@@ -122,7 +126,7 @@ public class ApplicationsServlet extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace(); // 打印日志方便后端排查
-            req.setAttribute("errorMessage", "Failed to load applications. Please try again.");
+            req.setAttribute("errorMessage", I18n.message(req, "msg.applicationsLoadFailed"));
             req.getRequestDispatcher("/portal/applications.jsp").forward(req, resp);
         }
     }

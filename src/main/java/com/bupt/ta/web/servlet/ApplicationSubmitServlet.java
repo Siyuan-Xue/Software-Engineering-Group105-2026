@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.model.Application;
 import com.bupt.ta.model.User;
 import com.bupt.ta.model.enums.ApplicationStatus;
@@ -15,6 +16,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @WebServlet("/application")
@@ -34,7 +37,8 @@ public class ApplicationSubmitServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
         if (currentUser == null) {
-            resp.sendRedirect(req.getContextPath() + "/login?errorMessage=Please log in to access this page");
+            resp.sendRedirect(req.getContextPath() + "/login?errorMessage="
+                    + URLEncoder.encode(I18n.message(req, "auth.loginRequired"), StandardCharsets.UTF_8));
             return;
         }
 
@@ -44,7 +48,7 @@ public class ApplicationSubmitServlet extends HttpServlet {
 
         if (vacancyIdStr == null || vacancyIdStr.isEmpty() || resumeIdStr == null || resumeIdStr.isEmpty()) {
             resp.sendRedirect(req.getContextPath() + "/vacancy?vacancyId=" + vacancyIdStr 
-                    + "&errorMessage=Missing required application data.");
+                    + "&errorMessage=" + URLEncoder.encode(I18n.message(req, "msg.appDataMissing"), StandardCharsets.UTF_8));
             return;
         }
 
@@ -62,16 +66,17 @@ public class ApplicationSubmitServlet extends HttpServlet {
             applicationService.save(newApplication);
 
             // 4. 成功后重定向到申请列表页并带上 successMessage (符合 Contract 要求)
-            resp.sendRedirect(req.getContextPath() + "/applications?successMessage=Application submitted successfully!");
+            resp.sendRedirect(req.getContextPath() + "/applications?successMessage="
+                    + URLEncoder.encode(I18n.message(req, "msg.appSubmitted"), StandardCharsets.UTF_8));
 
         } catch (IllegalArgumentException e) {
             // UUID 格式错误处理
             resp.sendRedirect(req.getContextPath() + "/vacancy?vacancyId=" + vacancyIdStr 
-                    + "&errorMessage=Invalid vacancy or resume ID.");
+                    + "&errorMessage=" + URLEncoder.encode(I18n.message(req, "msg.appInvalidIds"), StandardCharsets.UTF_8));
         } catch (Exception e) {
             // 其他后端异常处理
             resp.sendRedirect(req.getContextPath() + "/vacancy?vacancyId=" + vacancyIdStr 
-                    + "&errorMessage=Failed to submit application. Please try again later.");
+                    + "&errorMessage=" + URLEncoder.encode(I18n.message(req, "msg.appSubmitFailed"), StandardCharsets.UTF_8));
         }
     }
 }

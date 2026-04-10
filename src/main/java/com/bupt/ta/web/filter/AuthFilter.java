@@ -1,5 +1,6 @@
 package com.bupt.ta.web.filter;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.model.User;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
@@ -33,6 +34,15 @@ public class AuthFilter implements Filter {
 
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
+        HttpSession session = req.getSession(false);
+        User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
+
+        String language = resolveLanguage(session, currentUser);
+        String appearance = resolveAppearance(session, currentUser);
+        req.setAttribute("language", language);
+        req.setAttribute("langTag", I18n.langTag(language));
+        req.setAttribute("i18n", I18n.messagesFor(language));
+        req.setAttribute("appearance", appearance);
 
         String path = req.getRequestURI();
         String contextPath = req.getContextPath();
@@ -51,15 +61,16 @@ public class AuthFilter implements Filter {
             return;
         }
 
-        // 2. 检查会话（Session）中是否有用户
-        HttpSession session = req.getSession(false);
-        User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
-
         // 3. 如果未登录，重定向到登录页，并带上前端契约规定的 errorMessage
         if (currentUser == null) {
-            String errorMsg = URLEncoder.encode("Please log in to access this page", StandardCharsets.UTF_8);
+            String errorMsg = URLEncoder.encode(I18n.message(language, "auth.loginRequired"), StandardCharsets.UTF_8);
             resp.sendRedirect(contextPath + "/login?errorMessage=" + errorMsg);
             return;
+        }
+
+        if (session != null) {
+            session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, language);
+            session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, appearance);
         }
 
         // ====================================================================
@@ -70,7 +81,7 @@ public class AuthFilter implements Filter {
         // 4.1 组装前端需要的 userProfile 对象
         Map<String, Object> userProfile = new HashMap<>();
 
-        String fullName = currentUser.getFullName() != null ? currentUser.getFullName() : "Student User";
+        String fullName = currentUser.getFullName() != null ? currentUser.getFullName() : I18n.message(language, "common.studentUser");
         String[] nameParts = fullName.split(" ", 2);
         userProfile.put("firstName", nameParts[0]);
         userProfile.put("lastName", nameParts.length > 1 ? nameParts[1] : "");
@@ -84,6 +95,8 @@ public class AuthFilter implements Filter {
         userProfile.put("studentId", currentUser.getStudentId());
         userProfile.put("bio", currentUser.getBio());
         userProfile.put("notificationsEnabled", currentUser.isNotificationsEnabled());
+        userProfile.put("preferredLanguage", language);
+        userProfile.put("preferredAppearance", appearance);
 
         req.setAttribute("userName", fullName);
         req.setAttribute("userProfile", userProfile);
@@ -113,5 +126,31 @@ public class AuthFilter implements Filter {
         if (user.getStudentId()  != null && !user.getStudentId().isBlank())  score += 15;
         if (user.getBio()        != null && !user.getBio().isBlank())        score += 15;
         return Math.min(score, 100);
+    }
+
+    private String resolveLanguage(HttpSession session, User currentUser) {
+        if (currentUser != null && currentUser.getPreferredLanguage() != null) {
+            return I18n.normalizeLanguage(currentUser.getPreferredLanguage());
+        }
+        if (session != null) {
+            Object language = session.getAttribute(I18n.SESSION_LANGUAGE_ATTR);
+            if (language instanceof String value) {
+                return I18n.normalizeLanguage(value);
+            }
+        }
+        return I18n.DEFAULT_LANGUAGE;
+    }
+
+    private String resolveAppearance(HttpSession session, User currentUser) {
+        if (currentUser != null && currentUser.getPreferredAppearance() != null) {
+            return I18n.normalizeAppearance(currentUser.getPreferredAppearance());
+        }
+        if (session != null) {
+            Object appearance = session.getAttribute(I18n.SESSION_APPEARANCE_ATTR);
+            if (appearance instanceof String value) {
+                return I18n.normalizeAppearance(value);
+            }
+        }
+        return I18n.DEFAULT_APPEARANCE;
     }
 }

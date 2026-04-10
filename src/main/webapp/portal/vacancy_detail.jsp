@@ -1,11 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vacancy Detail - QM HIRE</title>
+    <title>${language == 'zh' ? '岗位详情 - QM HIRE' : 'Vacancy Detail - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -27,7 +27,7 @@
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
         <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -38,7 +38,7 @@
                 <div class="portal-page portal-page--detail">
                     <a href="${pageContext.request.contextPath}/vacancies" class="flex items-center gap-2 text-slate-500 hover:text-primary mb-6 transition-colors font-medium w-fit">
                         <span class="material-symbols-outlined">arrow_back</span>
-                        Back to Vacancies
+                        ${language == 'zh' ? '返回岗位列表' : 'Back to Vacancies'}
                     </a>
 
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
@@ -50,20 +50,20 @@
                             <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                 <jsp:param name="variant" value="error" />
                                 <jsp:param name="icon" value="work_alert" />
-                                <jsp:param name="title" value="Vacancy unavailable" />
-                                <jsp:param name="message" value="We couldn't load this vacancy right now. Please refresh the page or return to the list and try again." />
+                                <jsp:param name="title" value="${language == 'zh' ? '岗位暂不可用' : 'Vacancy unavailable'}" />
+                                <jsp:param name="message" value="${language == 'zh' ? '当前无法加载该岗位，请刷新页面或返回列表后重试。' : 'Unable to load this vacancy right now. Please refresh the page or return to the list and try again.'}" />
                                 <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                                <jsp:param name="actionLabel" value="Back to Vacancies" />
+                                <jsp:param name="actionLabel" value="${language == 'zh' ? '返回岗位列表' : 'Back to Vacancies'}" />
                             </jsp:include>
                         </c:when>
                         <c:when test="${empty vacancy}">
                             <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                 <jsp:param name="variant" value="notFound" />
                                 <jsp:param name="icon" value="search_off" />
-                                <jsp:param name="title" value="Vacancy not found" />
-                                <jsp:param name="message" value="The vacancy you are looking for does not exist or has been removed." />
+                                <jsp:param name="title" value="${language == 'zh' ? '未找到岗位' : 'Vacancy not found'}" />
+                                <jsp:param name="message" value="${language == 'zh' ? '你要查看的岗位不存在或已被移除。' : 'The vacancy you are looking for does not exist or has been removed.'}" />
                                 <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                                <jsp:param name="actionLabel" value="Browse Vacancies" />
+                                <jsp:param name="actionLabel" value="${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}" />
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
@@ -82,13 +82,13 @@
                                                 <c:if test="${vacancy.isOwner}">
                                                     <button class="portal-btn portal-btn-secondary">
                                                         <span class="material-symbols-outlined text-sm">edit</span>
-                                                        Edit Vacancy
+                                                        ${language == 'zh' ? '编辑岗位' : 'Edit Vacancy'}
                                                     </button>
                                                 </c:if>
                                             </c:when>
                                             <c:otherwise>
                                                 <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
-                                                    Apply Now
+                                                    ${language == 'zh' ? '立即申请' : 'Apply Now'}
                                                 </button>
                                             </c:otherwise>
                                         </c:choose>
@@ -96,19 +96,19 @@
 
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hours</p>
-                                            <p class="text-sm font-bold text-slate-700"><c:out value="${vacancy.hoursPerWeek}"/> hrs/week</p>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">${language == 'zh' ? '工时' : 'Hours'}</p>
+                                            <p class="text-sm font-bold text-slate-700"><c:out value="${vacancy.hoursPerWeek}"/> ${language == 'zh' ? '小时/周' : 'hrs/week'}</p>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pay Rate</p>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">${language == 'zh' ? '时薪' : 'Pay Rate'}</p>
                                             <p class="text-sm font-bold text-slate-700">$<c:out value="${vacancy.hourlyRate}"/>/hr</p>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Deadline</p>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">${language == 'zh' ? '截止日期' : 'Deadline'}</p>
                                             <p class="text-sm font-bold text-red-500"><c:out value="${vacancy.deadline}"/></p>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Module Owner</p>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">${language == 'zh' ? '课程负责人' : 'Module Owner'}</p>
                                             <p class="text-sm font-bold text-slate-700"><c:out value="${vacancy.moduleOwner}"/></p>
                                         </div>
                                     </div>
@@ -116,14 +116,14 @@
 
                                 <div class="p-8 space-y-8">
                                     <section>
-                                        <h3 class="text-xl font-bold text-slate-900 mb-4">Description</h3>
+                                        <h3 class="text-xl font-bold text-slate-900 mb-4">${language == 'zh' ? '岗位描述' : 'Description'}</h3>
                                         <p class="text-slate-600 leading-relaxed">
                                             <c:out value="${vacancy.description}"/>
                                         </p>
                                     </section>
 
                                     <section>
-                                        <h3 class="text-xl font-bold text-slate-900 mb-4">Requirements</h3>
+                                        <h3 class="text-xl font-bold text-slate-900 mb-4">${language == 'zh' ? '岗位要求' : 'Requirements'}</h3>
                                         <ul class="space-y-3">
                                             <c:forEach items="${vacancy.requirements}" var="requirement">
                                                 <li class="flex gap-3 text-slate-600">
@@ -140,22 +140,22 @@
                             <div id="applyModal" style="display:none" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                                 <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl" style="max-height:90vh;overflow-y:auto">
                                     <div class="flex items-center justify-between mb-2">
-                                        <h3 class="text-2xl font-black text-slate-900">Select Resume</h3>
+                                        <h3 class="text-2xl font-black text-slate-900">${language == 'zh' ? '选择简历' : 'Select Resume'}</h3>
                                         <button type="button" onclick="closeApplyModal()"
                                                 class="text-slate-400 hover:text-slate-600 transition-colors">
                                             <span class="material-symbols-outlined text-2xl">close</span>
                                         </button>
                                     </div>
-                                    <p class="text-slate-500 text-sm mb-1">Choose which resume you want to submit for this application.</p>
+                                    <p class="text-slate-500 text-sm mb-1">${language == 'zh' ? '选择你想用于本次申请的简历。' : 'Choose which resume you want to submit for this application.'}</p>
 
                                     <!-- AI recommendation notice -->
                                     <div id="aiRankStatus" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
                                         <span class="material-symbols-outlined text-[14px] animate-spin">autorenew</span>
-                                        <span>AI is analysing your resumes for this role…</span>
+                                        <span>${language == 'zh' ? 'AI 正在分析你的简历与该岗位的匹配度…' : 'AI is analysing your resumes for this role…'}</span>
                                     </div>
                                     <div id="aiRankDone" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
                                         <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
-                                        <span>AI recommendation ready — see scores below</span>
+                                        <span>${language == 'zh' ? 'AI 推荐已生成，请查看下方分数' : 'AI recommendation ready — see scores below'}</span>
                                     </div>
 
                                     <form action="${pageContext.request.contextPath}/application" method="POST">
@@ -165,10 +165,10 @@
                                                 <c:when test="${empty resumeList}">
                                                     <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
                                                         <jsp:param name="icon" value="description" />
-                                                        <jsp:param name="title" value="No resumes available" />
-                                                        <jsp:param name="message" value="Upload a resume first so you can submit this application." />
+                                                        <jsp:param name="title" value="${language == 'zh' ? '没有可用简历' : 'No resumes available'}" />
+                                                        <jsp:param name="message" value="${language == 'zh' ? '请先上传简历，再提交该申请。' : 'Upload a resume first so you can submit this application.'}" />
                                                         <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
-                                                        <jsp:param name="actionLabel" value="Go to Resumes" />
+                                                        <jsp:param name="actionLabel" value="${language == 'zh' ? '前往简历页面' : 'Go to Resumes'}" />
                                                         <jsp:param name="containerClass" value="px-0 py-2" />
                                                     </jsp:include>
                                                 </c:when>
@@ -192,10 +192,10 @@
 
                                         <div class="flex gap-3">
                                             <button type="button" onclick="closeApplyModal()" class="portal-btn portal-btn-secondary flex-1">
-                                                Cancel
+                                                ${language == 'zh' ? '取消' : 'Cancel'}
                                             </button>
                                             <button type="submit" class="portal-btn portal-btn-primary flex-1" <c:if test="${empty resumeList}">disabled="disabled"</c:if>>
-                                                Confirm Apply
+                                                ${language == 'zh' ? '确认申请' : 'Confirm Apply'}
                                             </button>
                                         </div>
                                     </form>
@@ -249,18 +249,18 @@
                                                 var color, icon, text;
                                                 if (r.score >= 85) {
                                                     color = 'text-emerald-700 bg-emerald-50 border-emerald-200';
-                                                    icon  = '🌟'; text = r.score + '% match';
+                                                    icon  = '🌟'; text = r.score + '% ${language == 'zh' ? '匹配' : 'match'}';
                                                 } else if (r.score >= 65) {
                                                     color = 'text-blue-700 bg-blue-50 border-blue-200';
-                                                    icon  = '✓'; text = r.score + '% match';
+                                                    icon  = '✓'; text = r.score + '% ${language == 'zh' ? '匹配' : 'match'}';
                                                 } else {
                                                     color = 'text-slate-500 bg-slate-50 border-slate-200';
-                                                    icon  = ''; text = r.score + '% match';
+                                                    icon  = ''; text = r.score + '% ${language == 'zh' ? '匹配' : 'match'}';
                                                 }
 
                                                 var recTag = '';
                                                 if (r.recommended) {
-                                                    recTag = '<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">AI Pick</span>';
+                                                    recTag = '<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">${language == 'zh' ? 'AI 推荐' : 'AI Pick'}</span>';
                                                     if (label) label.classList.add('border-violet-300', 'bg-violet-50/40');
                                                 }
 

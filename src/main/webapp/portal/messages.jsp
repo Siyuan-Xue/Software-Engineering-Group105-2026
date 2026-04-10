@@ -2,11 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages - QM HIRE</title>
+    <title>${language == 'zh' ? '消息 - QM HIRE' : 'Messages - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -28,7 +28,7 @@
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
         <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -41,7 +41,7 @@
                     <c:set var="showConversationEmpty" value="${messagesState == 'empty' or empty conversations}" />
                     <c:set var="showNoActiveConversation" value="${messagesState == 'noActiveConversation' or (not showConversationEmpty and empty activeConversation)}" />
                     <c:set var="selectedConversationId" value="${empty activeConversation.conversationId ? (empty activeConversation.id ? param.conversationId : activeConversation.id) : activeConversation.conversationId}" />
-                    <c:set var="noActiveMessage" value="${empty param.conversationId ? 'Choose a conversation from the left to read messages and send replies.' : 'We could not open that conversation. Choose another thread from the list.'}" />
+                    <c:set var="noActiveMessage" value="${empty param.conversationId ? (language == 'zh' ? '请从左侧选择一个会话以查看消息并回复。' : 'Choose a conversation from the left to read messages and send replies.') : (language == 'zh' ? '无法打开该会话，请从列表中选择其他对话。' : 'We could not open that conversation. Choose another thread from the list.')}" />
 
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
                         <jsp:param name="containerClass" value="mb-6" />
@@ -52,40 +52,40 @@
                             <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                 <jsp:param name="variant" value="error" />
                                 <jsp:param name="icon" value="mark_chat_read" />
-                                <jsp:param name="title" value="Messages unavailable" />
-                                <jsp:param name="message" value="We couldn't load your conversations right now. Please try again after refreshing the page." />
+                                <jsp:param name="title" value="${language == 'zh' ? '消息暂不可用' : 'Messages unavailable'}" />
+                                <jsp:param name="message" value="${language == 'zh' ? '当前无法加载你的会话，请刷新页面后重试。' : 'Unable to load your conversations right now. Please try again after refreshing the page.'}" />
                                 <jsp:param name="actionHref" value="${pageContext.request.contextPath}/messages" />
-                                <jsp:param name="actionLabel" value="Try Again" />
+                                <jsp:param name="actionLabel" value="${language == 'zh' ? '重试' : 'Try Again'}" />
                             </jsp:include>
                         </c:when>
                         <c:otherwise>
                             <div class="portal-page-header">
                                 <div>
-                                    <h2 class="portal-page-title">Messages</h2>
-                                    <p class="portal-page-copy">Stay in touch with recruiters and department contacts as your applications move forward.</p>
+                                    <h2 class="portal-page-title">${language == 'zh' ? '消息' : 'Messages'}</h2>
+                                    <p class="portal-page-copy">${language == 'zh' ? '在申请推进过程中，与招聘方和院系联系人保持沟通。' : 'Stay in touch with recruiters and department contacts as your applications move forward.'}</p>
                                 </div>
                                 <div class="portal-summary-card">
-                                    <p class="portal-kicker">Inbox Summary</p>
+                                    <p class="portal-kicker">${language == 'zh' ? '收件箱摘要' : 'Inbox Summary'}</p>
                                     <p class="mt-1 text-sm font-semibold text-slate-900">
                                         <c:choose>
                                             <c:when test="${showConversationEmpty}">
-                                                0 active conversations
+                                                ${language == 'zh' ? '0 个活跃会话' : '0 active conversations'}
                                             </c:when>
                                             <c:otherwise>
-                                                <c:out value="${fn:length(conversations)}" /> active conversations
+                                                <c:out value="${fn:length(conversations)}" /> ${language == 'zh' ? '个活跃会话' : 'active conversations'}
                                             </c:otherwise>
                                         </c:choose>
                                     </p>
                                     <p class="mt-1 text-xs text-slate-500">
                                         <c:choose>
                                             <c:when test="${showConversationEmpty}">
-                                                New conversations will appear here once departments or recruiters contact you.
+                                                ${language == 'zh' ? '当院系或招聘方联系你后，新的会话会显示在这里。' : 'New conversations will appear here once departments or recruiters contact you.'}
                                             </c:when>
                                             <c:when test="${showNoActiveConversation}">
-                                                Select a conversation to read updates and send replies.
+                                                ${language == 'zh' ? '选择一个会话以查看更新并发送回复。' : 'Select a conversation to read updates and send replies.'}
                                             </c:when>
                                             <c:otherwise>
-                                                Conversation ready. Keep your replies clear and timely.
+                                                ${language == 'zh' ? '当前会话已就绪，请保持回复清晰且及时。' : 'Conversation ready. Keep your replies clear and timely.'}
                                             </c:otherwise>
                                         </c:choose>
                                     </p>
@@ -95,28 +95,28 @@
                             <div class="portal-panel flex h-[calc(100vh-120px)] overflow-hidden">
                                 <div class="flex w-80 flex-col border-r border-slate-200">
                                     <div class="border-b border-slate-200 p-4">
-                                        <h3 class="text-base font-bold text-slate-900">Conversation List</h3>
-                                        <p class="mt-1 text-xs text-slate-500">Open a thread to read updates and send replies.</p>
+                                        <h3 class="text-base font-bold text-slate-900">${language == 'zh' ? '会话列表' : 'Conversation List'}</h3>
+                                        <p class="mt-1 text-xs text-slate-500">${language == 'zh' ? '打开一个会话以查看更新并回复。' : 'Open a thread to read updates and send replies.'}</p>
                                     </div>
                                     <div class="flex-1 overflow-y-auto">
                                         <c:choose>
                                             <c:when test="${showConversationEmpty}">
                                                 <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
                                                     <jsp:param name="icon" value="forum" />
-                                                    <jsp:param name="title" value="No conversations yet" />
-                                                    <jsp:param name="message" value="Messages from recruiters and departments will appear here once a conversation starts." />
+                                                    <jsp:param name="title" value="${language == 'zh' ? '暂无会话' : 'No conversations yet'}" />
+                                                    <jsp:param name="message" value="${language == 'zh' ? '当会话开始后，来自招聘方和院系的消息会显示在这里。' : 'Messages from recruiters and departments will appear here once a conversation starts.'}" />
                                                     <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                                                    <jsp:param name="actionLabel" value="Browse Vacancies" />
+                                                    <jsp:param name="actionLabel" value="${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}" />
                                                     <jsp:param name="containerClass" value="min-h-full" />
                                                 </jsp:include>
                                             </c:when>
                                             <c:otherwise>
                                                 <c:forEach items="${conversations}" var="conv">
                                                     <c:set var="conversationId" value="${empty conv.conversationId ? conv.id : conv.conversationId}" />
-                                                    <c:set var="contactName" value="${empty conv.contactName ? (empty conv.otherUserName ? 'Contact' : conv.otherUserName) : conv.contactName}" />
-                                                    <c:set var="contactRole" value="${empty conv.contactRole ? 'Department Contact' : conv.contactRole}" />
+                                                    <c:set var="contactName" value="${empty conv.contactName ? (empty conv.otherUserName ? (language == 'zh' ? '联系人' : 'Contact') : conv.otherUserName) : conv.contactName}" />
+                                                    <c:set var="contactRole" value="${empty conv.contactRole ? (language == 'zh' ? '院系联系人' : 'Department Contact') : conv.contactRole}" />
                                                     <c:set var="contactAvatar" value="${conv.contactAvatar}" />
-                                                    <c:set var="lastMessage" value="${empty conv.lastMessage ? (empty conv.lastMessagePreview ? 'No messages yet' : conv.lastMessagePreview) : conv.lastMessage}" />
+                                                    <c:set var="lastMessage" value="${empty conv.lastMessage ? (empty conv.lastMessagePreview ? (language == 'zh' ? '暂无消息' : 'No messages yet') : conv.lastMessagePreview) : conv.lastMessage}" />
                                                     <c:set var="lastMessageTime" value="${conv.lastMessageTime}" />
                                                     <c:set var="contactInitial" value="${fn:toUpperCase(fn:substring(contactName, 0, 1))}" />
                                                     <a href="${pageContext.request.contextPath}/messages?conversationId=${conversationId}" class="flex w-full gap-3 border-r-4 p-4 text-left transition-colors hover:bg-slate-50 ${conversationId == selectedConversationId ? 'border-primary bg-primary/5' : 'border-transparent'}">
@@ -157,25 +157,25 @@
                                         <c:when test="${showConversationEmpty}">
                                             <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
                                                 <jsp:param name="icon" value="mark_chat_unread" />
-                                                <jsp:param name="title" value="Inbox waiting for your first conversation" />
-                                                <jsp:param name="message" value="Once a department reaches out or you begin a thread from an application, the full conversation view will appear here." />
+                                                <jsp:param name="title" value="${language == 'zh' ? '收件箱等待你的第一个会话' : 'Inbox waiting for your first conversation'}" />
+                                                <jsp:param name="message" value="${language == 'zh' ? '当院系联系你或你从申请中开启对话后，完整会话会显示在这里。' : 'Once a department reaches out or you begin a thread from an application, the full conversation view will appear here.'}" />
                                                 <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                                                <jsp:param name="actionLabel" value="Find Opportunities" />
+                                                <jsp:param name="actionLabel" value="${language == 'zh' ? '寻找机会' : 'Find Opportunities'}" />
                                                 <jsp:param name="containerClass" value="min-h-full" />
                                             </jsp:include>
                                         </c:when>
                                         <c:when test="${showNoActiveConversation}">
                                             <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
                                                 <jsp:param name="icon" value="chat" />
-                                                <jsp:param name="title" value="No conversation selected" />
+                                                <jsp:param name="title" value="${language == 'zh' ? '未选择会话' : 'No conversation selected'}" />
                                                 <jsp:param name="message" value="${noActiveMessage}" />
                                                 <jsp:param name="containerClass" value="min-h-full" />
                                             </jsp:include>
                                         </c:when>
                                         <c:otherwise>
                                             <c:set var="activeConversationId" value="${empty activeConversation.conversationId ? activeConversation.id : activeConversation.conversationId}" />
-                                            <c:set var="activeContactName" value="${empty activeConversation.contactName ? (empty activeConversation.otherUserName ? 'Contact' : activeConversation.otherUserName) : activeConversation.contactName}" />
-                                            <c:set var="activeContactRole" value="${empty activeConversation.contactRole ? 'Department Contact' : activeConversation.contactRole}" />
+                                            <c:set var="activeContactName" value="${empty activeConversation.contactName ? (empty activeConversation.otherUserName ? (language == 'zh' ? '联系人' : 'Contact') : activeConversation.otherUserName) : activeConversation.contactName}" />
+                                            <c:set var="activeContactRole" value="${empty activeConversation.contactRole ? (language == 'zh' ? '院系联系人' : 'Department Contact') : activeConversation.contactRole}" />
                                             <c:set var="activeContactAvatar" value="${activeConversation.contactAvatar}" />
                                             <c:set var="activeContactInitial" value="${fn:toUpperCase(fn:substring(activeContactName, 0, 1))}" />
 
@@ -196,7 +196,7 @@
                                                         <span class="text-xs font-medium text-slate-500"><c:out value="${activeContactRole}" /></span>
                                                     </div>
                                                 </div>
-                                                <p class="mt-3 text-xs leading-relaxed text-slate-500">Keep replies professional and concise. Important updates about interviews, documents, or timelines should stay in this thread.</p>
+                                                <p class="mt-3 text-xs leading-relaxed text-slate-500">${language == 'zh' ? '请保持回复专业且简洁。有关面试、材料或时间安排的重要更新应保留在该会话中。' : 'Keep replies professional and concise. Important updates about interviews, documents, or timelines should stay in this thread.'}</p>
                                             </div>
 
                                             <div class="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-6">
@@ -204,8 +204,8 @@
                                                     <c:when test="${empty activeConversation.messages}">
                                                         <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
                                                             <jsp:param name="icon" value="chat_bubble" />
-                                                            <jsp:param name="title" value="No messages in this thread yet" />
-                                                            <jsp:param name="message" value="Start the conversation with a clear question or confirmation so the contact can respond quickly." />
+                                                            <jsp:param name="title" value="${language == 'zh' ? '该会话暂无消息' : 'No messages in this thread yet'}" />
+                                                            <jsp:param name="message" value="${language == 'zh' ? '可以通过明确的问题或确认信息开始对话，方便联系人尽快回复。' : 'Start the conversation with a clear question or confirmation so the contact can respond quickly.'}" />
                                                             <jsp:param name="containerClass" value="min-h-full" />
                                                         </jsp:include>
                                                     </c:when>
@@ -266,7 +266,7 @@
                                                     <input
                                                         type="text"
                                                         name="messageContent"
-                                                        placeholder="Type a message..."
+                                                        placeholder="${language == 'zh' ? '输入消息...' : 'Type a message...'}"
                                                         class="flex-1 rounded-xl border-none bg-slate-100 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                                                         required
                                                     />

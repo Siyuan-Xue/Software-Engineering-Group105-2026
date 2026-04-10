@@ -2,11 +2,11 @@
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn"  uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumes - QM HIRE</title>
+    <title>${language == 'zh' ? '简历 - QM HIRE' : 'Resumes - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
@@ -76,7 +76,7 @@
         .card-action-del:hover   { background:#fee2e2; }
     </style>
 </head>
-<body class="bg-background-light font-sans text-slate-900">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900">
 <div class="flex min-h-screen w-full flex-col">
     <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -94,21 +94,21 @@
                 <c:if test="${pageState == 'uploadSuccess'}">
                     <div class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 mb-2">
                         <span class="material-symbols-outlined text-emerald-500">check_circle</span>
-                        <p class="text-sm font-semibold text-emerald-800">Resume uploaded. Review and update the details below.</p>
+                        <p class="text-sm font-semibold text-emerald-800">${language == 'zh' ? '简历上传成功，请在下方检查并更新信息。' : 'Resume uploaded. Review and update the details below.'}</p>
                     </div>
                 </c:if>
                 <c:if test="${pageState == 'uploadFailure'}">
                     <div class="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 mb-2">
                         <span class="material-symbols-outlined text-red-500">error</span>
-                        <p class="text-sm font-semibold text-red-800">Upload failed.<c:if test="${not empty errorMessage}"> <c:out value="${errorMessage}"/></c:if></p>
+                        <p class="text-sm font-semibold text-red-800">${language == 'zh' ? '上传失败。' : 'Upload failed.'}<c:if test="${not empty errorMessage}"> <c:out value="${errorMessage}"/></c:if></p>
                     </div>
                 </c:if>
 
                 <%-- page header --%>
                 <div class="portal-page-header mb-4">
                     <div>
-                        <h1 class="portal-page-title">My Resumes</h1>
-                        <p class="portal-page-copy">Upload your CV, get AI coaching, and track your TA applications.</p>
+                        <h1 class="portal-page-title">${language == 'zh' ? '我的简历' : 'My Resumes'}</h1>
+                        <p class="portal-page-copy">${language == 'zh' ? '上传简历、获取 AI 优化建议，并跟踪你的助教申请。' : 'Upload your CV, get AI coaching, and track your TA applications.'}</p>
                     </div>
                 </div>
 
@@ -126,10 +126,10 @@
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                             <jsp:param name="variant" value="error"/>
                             <jsp:param name="icon" value="description"/>
-                            <jsp:param name="title" value="Resumes unavailable"/>
-                            <jsp:param name="message" value="We couldn't load your resumes. Please refresh and try again."/>
+                            <jsp:param name="title" value="${language == 'zh' ? '简历暂不可用' : 'Resumes unavailable'}"/>
+                            <jsp:param name="message" value="${language == 'zh' ? '当前无法加载你的简历，请刷新页面后重试。' : 'Unable to load your resumes. Please refresh and try again.'}"/>
                             <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes"/>
-                            <jsp:param name="actionLabel" value="Try Again"/>
+                            <jsp:param name="actionLabel" value="${language == 'zh' ? '重试' : 'Try Again'}"/>
                         </jsp:include>
                     </c:when>
                     <c:otherwise>
@@ -144,11 +144,11 @@
                                             <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-5">
                                                 <span class="material-symbols-outlined text-4xl text-slate-300">description</span>
                                             </div>
-                                            <p class="text-lg font-bold text-slate-700 mb-1">No resumes yet</p>
-                                            <p class="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">Upload your first resume to start matching with TA positions.</p>
+                                            <p class="text-lg font-bold text-slate-700 mb-1">${language == 'zh' ? '还没有简历' : 'No resumes yet'}</p>
+                                            <p class="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">${language == 'zh' ? '上传第一份简历后即可开始匹配助教岗位。' : 'Upload your first resume to start matching with TA positions.'}</p>
                                             <label for="resumeFileInput" class="portal-btn portal-btn-primary cursor-pointer">
                                                 <span class="material-symbols-outlined text-sm">upload_file</span>
-                                                Upload Your First Resume
+                                                ${language == 'zh' ? '上传第一份简历' : 'Upload Your First Resume'}
                                             </label>
                                         </div>
                                     </c:when>
@@ -217,7 +217,7 @@
                                                             <div class="flex gap-1.5 shrink-0">
                                                                 <button type="button"
                                                                         class="card-action-btn card-action-edit"
-                                                                        title="Edit resume"
+                                                                        title="${language == 'zh' ? '编辑简历' : 'Edit resume'}"
                                                                         data-resume-id="${r.id}"
                                                                         data-title="${fn:escapeXml(r.title)}"
                                                                         data-dept="${fn:escapeXml(r.department)}"
@@ -230,7 +230,7 @@
                                                                 </button>
                                                                 <button type="button"
                                                                         class="card-action-btn card-action-del"
-                                                                        title="Delete resume"
+                                                                        title="${language == 'zh' ? '删除简历' : 'Delete resume'}"
                                                                         onclick="deleteResume('${r.id}')">
                                                                     <span class="material-symbols-outlined text-[18px]">delete</span>
                                                                 </button>
@@ -257,9 +257,9 @@
                                                     <div class="flex items-center gap-4 text-xs text-slate-400">
                                                         <span class="flex items-center gap-1">
                                                             <span class="material-symbols-outlined text-[13px]">schedule</span>
-                                                            Max <strong class="text-slate-600"><c:out value="${r.maxWeeklyHours}"/></strong> hrs/wk
+                                                            ${language == 'zh' ? '最多 ' : 'Max '}<strong class="text-slate-600"><c:out value="${r.maxWeeklyHours}"/></strong> ${language == 'zh' ? '小时/周' : 'hrs/wk'}
                                                         </span>
-                                                        <span>Updated: <c:out value="${r.updatedAtDisplay}"/></span>
+                                                        <span>${language == 'zh' ? '更新于：' : 'Updated: '}<c:out value="${r.updatedAtDisplay}"/></span>
                                                     </div>
                                                     <%-- card AI button: pass this specific resume's ID --%>
                                                     <button type="button"
@@ -268,7 +268,7 @@
                                                             onclick="openDisclaimerModal(this.dataset.resumeId, this.dataset.resumeTitle)"
                                                             class="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors">
                                                         <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
-                                                        AI Review
+                                                        ${language == 'zh' ? 'AI 分析' : 'AI Review'}
                                                     </button>
                                                 </div>
                                             </div>
@@ -282,12 +282,12 @@
                                     <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mx-auto mb-4 group-hover:scale-110 transition-transform">
                                         <span class="material-symbols-outlined text-3xl">cloud_upload</span>
                                     </div>
-                                    <p class="font-bold text-slate-800 mb-1">Drag &amp; drop or click to upload</p>
-                                    <p class="text-sm text-slate-400 mb-4">PDF · DOCX · JPG · PNG · TXT &nbsp;·&nbsp; Max 15 MB</p>
+                                    <p class="font-bold text-slate-800 mb-1">${language == 'zh' ? '拖拽文件到此处或点击上传' : 'Drag & drop or click to upload'}</p>
+                                    <p class="text-sm text-slate-400 mb-4">PDF · DOCX · JPG · PNG · TXT &nbsp;·&nbsp; ${language == 'zh' ? '最大 15 MB' : 'Max 15 MB'}</p>
                                     <label for="resumeFileInput"
                                            class="portal-btn portal-btn-primary text-sm pointer-events-none inline-flex cursor-pointer">
                                         <span class="material-symbols-outlined text-sm">upload_file</span>
-                                        Upload Resume
+                                        ${language == 'zh' ? '上传简历' : 'Upload Resume'}
                                     </label>
                                 </div>
                             </div>
@@ -301,21 +301,20 @@
                                     <div class="relative flex items-center gap-2 mb-3">
                                         <span class="material-symbols-outlined text-violet-600"
                                               style="font-variation-settings:'FILL' 1">auto_awesome</span>
-                                        <h3 class="font-bold text-slate-900">AI Resume Review</h3>
+                                        <h3 class="font-bold text-slate-900">${language == 'zh' ? 'AI 简历分析' : 'AI Resume Review'}</h3>
                                         <c:if test="${not qwenConfigured}">
-                                            <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">KEY REQUIRED</span>
+                                            <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 whitespace-nowrap">${language == 'zh' ? '缺少 KEY' : 'KEY REQUIRED'}</span>
                                         </c:if>
                                     </div>
                                     <p class="text-sm text-slate-500 mb-5 leading-relaxed relative">
-                                        Get personalised coaching on how to <strong class="text-slate-700">improve your resume</strong> for TA roles.
-                                        Upload a <strong class="text-slate-700">PDF or image</strong> for the best multimodal analysis.
+                                        ${language == 'zh' ? '获取针对助教岗位的个性化简历优化建议。上传 ' : 'Get personalised coaching on how to improve your resume for TA roles. Upload a '}<strong class="text-slate-700">${language == 'zh' ? 'PDF 或图片' : 'PDF or image'}</strong>${language == 'zh' ? ' 可获得更好的多模态分析效果。' : ' for the best multimodal analysis.'}
                                     </p>
                                     <%-- sidebar: no resumeId = analyse latest uploaded file --%>
                                     <button type="button" id="aiReviewSidebarBtn"
-                                            onclick="openDisclaimerModal(null, 'Latest Uploaded File')"
+                                            onclick="openDisclaimerModal(null, '${language == 'zh' ? '最近上传的文件' : 'Latest Uploaded File'}')"
                                             class="portal-btn portal-btn-primary w-full justify-center relative">
                                         <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                                        Analyse &amp; Improve My Resume
+                                        ${language == 'zh' ? '分析并优化我的简历' : 'Analyse & Improve My Resume'}
                                     </button>
                                 </div>
 
@@ -324,39 +323,39 @@
                                     <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm">
                                         <span class="material-symbols-outlined text-amber-500"
                                               style="font-variation-settings:'FILL' 1">lightbulb</span>
-                                        Resume Tips for TAs
+                                        ${language == 'zh' ? '助教简历建议' : 'Resume Tips for TAs'}
                                     </h3>
                                     <ul class="space-y-3.5">
                                         <li class="flex gap-3">
                                             <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
                                                   style="font-variation-settings:'FILL' 1">check_circle</span>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">Highlight Teaching Experience</p>
-                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Tutoring, mentoring, or previous TA roles — put these at the top.</p>
+                                                <p class="text-sm font-semibold text-slate-800">${language == 'zh' ? '突出教学经历' : 'Highlight Teaching Experience'}</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">${language == 'zh' ? '辅导、带教或以往 TA 经历应尽量放在前面。' : 'Tutoring, mentoring, or previous TA roles — put these at the top.'}</p>
                                             </div>
                                         </li>
                                         <li class="flex gap-3">
                                             <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
                                                   style="font-variation-settings:'FILL' 1">check_circle</span>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">List Relevant Coursework</p>
-                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Advanced courses related to the module you're applying for.</p>
+                                                <p class="text-sm font-semibold text-slate-800">${language == 'zh' ? '列出相关课程' : 'List Relevant Coursework'}</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">${language == 'zh' ? '写出与你申请岗位相关的进阶课程。' : 'Advanced courses related to the module you are applying for.'}</p>
                                             </div>
                                         </li>
                                         <li class="flex gap-3">
                                             <span class="material-symbols-outlined text-emerald-500 shrink-0 mt-0.5 text-lg"
                                                   style="font-variation-settings:'FILL' 1">check_circle</span>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">Quantify Achievements</p>
-                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">"Tutored 12 students, improved average grade by 8%".</p>
+                                                <p class="text-sm font-semibold text-slate-800">${language == 'zh' ? '量化你的成果' : 'Quantify Achievements'}</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">${language == 'zh' ? '例如：“辅导 12 名学生，平均成绩提升 8%”。' : '"Tutored 12 students, improved average grade by 8%".'}</p>
                                             </div>
                                         </li>
                                         <li class="flex gap-3">
                                             <span class="material-symbols-outlined text-amber-500 shrink-0 mt-0.5 text-lg"
                                                   style="font-variation-settings:'FILL' 1">tips_and_updates</span>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">Upload a File for Best AI Results</p>
-                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">PDF or image lets the AI analyse your actual document visually.</p>
+                                                <p class="text-sm font-semibold text-slate-800">${language == 'zh' ? '上传文件可获得更好的 AI 结果' : 'Upload a File for Best AI Results'}</p>
+                                                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">${language == 'zh' ? 'PDF 或图片能让 AI 直接分析你的实际文档内容。' : 'PDF or image lets the AI analyse your actual document visually.'}</p>
                                             </div>
                                         </li>
                                     </ul>
@@ -364,7 +363,7 @@
 
                                 <%-- formats card --%>
                                 <div class="portal-panel p-5">
-                                    <h3 class="font-semibold text-slate-800 mb-3 text-sm">Supported Formats</h3>
+                                    <h3 class="font-semibold text-slate-800 mb-3 text-sm">${language == 'zh' ? '支持格式' : 'Supported Formats'}</h3>
                                     <div class="grid grid-cols-3 gap-1.5 text-center text-xs font-bold">
                                         <span class="rounded-xl icon-pdf py-2">PDF</span>
                                         <span class="rounded-xl icon-doc py-2">DOCX</span>
@@ -373,7 +372,7 @@
                                         <span class="rounded-xl icon-img py-2">PNG</span>
                                         <span class="rounded-xl icon-txt py-2">TXT</span>
                                     </div>
-                                    <p class="text-[11px] text-slate-400 mt-3 text-center">Max file size: 15 MB</p>
+                                    <p class="text-[11px] text-slate-400 mt-3 text-center">${language == 'zh' ? '最大文件大小：15 MB' : 'Max file size: 15 MB'}</p>
                                 </div>
                             </div>
                         </div>
@@ -401,35 +400,35 @@
                           style="font-variation-settings:'FILL' 1">drive_file_rename_outline</span>
                 </div>
                 <div>
-                    <h2 class="text-lg font-bold text-slate-800">Name Your Resume</h2>
+                    <h2 class="text-lg font-bold text-slate-800">${language == 'zh' ? '给你的简历命名' : 'Name Your Resume'}</h2>
                     <p class="text-sm text-slate-500 mt-0.5">
-                        File uploaded successfully. Give it a meaningful name.
+                        ${language == 'zh' ? '文件上传成功，请给它起一个清晰的名称。' : 'File uploaded successfully. Give it a meaningful name.'}
                     </p>
                 </div>
             </div>
 
-            <p class="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">Source file</p>
+            <p class="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">${language == 'zh' ? '源文件' : 'Source file'}</p>
             <p id="renameFileInfo" class="text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2 mb-5
                                           border border-slate-200 truncate font-mono"></p>
 
             <label class="block text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide"
-                   for="renameInput">Resume title</label>
-            <input id="renameInput" type="text" placeholder="Untitled"
+                   for="renameInput">${language == 'zh' ? '简历标题' : 'Resume title'}</label>
+            <input id="renameInput" type="text" placeholder="${language == 'zh' ? '未命名' : 'Untitled'}"
                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
                           focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
                           text-slate-800 placeholder-slate-400" />
-            <p class="text-xs text-slate-400 mt-1.5">Leave blank to keep "Untitled".</p>
+            <p class="text-xs text-slate-400 mt-1.5">${language == 'zh' ? '留空则保持为“未命名”。' : 'Leave blank to keep "Untitled".'}</p>
         </div>
 
         <div class="px-7 py-5 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
             <button type="button" onclick="closeRenameModal()"
                     class="portal-btn portal-btn-secondary text-sm">
-                Skip
+                ${language == 'zh' ? '跳过' : 'Skip'}
             </button>
             <button type="button" onclick="saveRename()"
                     class="portal-btn portal-btn-primary text-sm">
                 <span class="material-symbols-outlined text-sm">check</span>
-                Save Name
+                ${language == 'zh' ? '保存名称' : 'Save Name'}
             </button>
         </div>
     </div>
@@ -445,33 +444,33 @@
                           style="font-variation-settings:'FILL' 1">policy</span>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900">AI Resume Review</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Please read the disclaimer before continuing</p>
+                    <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 简历分析' : 'AI Resume Review'}</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '继续前请先阅读说明' : 'Please read the disclaimer before continuing'}</p>
                     <p id="disclaimerResumeLabel" class="text-xs font-semibold text-violet-600 mt-1 hidden"></p>
                 </div>
             </div>
 
             <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-sm text-amber-900 leading-relaxed">
-                <p class="font-bold mb-2">⚠️ Disclaimer — Read carefully:</p>
+                <p class="font-bold mb-2">${language == 'zh' ? '注意：请仔细阅读以下说明：' : 'Disclaimer — Read carefully:'}</p>
                 <ul class="list-disc pl-4 space-y-1.5 text-amber-800">
-                    <li>This analysis is generated by an AI model (<strong>Qwen VL</strong>) and is for <strong>reference only</strong>.</li>
-                    <li>Results may be incomplete, inaccurate, or contain hallucinations.</li>
-                    <li>AI suggestions <strong>do not</strong> represent official hiring decisions or guarantees.</li>
-                    <li>Uploaded files are processed transiently for analysis purposes only.</li>
-                    <li>Upload a <strong>PDF or image</strong> of your resume for the best visual analysis.</li>
+                    <li>${language == 'zh' ? '本分析由 AI 模型（Qwen VL）生成，仅供参考。' : 'This analysis is generated by an AI model (Qwen VL) and is for reference only.'}</li>
+                    <li>${language == 'zh' ? '结果可能不完整、不准确，或包含模型幻觉。' : 'Results may be incomplete, inaccurate, or contain hallucinations.'}</li>
+                    <li>${language == 'zh' ? 'AI 建议不代表官方录用决定，也不构成任何保证。' : 'AI suggestions do not represent official hiring decisions or guarantees.'}</li>
+                    <li>${language == 'zh' ? '上传文件仅会在分析过程中短暂处理。' : 'Uploaded files are processed transiently for analysis purposes only.'}</li>
+                    <li>${language == 'zh' ? '上传 PDF 或图片格式的简历可获得更好的视觉分析效果。' : 'Upload a PDF or image of your resume for the best visual analysis.'}</li>
                 </ul>
             </div>
             <p class="text-sm text-slate-500">
-                By clicking <strong>"I Agree &amp; Analyse"</strong> you confirm you have read and understood the above.
+                ${language == 'zh' ? '点击“同意并分析”即表示你已阅读并理解以上内容。' : 'By clicking "I Agree & Analyse" you confirm you have read and understood the above.'}
             </p>
         </div>
         <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
             <button type="button" onclick="closeDisclaimerModal()" class="portal-btn portal-btn-secondary">
-                Cancel
+                ${language == 'zh' ? '取消' : 'Cancel'}
             </button>
             <button type="button" onclick="startAIReview()" class="portal-btn portal-btn-primary">
                 <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                I Agree &amp; Analyse
+                ${language == 'zh' ? '同意并分析' : 'I Agree & Analyse'}
             </button>
         </div>
     </div>
@@ -488,7 +487,7 @@
                 <span class="material-symbols-outlined text-2xl text-violet-600"
                       style="font-variation-settings:'FILL' 1">auto_awesome</span>
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900">AI Resume Analysis</h2>
+                    <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 简历分析结果' : 'AI Resume Analysis'}</h2>
                     <p id="aiModelLabel" class="text-xs text-slate-400 mt-0.5"></p>
                 </div>
             </div>
@@ -508,7 +507,7 @@
             <div class="skeleton h-3.5 w-full"></div>
             <div class="skeleton h-3.5 w-5/6"></div>
             <p class="text-center text-xs text-slate-400 mt-4 animate-pulse">
-                AI is analysing your resume… this may take 15-30 seconds.
+                ${language == 'zh' ? 'AI 正在分析你的简历…这可能需要 15-30 秒。' : 'AI is analysing your resume… this may take 15-30 seconds.'}
             </p>
         </div>
 
@@ -521,12 +520,12 @@
             <span class="material-symbols-outlined text-5xl text-red-300 mb-3 block"
                   style="font-variation-settings:'FILL' 1">error_circle</span>
             <p class="text-sm font-bold text-red-700 mb-1" id="aiErrorMessage"></p>
-            <p class="text-xs text-slate-400">Check your API configuration or try again later.</p>
+            <p class="text-xs text-slate-400">${language == 'zh' ? '请检查 API 配置，或稍后再试。' : 'Check your API configuration or try again later.'}</p>
         </div>
 
         <div class="px-7 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-            <p class="text-[11px] text-slate-400">AI-generated content · for reference only</p>
-            <button onclick="closeAIModal()" class="portal-btn portal-btn-secondary text-sm">Close</button>
+            <p class="text-[11px] text-slate-400">${language == 'zh' ? 'AI 生成内容 · 仅供参考' : 'AI-generated content · for reference only'}</p>
+            <button onclick="closeAIModal()" class="portal-btn portal-btn-secondary text-sm">${language == 'zh' ? '关闭' : 'Close'}</button>
         </div>
     </div>
 </div>
@@ -538,7 +537,7 @@
      onclick="if(event.target===this) closeEditModal()">
     <div class="qm-modal-box max-w-lg">
         <div class="px-7 pt-7 pb-5 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-900">Edit Resume Details</h2>
+            <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? '编辑简历信息' : 'Edit Resume Details'}</h2>
             <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">
                 <span class="material-symbols-outlined text-2xl">close</span>
             </button>
@@ -549,22 +548,22 @@
             <input type="hidden" name="resumeId" id="editResumeId"/>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Title</label>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '标题' : 'Title'}</label>
                 <input type="text" name="title" id="editTitle" required
                        class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Department</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '院系' : 'Department'}</label>
                     <input type="text" name="department" id="editDept"
                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Degree Level</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '学位层次' : 'Degree Level'}</label>
                     <select name="degreeLevel" id="editDegree"
                             class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300">
-                        <option value="BACHELOR">Bachelor</option>
-                        <option value="MASTER">Master</option>
+                        <option value="BACHELOR">${language == 'zh' ? '本科' : 'Bachelor'}</option>
+                        <option value="MASTER">${language == 'zh' ? '硕士' : 'Master'}</option>
                         <option value="PHD">PhD</option>
                     </select>
                 </div>
@@ -576,20 +575,20 @@
                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Max Hours / Week</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '每周最多工时' : 'Max Hours / Week'}</label>
                     <input type="number" name="maxWeeklyHours" id="editHours" min="1" max="40"
                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Personal Statement / Bio</label>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '个人陈述 / 简介' : 'Personal Statement / Bio'}</label>
                 <textarea name="bio" id="editBio" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 resize-y"></textarea>
             </div>
             <div class="pt-1 flex justify-end gap-3">
-                <button type="button" onclick="closeEditModal()" class="portal-btn portal-btn-secondary">Cancel</button>
+                <button type="button" onclick="closeEditModal()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
                 <button type="submit" class="portal-btn portal-btn-primary">
                     <span class="material-symbols-outlined text-sm">save</span>
-                    Save Changes
+                    ${language == 'zh' ? '保存修改' : 'Save Changes'}
                 </button>
             </div>
         </form>
@@ -612,8 +611,8 @@
         function showZoneLoading(fileName) {
             zone.innerHTML = '<div class="py-6 text-center">'
                 + '<div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>'
-                + '<p class="text-sm font-semibold text-slate-700">Uploading <em>' + fileName + '</em>…</p>'
-                + '<p class="text-xs text-slate-400 mt-1">Please wait</p>'
+                + '<p class="text-sm font-semibold text-slate-700">${language == 'zh' ? '正在上传' : 'Uploading'} <em>' + fileName + '</em>…</p>'
+                + '<p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '请稍候' : 'Please wait'}</p>'
                 + '</div>';
         }
 
@@ -636,7 +635,7 @@
                     // Reset input so the same file can be re-selected if needed
                     input.value = '';
                     if (!data.ok) {
-                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        alert('${language == 'zh' ? '上传失败：' : 'Upload failed: '}' + (data.error || '${language == 'zh' ? '未知错误' : 'Unknown error'}'));
                         return;
                     }
                     // Show rename modal so user can give the resume a meaningful name
@@ -645,7 +644,7 @@
                 .catch(function (err) {
                     restoreZone();
                     input.value = '';
-                    alert('Upload failed (network error). Please try again.');
+                    alert('${language == 'zh' ? '上传失败（网络错误），请重试。' : 'Upload failed (network error). Please try again.'}');
                 });
         }
 
@@ -675,7 +674,7 @@
         _renameResumeId = resumeId;
         var nameInput   = document.getElementById('renameInput');
         var fileInfo    = document.getElementById('renameFileInfo');
-        if (nameInput)  { nameInput.value = 'Untitled'; }
+        if (nameInput)  { nameInput.value = '${language == 'zh' ? '未命名' : 'Untitled'}'; }
         if (fileInfo)   { fileInfo.textContent = originalFileName || ''; }
         document.getElementById('renameModal').classList.add('open');
         if (nameInput) { nameInput.focus(); nameInput.select(); }
@@ -689,7 +688,7 @@
 
     function saveRename() {
         if (!_renameResumeId) { closeRenameModal(); return; }
-        var title = (document.getElementById('renameInput').value || '').trim() || 'Untitled';
+        var title = (document.getElementById('renameInput').value || '').trim() || '${language == 'zh' ? '未命名' : 'Untitled'}';
         var form  = document.createElement('form');
         form.method = 'POST';
         form.action = '${pageContext.request.contextPath}/resumes';
@@ -718,7 +717,7 @@
         var lbl = document.getElementById('disclaimerResumeLabel');
         if (lbl) {
             if (resumeTitle) {
-                lbl.textContent = 'Analysing: ' + resumeTitle;
+                lbl.textContent = '${language == 'zh' ? '正在分析：' : 'Analysing: '}' + resumeTitle;
                 lbl.classList.remove('hidden');
             } else {
                 lbl.classList.add('hidden');
@@ -781,14 +780,14 @@
             .then(function(data) {
                 document.getElementById('aiLoadingState').style.display = 'none';
                 if (!data.ok) {
-                    showAIError(data.error || 'Unknown error from server.');
+                    showAIError(data.error || '${language == 'zh' ? '服务器返回未知错误。' : 'Unknown error from server.'}');
                     return;
                 }
                 if (data.model) {
-                    var modeStr = data.hasFile ? ' · multimodal analysis' : ' · text analysis';
+                    var modeStr = data.hasFile ? '${language == 'zh' ? ' · 多模态分析' : ' · multimodal analysis'}' : '${language == 'zh' ? ' · 文本分析' : ' · text analysis'}';
                     var resumeStr = data.resumeTitle ? ' · ' + data.resumeTitle : '';
                     document.getElementById('aiModelLabel').textContent =
-                        'Model: ' + data.model + modeStr + resumeStr;
+                        '${language == 'zh' ? '模型：' : 'Model: '}' + data.model + modeStr + resumeStr;
                 }
                 var content = document.getElementById('aiResultContent');
                 content.innerHTML = mdToHtml(data.analysis || '');
@@ -796,7 +795,7 @@
             })
             .catch(function(err) {
                 document.getElementById('aiLoadingState').style.display = 'none';
-                showAIError('Network or server error: ' + err.message);
+                showAIError('${language == 'zh' ? '网络或服务器错误：' : 'Network or server error: '}' + err.message);
             });
     }
 
@@ -820,7 +819,7 @@
 
     // ── Delete ─────────────────────────────────────────────────────────────────
     function deleteResume(id) {
-        if (!confirm('Delete this resume? This action cannot be undone.')) return;
+        if (!confirm('${language == 'zh' ? '确定删除这份简历吗？此操作无法撤销。' : 'Delete this resume? This action cannot be undone.'}')) return;
         var f = document.createElement('form');
         f.method = 'POST';
         f.action = '${pageContext.request.contextPath}/resumes';

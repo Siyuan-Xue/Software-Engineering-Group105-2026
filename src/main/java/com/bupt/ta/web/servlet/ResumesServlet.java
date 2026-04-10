@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.model.Job;
 import com.bupt.ta.model.Resume;
 import com.bupt.ta.model.User;
@@ -108,7 +109,7 @@ public class ResumesServlet extends HttpServlet {
                 case "save"   -> handleManualSave(req, user);
                 case "rename" -> handleRename(req, user);
                 case "delete" -> handleDelete(req, user);
-                default -> throw new IllegalArgumentException("Unknown action: " + action);
+                default -> throw new IllegalArgumentException(I18n.message(req, "msg.resumeUnknownActionPrefix") + action);
             }
             resp.sendRedirect(req.getContextPath() + "/resumes");
         } catch (Exception e) {
@@ -135,7 +136,7 @@ public class ResumesServlet extends HttpServlet {
             Part filePart = req.getPart("resumeFile");
             if (filePart == null || filePart.getSize() == 0) {
                 json.put("ok", false);
-                json.put("error", "No file selected.");
+                json.put("error", I18n.message(req, "msg.resumeNoFile"));
                 objectMapper.writeValue(resp.getWriter(), json);
                 return;
             }
@@ -146,7 +147,7 @@ public class ResumesServlet extends HttpServlet {
 
             if (!ext.matches("\\.(pdf|doc|docx|jpg|jpeg|png|txt)$")) {
                 json.put("ok", false);
-                json.put("error", "Unsupported file type. Allowed: PDF, DOC, DOCX, JPG, PNG, TXT.");
+                json.put("error", I18n.message(req, "msg.resumeUnsupportedType"));
                 objectMapper.writeValue(resp.getWriter(), json);
                 return;
             }
@@ -163,7 +164,7 @@ public class ResumesServlet extends HttpServlet {
 
             Resume resume = new Resume();
             resume.setUserId(user.getId());
-            resume.setTitle("Untitled");   // user renames in the modal after upload
+            resume.setTitle(I18n.message(req, "msg.resumeUntitled"));   // user renames in the modal after upload
             resume.setDepartment(user.getDepartment() != null ? user.getDepartment() : "");
             resume.setDegreeLevel(DegreeLevel.BACHELOR);
             resume.setGpa(new BigDecimal("0.00"));
@@ -180,7 +181,7 @@ public class ResumesServlet extends HttpServlet {
 
         } catch (Exception e) {
             json.put("ok", false);
-            json.put("error", "Upload failed: " + e.getMessage());
+            json.put("error", I18n.message(req, "msg.resumeUploadFailedPrefix") + e.getMessage());
         }
 
         objectMapper.writeValue(resp.getWriter(), json);
@@ -190,15 +191,15 @@ public class ResumesServlet extends HttpServlet {
     private void handleRename(HttpServletRequest req, User user) throws Exception {
         String resumeId = req.getParameter("resumeId");
         if (resumeId == null || resumeId.isBlank()) {
-            throw new IllegalArgumentException("resumeId is required.");
+            throw new IllegalArgumentException(I18n.message(req, "msg.resumeIdRequired"));
         }
         String title = req.getParameter("title");
-        if (title == null || title.isBlank()) title = "Untitled";
+        if (title == null || title.isBlank()) title = I18n.message(req, "msg.resumeUntitled");
 
         Resume resume = resumeService.listByUserId(user.getId()).stream()
                 .filter(r -> r.getId().toString().equals(resumeId.trim()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Resume not found."));
+                .orElseThrow(() -> new IllegalArgumentException(I18n.message(req, "msg.resumeNotFound")));
         resume.setTitle(title.trim());
         resumeService.save(resume);
     }
@@ -212,8 +213,7 @@ public class ResumesServlet extends HttpServlet {
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
             json.put("ok", false);
-            json.put("error", "Qwen API key is not configured on this server. " +
-                    "Please ask your administrator to add QWEN_API_KEY to Tomcat's setenv.bat.");
+            json.put("error", I18n.message(req, "msg.aiKeyMissing"));
             objectMapper.writeValue(resp.getWriter(), json);
             return;
         }

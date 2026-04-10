@@ -2,11 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vacancies - QM HIRE</title>
+    <title>${language == 'zh' ? '岗位列表 - QM HIRE' : 'Vacancies - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -88,7 +88,7 @@
         }
     </style>
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
 <div class="relative flex min-h-screen w-full flex-col">
     <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -101,27 +101,27 @@
                 <!-- Page Header -->
                 <div class="portal-page-header mb-2">
                     <div>
-                        <h2 class="portal-page-title">Available Vacancies</h2>
-                        <p class="portal-page-copy">Browse and apply for open Teaching Assistant positions across departments.</p>
+                        <h2 class="portal-page-title">${language == 'zh' ? '可申请岗位' : 'Available Vacancies'}</h2>
+                        <p class="portal-page-copy">${language == 'zh' ? '浏览并申请各院系开放的助教岗位。' : 'Browse and apply for open Teaching Assistant positions across departments.'}</p>
                     </div>
                     <div class="flex gap-3">
                         <c:if test="${userRole == 'MO'}">
-                            <button class="portal-btn portal-btn-primary" title="Post a new vacancy" onclick="openCreateVacancyModal()">
+                            <button class="portal-btn portal-btn-primary" title="${language == 'zh' ? '发布新岗位' : 'Post a new vacancy'}" onclick="openCreateVacancyModal()">
                                 <span class="material-symbols-outlined text-sm">add</span>
-                                Post Vacancy
+                                ${language == 'zh' ? '发布岗位' : 'Post Vacancy'}
                             </button>
                         </c:if>
                         <c:if test="${userRole == 'TA'}">
                             <button id="aiMatchBtn"
                                     onclick="openAIMatchDisclaimer()"
                                     class="portal-btn portal-btn-secondary"
-                                    title="Use AI to score how well your resume matches each vacancy">
+                                    title="${language == 'zh' ? '使用 AI 评估你的简历与各岗位的匹配度' : 'Use AI to score how well your resume matches each vacancy'}">
                                 <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                                AI Match
+                                ${language == 'zh' ? 'AI 匹配' : 'AI Match'}
                             </button>
-                            <button class="portal-btn portal-btn-secondary" title="Get notified when new vacancies are posted">
+                            <button class="portal-btn portal-btn-secondary" title="${language == 'zh' ? '有新岗位发布时接收提醒' : 'Get notified when new vacancies are posted'}">
                                 <span class="material-symbols-outlined text-sm">notifications_active</span>
-                                Job Alerts
+                                ${language == 'zh' ? '岗位提醒' : 'Job Alerts'}
                             </button>
                         </c:if>
                     </div>
@@ -146,7 +146,7 @@
                                     <span class="material-symbols-outlined text-slate-400">search</span>
                                     <input type="text" name="keyword" value="${fn:escapeXml(param.keyword)}"
                                            class="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm font-medium pl-3 outline-none"
-                                           placeholder="Search by course code, title, or keywords..." />
+                                           placeholder="${language == 'zh' ? '按课程代码、标题或关键词搜索...' : 'Search by course code, title, or keywords...'}" />
                                 </div>
                             </label>
                         </div>
@@ -154,16 +154,16 @@
                             <!-- Department -->
                             <div class="relative">
                                 <select name="department" class="h-11 rounded-lg bg-white border border-slate-200 pl-4 pr-8 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none">
-                                    <option value="">All Departments</option>
-                                    <option value="CS"   ${param.department == 'CS'   ? 'selected' : ''}>Computer Science</option>
-                                    <option value="MATH" ${param.department == 'MATH' ? 'selected' : ''}>Mathematics</option>
+                                    <option value="">${language == 'zh' ? '全部院系' : 'All Departments'}</option>
+                                    <option value="CS"   ${param.department == 'CS'   ? 'selected' : ''}>${language == 'zh' ? '计算机' : 'Computer Science'}</option>
+                                    <option value="MATH" ${param.department == 'MATH' ? 'selected' : ''}>${language == 'zh' ? '数学' : 'Mathematics'}</option>
                                 </select>
                                 <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
                             </div>
                             <!-- Term (dynamic) -->
                             <div class="relative">
                                 <select name="term" class="h-11 rounded-lg bg-white border border-slate-200 pl-4 pr-8 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none">
-                                    <option value="">All Terms</option>
+                                    <option value="">${language == 'zh' ? '全部学期' : 'All Terms'}</option>
                                     <c:forEach items="${termOptions}" var="termOpt">
                                         <option value="${fn:escapeXml(termOpt)}" ${param.term == termOpt ? 'selected' : ''}><c:out value="${termOpt}"/></option>
                                     </c:forEach>
@@ -172,12 +172,12 @@
                             </div>
                             <button type="submit" class="portal-btn portal-btn-primary">
                                 <span class="material-symbols-outlined text-sm">search</span>
-                                Search
+                                ${language == 'zh' ? '搜索' : 'Search'}
                             </button>
                             <c:if test="${not empty param.keyword or not empty param.department or not empty param.term}">
-                                <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary" title="Clear filters">
+                                <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary" title="${language == 'zh' ? '清除筛选' : 'Clear filters'}">
                                     <span class="material-symbols-outlined text-sm">close</span>
-                                    Clear
+                                    ${language == 'zh' ? '清除' : 'Clear'}
                                 </a>
                             </c:if>
                         </div>
@@ -193,10 +193,10 @@
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                             <jsp:param name="variant" value="error" />
                             <jsp:param name="icon" value="travel_explore" />
-                            <jsp:param name="title" value="Vacancies unavailable" />
-                            <jsp:param name="message" value="We couldn't load the vacancy list right now. Please refresh the page and try again." />
+                            <jsp:param name="title" value="${language == 'zh' ? '岗位列表暂不可用' : 'Vacancies unavailable'}" />
+                            <jsp:param name="message" value="${language == 'zh' ? '当前无法加载岗位列表，请刷新页面后重试。' : 'Unable to load the vacancy list right now. Please refresh the page and try again.'}" />
                             <jsp:param name="actionHref" value="${pageContext.request.contextPath}/vacancies" />
-                            <jsp:param name="actionLabel" value="Try Again" />
+                            <jsp:param name="actionLabel" value="${language == 'zh' ? '重试' : 'Try Again'}" />
                         </jsp:include>
                     </c:when>
                     <c:otherwise>
@@ -205,14 +205,14 @@
                         <c:if test="${not empty vacancies or totalCount > 0}">
                             <div class="flex items-center justify-between mb-1 px-1">
                                 <p class="text-sm text-slate-500">
-                                    Showing
+                                    ${language == 'zh' ? '显示' : 'Showing'}
                                     <span class="font-semibold text-slate-700">${(currentPage - 1) * 6 + 1}–${(currentPage - 1) * 6 + fn:length(vacancies)}</span>
-                                    of
+                                    ${language == 'zh' ? '，共' : 'of'}
                                     <span class="font-semibold text-slate-700">${totalCount}</span>
-                                    vacancies
+                                    ${language == 'zh' ? '个岗位' : 'vacancies'}
                                 </p>
                                 <c:if test="${totalPages > 1}">
-                                    <span class="text-xs text-slate-400">Page ${currentPage} / ${totalPages}</span>
+                                    <span class="text-xs text-slate-400">${language == 'zh' ? '第' : 'Page '}${currentPage} / ${totalPages}${language == 'zh' ? '页' : ''}</span>
                                 </c:if>
                             </div>
                         </c:if>
@@ -223,8 +223,8 @@
                                 <c:when test="${empty vacancies}">
                                     <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                         <jsp:param name="icon" value="search_off" />
-                                        <jsp:param name="title" value="No vacancies found" />
-                                        <jsp:param name="message" value="Try adjusting your search filters or check back later for new opportunities." />
+                                        <jsp:param name="title" value="${language == 'zh' ? '未找到岗位' : 'No vacancies found'}" />
+                                        <jsp:param name="message" value="${language == 'zh' ? '请尝试调整搜索条件，或稍后再查看新的岗位机会。' : 'Try adjusting your search filters or check back later for new opportunities.'}" />
                                     </jsp:include>
                                 </c:when>
                                 <c:otherwise>
@@ -252,7 +252,7 @@
                                                         </div>
                                                         <div class="flex items-center gap-1.5">
                                                             <span class="material-symbols-outlined text-[17px]">schedule</span>
-                                                            <c:out value="${vacancy.hoursPerWeek}"/> hrs/week
+                                                            <c:out value="${vacancy.hoursPerWeek}"/> ${language == 'zh' ? '小时/周' : 'hrs/week'}
                                                         </div>
                                                         <div class="flex items-center gap-1.5 font-semibold text-emerald-600">
                                                             <span class="material-symbols-outlined text-[17px]">payments</span>
@@ -260,7 +260,7 @@
                                                         </div>
                                                         <div class="flex items-center gap-1.5 font-medium text-amber-600">
                                                             <span class="material-symbols-outlined text-[17px]">event</span>
-                                                            Deadline: <c:out value="${vacancy.deadline}"/>
+                                                            ${language == 'zh' ? '截止：' : 'Deadline: '}<c:out value="${vacancy.deadline}"/>
                                                         </div>
                                                         <div class="flex items-center gap-1.5 text-slate-400">
                                                             <span class="material-symbols-outlined text-[17px]">person</span>
@@ -275,15 +275,15 @@
                                                         <c:when test="${userRole == 'MO'}">
                                                             <div class="flex flex-col items-center gap-1.5">
                                                                 <c:if test="${vacancy.isOwner}">
-                                                                    <button type="button" class="portal-btn portal-btn-secondary whitespace-nowrap" title="Edit this vacancy">
+                                                                    <button type="button" class="portal-btn portal-btn-secondary whitespace-nowrap" title="${language == 'zh' ? '编辑该岗位' : 'Edit this vacancy'}">
                                                                         <span class="material-symbols-outlined text-sm">edit</span>
-                                                                        Edit
+                                                                        ${language == 'zh' ? '编辑' : 'Edit'}
                                                                     </button>
                                                                 </c:if>
                                                             </div>
                                                             <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
                                                                class="portal-btn portal-btn-primary whitespace-nowrap">
-                                                                View Details
+                                                                ${language == 'zh' ? '查看详情' : 'View Details'}
                                                             </a>
                                                         </c:when>
                                                         <c:otherwise>
@@ -292,7 +292,7 @@
                                                                 <button type="button"
                                                                         class="fav-btn ${vacancy.saved ? 'saved' : ''}"
                                                                         data-vacancy-id="${vacancy.vacancyId}"
-                                                                        title="${vacancy.saved ? 'Remove from saved' : 'Save vacancy'}"
+                                                                        title="${vacancy.saved ? (language == 'zh' ? '取消收藏' : 'Remove from saved') : (language == 'zh' ? '收藏岗位' : 'Save vacancy')}"
                                                                         onclick="toggleFavorite(this)">
                                                                     <span class="material-symbols-outlined text-2xl">favorite</span>
                                                                 </button>
@@ -306,7 +306,7 @@
                                                             <!-- Apply button -->
                                                             <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
                                                                class="portal-btn portal-btn-primary whitespace-nowrap">
-                                                                View & Apply
+                                                                ${language == 'zh' ? '查看并申请' : 'View & Apply'}
                                                             </a>
                                                         </c:otherwise>
                                                     </c:choose>
@@ -388,31 +388,31 @@
                           style="font-variation-settings:'FILL' 1">policy</span>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-slate-900">AI Job Match</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Please read before continuing</p>
+                    <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 岗位匹配' : 'AI Job Match'}</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '继续前请先阅读' : 'Please read before continuing'}</p>
                 </div>
             </div>
 
             <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-sm text-amber-900 leading-relaxed">
-                <p class="font-bold mb-2">⚠️ Disclaimer — Read carefully:</p>
+                <p class="font-bold mb-2">${language == 'zh' ? '注意：请仔细阅读以下说明：' : 'Disclaimer — Read carefully:'}</p>
                 <ul class="list-disc pl-4 space-y-1.5 text-amber-800">
-                    <li>Match scores are generated by <strong>Qwen AI</strong> and are for <strong>reference only</strong>.</li>
-                    <li>Scores may be inaccurate and <strong>do not</strong> guarantee or predict selection outcomes.</li>
-                    <li>Your resume data is processed transiently and is not stored by the AI service.</li>
-                    <li>For more accurate scores, ensure your resume profile is <strong>complete and up to date</strong> on the Resumes page.</li>
+                    <li>${language == 'zh' ? '匹配分数由 ' : 'Match scores are generated by '}<strong>Qwen AI</strong>${language == 'zh' ? ' 生成，仅供参考。' : ' and are for reference only.'}</li>
+                    <li>${language == 'zh' ? '分数可能不准确，不能保证或预测录用结果。' : 'Scores may be inaccurate and do not guarantee or predict selection outcomes.'}</li>
+                    <li>${language == 'zh' ? '你的简历数据仅在分析过程中短暂处理，不会被 AI 服务长期存储。' : 'Your resume data is processed transiently and is not stored by the AI service.'}</li>
+                    <li>${language == 'zh' ? '为获得更准确的分数，请确保你在简历页面中的简历资料完整且最新。' : 'For more accurate scores, ensure your resume profile is complete and up to date on the Resumes page.'}</li>
                 </ul>
             </div>
             <p class="text-sm text-slate-500">
-                By clicking <strong>"I Agree &amp; Match"</strong> you confirm you have read the above.
+                ${language == 'zh' ? '点击“同意并匹配”即表示你已阅读并理解以上内容。' : 'By clicking "I Agree & Match" you confirm you have read the above.'}
             </p>
         </div>
         <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
             <button type="button" onclick="closeAIMatchDisclaimer()" class="portal-btn portal-btn-secondary">
-                Cancel
+                ${language == 'zh' ? '取消' : 'Cancel'}
             </button>
             <button type="button" onclick="agreeAndStartAIMatch()" class="portal-btn portal-btn-primary">
                 <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                I Agree &amp; Match
+                ${language == 'zh' ? '同意并匹配' : 'I Agree & Match'}
             </button>
         </div>
     </div>
@@ -433,23 +433,23 @@
                               style="font-variation-settings:'FILL' 1">add_circle</span>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-slate-900">Post a New Vacancy</h2>
-                        <p class="text-sm text-slate-500 mt-0.5">Fill in the details for the new teaching assistant position.</p>
+                        <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? '发布新岗位' : 'Post a New Vacancy'}</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '填写新的助教岗位信息。' : 'Fill in the details for the new teaching assistant position.'}</p>
                     </div>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Title <span class="text-red-500">*</span></label>
-                        <input type="text" name="title" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="e.g. Teaching Assistant for Intro to Java">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标题' : 'Title'} <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java 导论助教' : 'e.g. Teaching Assistant for Intro to Java'}">
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Course Code</label>
-                            <input type="text" name="courseCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="e.g. ECS414U">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '课程代码' : 'Course Code'}</label>
+                            <input type="text" name="courseCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：ECS414U' : 'e.g. ECS414U'}">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Term</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '学期' : 'Term'}</label>
                             <select name="term" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                                 <c:forEach items="${termOptions}" var="termOpt">
                                     <option value="${fn:escapeXml(termOpt)}"><c:out value="${termOpt}"/></option>
@@ -458,20 +458,20 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="Brief description of the role..."></textarea>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
+                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '简要描述岗位内容...' : 'Brief description of the role...'}"></textarea>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Hours/Week</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '每周工时' : 'Hours/Week'}</label>
                             <input type="number" name="hoursPerWeek" min="1" value="10" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Hourly Rate (£)</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '时薪 (£)' : 'Hourly Rate (£)'}</label>
                             <input type="number" step="0.01" name="hourlyRate" min="0" value="20.00" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Deadline</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '截止时间' : 'Deadline'}</label>
                             <input type="datetime-local" name="deadline" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                         </div>
                     </div>
@@ -479,11 +479,11 @@
             </div>
             <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                 <button type="button" onclick="closeCreateVacancyModal()" class="portal-btn portal-btn-secondary">
-                    Cancel
+                    ${language == 'zh' ? '取消' : 'Cancel'}
                 </button>
                 <button type="submit" class="portal-btn portal-btn-primary">
                     <span class="material-symbols-outlined text-sm">save</span>
-                    Create Vacancy
+                    ${language == 'zh' ? '创建岗位' : 'Create Vacancy'}
                 </button>
             </div>
         </form>
@@ -523,12 +523,12 @@
             const fd = new FormData();
             fd.append('vacancyId', vacancyId);
             const res = await fetch(CTX + '/favorites', { method: 'POST', body: fd });
-            if (res.status === 401) { alert('Please log in to save vacancies.'); return; }
-            if (!res.ok) throw new Error('Server error');
+            if (res.status === 401) { alert('${language == 'zh' ? '请先登录后再收藏岗位。' : 'Please log in to save vacancies.'}'); return; }
+            if (!res.ok) throw new Error('${language == 'zh' ? '服务器错误' : 'Server error'}');
             const data = await res.json();
-            if (data.saved) { btn.classList.add('saved');    btn.title = 'Remove from saved'; }
-            else             { btn.classList.remove('saved'); btn.title = 'Save vacancy'; }
-        } catch (e) { console.error('Favorite toggle failed:', e); }
+            if (data.saved) { btn.classList.add('saved');    btn.title = '${language == 'zh' ? '取消收藏' : 'Remove from saved'}'; }
+            else             { btn.classList.remove('saved'); btn.title = '${language == 'zh' ? '收藏岗位' : 'Save vacancy'}'; }
+        } catch (e) { console.error('${language == 'zh' ? '收藏切换失败：' : 'Favorite toggle failed:'}', e); }
         finally { btn.disabled = false; }
     }
 
@@ -553,13 +553,13 @@
             const id = slot.dataset.jobId;
             if (id && cache[id] !== undefined) renderBadge(slot, cache[id]);
         });
-        showBanner('AI match scores loaded from cache. Click AI Match to refresh.', false);
+        showBanner('${language == 'zh' ? '已从缓存加载 AI 匹配分数。点击 AI Match 可刷新。' : 'AI match scores loaded from cache. Click AI Match to refresh.'}', false);
     })();
 
     async function startAIMatch() {
         // Collect all job IDs visible on this page
         const slots = Array.from(document.querySelectorAll('.ai-score-slot'));
-        if (!slots.length) { showBanner('No vacancies on this page to score.', false); return; }
+        if (!slots.length) { showBanner('${language == 'zh' ? '当前页面没有可评分的岗位。' : 'No vacancies on this page to score.'}', false); return; }
 
         const ids = slots.map(s => s.dataset.jobId).filter(Boolean);
 
@@ -567,7 +567,7 @@
         slots.forEach(slot => {
             slot.innerHTML = '<div class="ai-badge-skeleton"></div>';
         });
-        showBanner('AI is scoring your resume against these vacancies…', true);
+        showBanner('${language == 'zh' ? 'AI 正在评估你的简历与这些岗位的匹配度…' : 'AI is scoring your resume against these vacancies…'}', true);
 
         const btn = document.getElementById('aiMatchBtn');
         if (btn) btn.disabled = true;
@@ -587,13 +587,13 @@
 
             if (res.status === 401) {
                 clearSkeletons(slots);
-                showBanner('Please log in to use AI Match.', false);
+                showBanner('${language == 'zh' ? '请先登录后再使用 AI 匹配。' : 'Please log in to use AI Match.'}', false);
                 return;
             }
 
             if (!data.ok) {
                 clearSkeletons(slots);
-                showBanner('AI Match failed: ' + (data.error || 'Unknown error'), false);
+                showBanner('${language == 'zh' ? 'AI 匹配失败：' : 'AI Match failed: '}' + (data.error || '${language == 'zh' ? '未知错误' : 'Unknown error'}'), false);
                 return;
             }
 
@@ -609,13 +609,13 @@
 
             const hasResume = data.hasResume;
             const tip = hasResume
-                ? 'AI match scores shown below each vacancy. Scores reflect your best-matched resume for each role.'
-                : 'No resume found — upload one on the Resumes page for personalised scores.';
+                ? '${language == 'zh' ? 'AI 匹配分数已显示在各岗位下方，分数反映你最匹配该岗位的简历。' : 'AI match scores shown below each vacancy. Scores reflect your best-matched resume for each role.'}'
+                : '${language == 'zh' ? '未找到简历，请先在简历页面上传以获取个性化评分。' : 'No resume found — upload one on the Resumes page for personalised scores.'}';
             showBanner(tip, false);
 
         } catch (e) {
             clearSkeletons(slots);
-            showBanner('Network error: ' + e.message, false);
+            showBanner('${language == 'zh' ? '网络错误：' : 'Network error: '}' + e.message, false);
         } finally {
             if (btn) btn.disabled = false;
         }
@@ -623,7 +623,7 @@
 
     function renderBadge(slot, score) {
         if (score < 0) {
-            slot.innerHTML = '<span class="ai-badge score-unknown">?</span>';
+            slot.innerHTML = '<span class="ai-badge score-unknown">${language == 'zh' ? '未知' : '?'}</span>';
             return;
         }
         let cls, label, icon;
@@ -633,7 +633,7 @@
         else                  { cls = 'score-low';       label = score + '%'; icon = '↓'; }
 
         slot.innerHTML =
-            '<span class="ai-badge ' + cls + '" title="AI match score: ' + score + '/100">' +
+            '<span class="ai-badge ' + cls + '" title="${language == 'zh' ? 'AI 匹配得分' : 'AI match score'}: ' + score + '/100">' +
             icon + ' ' + label +
             '</span>';
     }

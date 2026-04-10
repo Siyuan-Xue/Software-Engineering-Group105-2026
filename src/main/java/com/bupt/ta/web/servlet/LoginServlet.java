@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.model.User;
 import com.bupt.ta.service.AuthService;
 
@@ -42,9 +43,10 @@ public class LoginServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String email = req.getParameter("email");
         String password = req.getParameter("password");
+        String language = resolveLanguage(req);
 
         if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) {
-            req.setAttribute("errorMessage", "Email and password are required.");
+            req.setAttribute("errorMessage", I18n.message(language, "auth.emailPasswordRequired"));
             req.getRequestDispatcher("/login.jsp").forward(req, resp);
             return;
         }
@@ -57,12 +59,29 @@ public class LoginServlet extends HttpServlet {
             User realUser = userOpt.get();
             HttpSession session = req.getSession(true);
             session.setAttribute("currentUser", realUser);
+            session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, I18n.normalizeLanguage(realUser.getPreferredLanguage()));
+            session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(realUser.getPreferredAppearance()));
             // 重定向到后台控制台
             resp.sendRedirect(req.getContextPath() + "/dashboard");
         } else {
             // 登录失败
-            req.setAttribute("errorMessage", "Invalid email or password. Please try again.");
+            req.setAttribute("errorMessage", I18n.message(language, "auth.invalidCredentials"));
             req.getRequestDispatcher("/login.jsp").forward(req, resp);
         }
+    }
+
+    private String resolveLanguage(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session != null) {
+            Object language = session.getAttribute(I18n.SESSION_LANGUAGE_ATTR);
+            if (language instanceof String value) {
+                return I18n.normalizeLanguage(value);
+            }
+        }
+        Object language = req.getAttribute("language");
+        if (language instanceof String value) {
+            return I18n.normalizeLanguage(value);
+        }
+        return I18n.DEFAULT_LANGUAGE;
     }
 }
