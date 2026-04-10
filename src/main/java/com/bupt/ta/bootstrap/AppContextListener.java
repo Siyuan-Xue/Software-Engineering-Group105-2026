@@ -16,26 +16,35 @@ public class AppContextListener implements ServletContextListener {
     private static final String DEFAULT_USER_PASSWORD = "password";
     private static final String DEFAULT_USER_FULL_NAME = "Test User";
 
+    private static final String MO_USER_EMAIL = "mo@example.com";
+    private static final String ADMIN_USER_EMAIL = "admin@example.com";
+
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         TaDatabase database = TaDatabase.open(DatabaseConfig.defaultConfig());
         ensureDefaultUser(database, sce);
+        ensureUser(database, sce, MO_USER_EMAIL, "Module Organiser", UserRole.MO);
+        ensureUser(database, sce, ADMIN_USER_EMAIL, "System Admin", UserRole.ADMIN);
         DatabaseProvider.bind(sce.getServletContext(), database);
     }
 
     private void ensureDefaultUser(TaDatabase database, ServletContextEvent sce) {
-        if (database.users().findByEmail(DEFAULT_USER_EMAIL).isPresent()) {
+        ensureUser(database, sce, DEFAULT_USER_EMAIL, DEFAULT_USER_FULL_NAME, UserRole.TA);
+    }
+
+    private void ensureUser(TaDatabase database, ServletContextEvent sce, String email, String fullName, UserRole role) {
+        if (database.users().findByEmail(email).isPresent()) {
             return;
         }
 
-        User defaultUser = new User();
-        defaultUser.setEmail(DEFAULT_USER_EMAIL);
-        defaultUser.setPasswordHash(PasswordUtil.hashPassword(DEFAULT_USER_PASSWORD));
-        defaultUser.setRole(UserRole.TA);
-        defaultUser.setFullName(DEFAULT_USER_FULL_NAME);
-        defaultUser.setActive(true);
-        database.users().save(defaultUser);
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(PasswordUtil.hashPassword(DEFAULT_USER_PASSWORD));
+        user.setRole(role);
+        user.setFullName(fullName);
+        user.setActive(true);
+        database.users().save(user);
 
-        sce.getServletContext().log("Default user created: " + DEFAULT_USER_EMAIL);
+        sce.getServletContext().log(role.name() + " user created: " + email);
     }
 }

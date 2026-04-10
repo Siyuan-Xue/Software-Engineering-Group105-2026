@@ -105,17 +105,25 @@
                         <p class="portal-page-copy">Browse and apply for open Teaching Assistant positions across departments.</p>
                     </div>
                     <div class="flex gap-3">
-                        <button id="aiMatchBtn"
-                                onclick="openAIMatchDisclaimer()"
-                                class="portal-btn portal-btn-secondary"
-                                title="Use AI to score how well your resume matches each vacancy">
-                            <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                            AI Match
-                        </button>
-                        <button class="portal-btn portal-btn-secondary" title="Get notified when new vacancies are posted">
-                            <span class="material-symbols-outlined text-sm">notifications_active</span>
-                            Job Alerts
-                        </button>
+                        <c:if test="${userRole == 'MO'}">
+                            <button class="portal-btn portal-btn-primary" title="Post a new vacancy">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                                Post Vacancy
+                            </button>
+                        </c:if>
+                        <c:if test="${userRole == 'TA'}">
+                            <button id="aiMatchBtn"
+                                    onclick="openAIMatchDisclaimer()"
+                                    class="portal-btn portal-btn-secondary"
+                                    title="Use AI to score how well your resume matches each vacancy">
+                                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                                AI Match
+                            </button>
+                            <button class="portal-btn portal-btn-secondary" title="Get notified when new vacancies are posted">
+                                <span class="material-symbols-outlined text-sm">notifications_active</span>
+                                Job Alerts
+                            </button>
+                        </c:if>
                     </div>
                 </div>
 
@@ -263,27 +271,45 @@
 
                                                 <!-- Right actions -->
                                                 <div class="flex flex-row md:flex-col justify-between items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                                    <!-- Favourite button + AI score badge -->
-                                                    <div class="flex flex-col items-center gap-1.5">
-                                                        <button type="button"
-                                                                class="fav-btn ${vacancy.saved ? 'saved' : ''}"
-                                                                data-vacancy-id="${vacancy.vacancyId}"
-                                                                title="${vacancy.saved ? 'Remove from saved' : 'Save vacancy'}"
-                                                                onclick="toggleFavorite(this)">
-                                                            <span class="material-symbols-outlined text-2xl">favorite</span>
-                                                        </button>
-                                                        <!-- AI match score badge (populated by JS) -->
-                                                        <div id="score-${vacancy.vacancyId}"
-                                                             class="ai-score-slot"
-                                                             data-job-id="${vacancy.vacancyId}">
-                                                            <%-- hidden initially; filled by startAIMatch() --%>
-                                                        </div>
-                                                    </div>
-                                                    <!-- Apply button -->
-                                                    <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
-                                                       class="portal-btn portal-btn-primary whitespace-nowrap">
-                                                        View & Apply
-                                                    </a>
+                                                    <c:choose>
+                                                        <c:when test="${userRole == 'MO'}">
+                                                            <div class="flex flex-col items-center gap-1.5">
+                                                                <c:if test="${vacancy.isOwner}">
+                                                                    <button type="button" class="portal-btn portal-btn-secondary whitespace-nowrap" title="Edit this vacancy">
+                                                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                                                        Edit
+                                                                    </button>
+                                                                </c:if>
+                                                            </div>
+                                                            <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
+                                                               class="portal-btn portal-btn-primary whitespace-nowrap">
+                                                                View Details
+                                                            </a>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <!-- Favourite button + AI score badge (TA only) -->
+                                                            <div class="flex flex-col items-center gap-1.5">
+                                                                <button type="button"
+                                                                        class="fav-btn ${vacancy.saved ? 'saved' : ''}"
+                                                                        data-vacancy-id="${vacancy.vacancyId}"
+                                                                        title="${vacancy.saved ? 'Remove from saved' : 'Save vacancy'}"
+                                                                        onclick="toggleFavorite(this)">
+                                                                    <span class="material-symbols-outlined text-2xl">favorite</span>
+                                                                </button>
+                                                                <!-- AI match score badge (populated by JS) -->
+                                                                <div id="score-${vacancy.vacancyId}"
+                                                                     class="ai-score-slot"
+                                                                     data-job-id="${vacancy.vacancyId}">
+                                                                    <%-- hidden initially; filled by startAIMatch() --%>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Apply button -->
+                                                            <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
+                                                               class="portal-btn portal-btn-primary whitespace-nowrap">
+                                                                View & Apply
+                                                            </a>
+                                                        </c:otherwise>
+                                                    </c:choose>
                                                 </div>
                                             </div>
                                         </div>

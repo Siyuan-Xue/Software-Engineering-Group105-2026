@@ -77,9 +77,21 @@
                                             <h2 class="text-3xl font-black text-slate-900 tracking-tight"><c:out value="${vacancy.title}"/></h2>
                                             <p class="text-lg text-slate-500 mt-1"><c:out value="${vacancy.department}"/></p>
                                         </div>
-                                        <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
-                                            Apply Now
-                                        </button>
+                                        <c:choose>
+                                            <c:when test="${userRole == 'MO'}">
+                                                <c:if test="${vacancy.isOwner}">
+                                                    <button class="portal-btn portal-btn-secondary">
+                                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                                        Edit Vacancy
+                                                    </button>
+                                                </c:if>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
+                                                    Apply Now
+                                                </button>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
 
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">

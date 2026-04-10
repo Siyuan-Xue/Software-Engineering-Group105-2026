@@ -87,6 +87,7 @@ public class AuthFilter implements Filter {
 
         req.setAttribute("userName", fullName);
         req.setAttribute("userProfile", userProfile);
+        req.setAttribute("userRole", currentUser.getRole().name());
 
         // 4.2 动态计算并注入 sidebar 需要的 profileCompletionPercentage
         int completion = calculateProfileCompletion(currentUser);

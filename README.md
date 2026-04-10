@@ -117,9 +117,10 @@ brew services start tomcat
 运行项目：
 启动 Tomcat。
 访问 `http://localhost:8080/`（或你配置的端口），你将看到 QM HIRE 的落地页。
-测试账号：系统首次启动时会自动生成一个测试账号：
-邮箱：[test@example.com](mailto:test@example.com)
-密码：password
+测试账号：系统首次启动时会自动生成三个测试账号，密码均为 `password`：
+- TA 账号：[test@example.com](mailto:test@example.com)
+- MO 账号：[mo@example.com](mailto:mo@example.com)
+- Admin 账号：[admin@example.com](mailto:admin@example.com)
 
 运行期数据目录：
 
@@ -230,7 +231,10 @@ cmd /c startup.bat
 
 - 应用入口：<http://localhost:8080/ta105/>（HTTP 端口以 `conf\server.xml` 中 `Connector` 为准，默认 **8080**。）
 - 访问 <http://localhost:8080/> 可打开 Tomcat 根应用 / 欢迎页。
-- 测试账号（首次启动自动生成）：邮箱 `test@example.com`，密码 `password`。
+- 测试账号（首次启动自动生成），密码均为 `password`：
+  - TA 账号：`test@example.com`
+  - MO 账号：`mo@example.com`
+  - Admin 账号：`admin@example.com`
 
 运行期数据目录、`-Dta105.data.dir` 与 macOS 一节相同。
 

@@ -16,18 +16,35 @@
             <span class="material-symbols-outlined text-[20px]">dashboard</span>
             <span class="text-sm font-semibold">Dashboard</span>
         </a>
-        <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${applicationsActive ? 'shadow-sm' : ''}">
-            <span class="material-symbols-outlined text-[20px]">work_history</span>
-            <span class="text-sm font-semibold">Applications</span>
-        </a>
-        <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${resumesActive ? 'shadow-sm' : ''}">
-            <span class="material-symbols-outlined text-[20px]">article</span>
-            <span class="text-sm font-semibold">Resumes</span>
-        </a>
-        <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${vacanciesActive ? 'shadow-sm' : ''}">
-            <span class="material-symbols-outlined text-[20px]">search</span>
-            <span class="text-sm font-semibold">Vacancies</span>
-        </a>
+        
+        <c:if test="${userRole == 'TA' or userRole == 'MO'}">
+            <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${applicationsActive ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">work_history</span>
+                <span class="text-sm font-semibold">Applications</span>
+            </a>
+        </c:if>
+
+        <c:if test="${userRole == 'TA'}">
+            <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${resumesActive ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">article</span>
+                <span class="text-sm font-semibold">Resumes</span>
+            </a>
+        </c:if>
+
+        <c:if test="${userRole == 'TA' or userRole == 'MO'}">
+            <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${vacanciesActive ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">search</span>
+                <span class="text-sm font-semibold">Vacancies</span>
+            </a>
+        </c:if>
+
+        <c:if test="${userRole == 'ADMIN'}">
+            <a href="${contextPath}/workloads" style="${fn:contains(currentPath, 'workloads') ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${fn:contains(currentPath, 'workloads') ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">group</span>
+                <span class="text-sm font-semibold">Workloads</span>
+            </a>
+        </c:if>
+
         <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${messagesActive ? 'shadow-sm' : ''}">
             <span class="material-symbols-outlined text-[20px]">chat</span>
             <span class="text-sm font-semibold">Messages</span>

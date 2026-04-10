@@ -1,8 +1,6 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.json.JsonUserRepository;
 import com.bupt.ta.service.AuthService;
 
 import jakarta.servlet.ServletException;
@@ -22,13 +20,9 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        // 1. 初始化数据库配置 (注意：这里需要根据你实际的 DatabaseConfig 构造方式来写)
-        // 如果你的 DatabaseConfig 有无参构造，直接 new；如果需要传路径，就传具体的路径
-        DatabaseConfig config = DatabaseConfig.defaultConfig(); 
-        
-        // 2. 组装 Repository 和 Service
-        JsonUserRepository userRepository = new JsonUserRepository(config);
-        this.authService = new AuthService(userRepository);
+        // Use the database initialized by AppContextListener
+        com.bupt.ta.persistence.TaDatabase database = com.bupt.ta.persistence.DatabaseProvider.get(getServletContext());
+        this.authService = new AuthService(database.users());
     }
 
     @Override

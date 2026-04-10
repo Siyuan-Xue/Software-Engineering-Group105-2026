@@ -122,30 +122,86 @@
 
                             <!-- Stats Grid -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="portal-stat-card flex flex-col gap-2">
-                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
-                                        <span class="material-symbols-outlined">description</span>
-                                    </div>
-                                    <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Saved Resumes</p>
-                                    <p class="text-primary text-4xl font-black"><c:out value="${resumeCount}"/></p>
-                                    <p class="text-xs text-slate-500">Keep at least one up-to-date resume ready for quick applications.</p>
-                                </div>
-                                <div class="portal-stat-card flex flex-col gap-2">
-                                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
-                                        <span class="material-symbols-outlined">send</span>
-                                    </div>
-                                    <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Submitted</p>
-                                    <p class="text-primary text-4xl font-black"><c:out value="${submittedCount}"/></p>
-                                    <p class="text-xs text-slate-500">Every submitted application will feed the status and activity modules below.</p>
-                                </div>
-                                <div class="portal-stat-card flex flex-col gap-2">
-                                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
-                                        <span class="material-symbols-outlined">pending_actions</span>
-                                    </div>
-                                    <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Under Review</p>
-                                    <p class="text-primary text-4xl font-black"><c:out value="${underReviewCount}"/></p>
-                                    <p class="text-xs text-slate-500">Stay responsive so you don't miss follow-up requests from recruiters.</p>
-                                </div>
+                                <c:choose>
+                                    <c:when test="${userRole == 'MO'}">
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                                                <span class="material-symbols-outlined">post_add</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Posted Vacancies</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${postedVacanciesCount != null ? postedVacanciesCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Vacancies you have published.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
+                                                <span class="material-symbols-outlined">inbox</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Received Applications</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${receivedApplicationsCount != null ? receivedApplicationsCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Total applications received for your vacancies.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
+                                                <span class="material-symbols-outlined">pending_actions</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Pending Review</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${underReviewCount != null ? underReviewCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Applications waiting for your review.</p>
+                                        </div>
+                                    </c:when>
+                                    <c:when test="${userRole == 'ADMIN'}">
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                                                <span class="material-symbols-outlined">group</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Total TAs</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${totalTAsCount != null ? totalTAsCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Registered Teaching Assistants.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
+                                                <span class="material-symbols-outlined">work</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Active Vacancies</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${activeVacanciesCount != null ? activeVacanciesCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Currently open positions.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
+                                                <span class="material-symbols-outlined">assignment_turned_in</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Assigned TAs</p>
+                                            <p class="text-primary text-4xl font-black">0</p>
+                                            <p class="text-xs text-slate-500">TAs currently working.</p>
+                                        </div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                                                <span class="material-symbols-outlined">description</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Saved Resumes</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${savedResumesCount != null ? savedResumesCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Keep at least one up-to-date resume ready for quick applications.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2">
+                                                <span class="material-symbols-outlined">send</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Submitted</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${submittedApplicationsCount != null ? submittedApplicationsCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Every submitted application will feed the status and activity modules below.</p>
+                                        </div>
+                                        <div class="portal-stat-card flex flex-col gap-2">
+                                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
+                                                <span class="material-symbols-outlined">pending_actions</span>
+                                            </div>
+                                            <p class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Under Review</p>
+                                            <p class="text-primary text-4xl font-black"><c:out value="${underReviewApplicationsCount != null ? underReviewApplicationsCount : 0}"/></p>
+                                            <p class="text-xs text-slate-500">Stay responsive so you don't miss follow-up requests from recruiters.</p>
+                                        </div>
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
 
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
