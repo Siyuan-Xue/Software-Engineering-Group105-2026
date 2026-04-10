@@ -40,7 +40,7 @@
                     <c:set var="displayName" value="${empty userName ? 'User' : userName}" />
                     <c:set var="resumeCount" value="${empty savedResumesCount ? 0 : savedResumesCount}" />
                     <c:set var="submittedCount" value="${empty submittedApplicationsCount ? 0 : submittedApplicationsCount}" />
-                    <c:set var="underReviewCount" value="${empty underReviewApplicationsCount ? 0 : underReviewApplicationsCount}" />
+                    <c:set var="underReviewCount" value="${not empty requestScope.underReviewCount ? requestScope.underReviewCount : (empty underReviewApplicationsCount ? 0 : underReviewApplicationsCount)}" />
                     <c:set var="profileCompletion" value="${empty profileCompletionPercentage ? 0 : profileCompletionPercentage}" />
                     <c:set var="activitiesEmpty" value="${dashboardState == 'emptyActivities' or empty recentActivities}" />
                     <c:set var="deadlinesEmpty" value="${dashboardState == 'emptyDeadlines' or empty upcomingDeadlines}" />

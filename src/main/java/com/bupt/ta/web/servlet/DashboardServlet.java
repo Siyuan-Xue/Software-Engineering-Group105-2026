@@ -87,35 +87,34 @@ public class DashboardServlet extends HttpServlet {
         
         String userRole = (String) req.getAttribute("userRole");
 
-        if (userRole == "TA"){
+        if ("TA".equals(userRole)) {
             List<Resume> myResumes = this.resumeRepository.listByUserId(currentUser.getId());
 
             List<Application> all_applications = listMyApplicationsByResumes(myResumes);
             int count = 0;
-            for(Application application: all_applications){
-                if(application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING){
+            for (Application application : all_applications) {
+                if (application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING) {
                     ++count;
                 }
             }
             req.setAttribute("savedResumesCount", myResumes.size());
             req.setAttribute("submittedApplicationsCount", all_applications.size());
             req.setAttribute("underReviewApplicationsCount", count);
-        }
-        else if (userRole == "MO"){
+        } else if ("MO".equals(userRole)) {
             List<Job> myJobs = this.jobRepository.listByPoster(currentUser.getId());
 
             List<Application> all_applications = listMyApplicationsByJobs(myJobs);
             int count = 0;
-            for(Application application: all_applications){
-                if(application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING){
+            for (Application application : all_applications) {
+                if (application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING) {
                     ++count;
                 }
             }
 
             req.setAttribute("postedVacanciesCount", myJobs.size());
-            req.setAttribute("receivedApplicationsCount", count);
-        }
-        else if (userRole == "ADMIN"){
+            req.setAttribute("receivedApplicationsCount", all_applications.size());
+            req.setAttribute("underReviewCount", count);
+        } else if ("ADMIN".equals(userRole)) {
             List<User> users = this.userRepository.listAll();
 
             int totalTAsCount = 0;
