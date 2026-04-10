@@ -5,7 +5,11 @@ import com.bupt.ta.model.Activity;
 import com.bupt.ta.model.Application;
 import com.bupt.ta.model.Deadline;
 import com.bupt.ta.model.User;
+import com.bupt.ta.model.Job;
+import com.bupt.ta.model.Resume;
 import com.bupt.ta.model.enums.ApplicationStatus;
+import com.bupt.ta.model.enums.JobStatus;
+import com.bupt.ta.model.enums.UserRole;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -25,12 +29,53 @@ import java.util.List;
 public class DashboardServlet extends HttpServlet {
     private ResumeRepository resumeRepository;
     private ApplicationRepository applicationRepository;
+    private JobRepository jobRepository;
+    private UserRepository userRepository;
+
 
     @Override
     public void init() throws ServletException {
         DatabaseConfig config = DatabaseConfig.defaultConfig();
         this.resumeRepository = new JsonResumeRepository(config);
         this.applicationRepository = new JsonApplicationRepository(config);
+        this.jobRepository = new JsonJobRepository(config);
+        this.userRepository = new JsonUserRepository(config);
+    }
+
+    private List<Application> listMyApplicationsByResumes(List<Resume> myResumes){
+        List<Application> all_Applications = this.applicationRepository.listAll();
+        List<Application> ret = new ArrayList<>();
+        for(Application application: all_Applications){
+            boolean isMyApplication = false;
+            for(Resume resume: myResumes){
+                if(application.getResumeId().equals(resume.getId())){
+                    isMyApplication = true;
+                    break;
+                }
+            }
+            if (isMyApplication) {
+                ret.add(application);
+            }
+        }
+        return ret;
+    }
+
+    private List<Application> listMyApplicationsByJobs(List<Job> myJobs){
+        List<Application> all_Applications = this.applicationRepository.listAll();
+        List<Application> ret = new ArrayList<>();
+        for(Application application: all_Applications){
+            boolean isMyApplication = false;
+            for(Job job: myJobs){
+                if(application.getJobId().equals(job.getId())){
+                    isMyApplication = true;
+                    break;
+                }
+            }
+            if (isMyApplication) {
+                ret.add(application);
+            }
+        }
+        return ret;
     }
 
     @Override
@@ -39,23 +84,60 @@ public class DashboardServlet extends HttpServlet {
         // 1. 获取当前登录用户对象 (AuthFilter 确保了 session 和 currentUser 必然存在)
         HttpSession session = req.getSession(false);
         User currentUser = (User) session.getAttribute("currentUser");
+        
+        String userRole = (String) req.getAttribute("userRole");
 
-        // 2. 设置用户基础信息
-        //req.setAttribute("userName", currentUser.getFullName());
+        if (userRole == "TA"){
+            List<Resume> myResumes = this.resumeRepository.listByUserId(currentUser.getId());
 
-        // 3. 准备模拟统计数据 (后续会替换为真实的 Service 调用，例如 applicationService.count(...))
-        List<Application> all_applications = this.applicationRepository.listAll();
-
-        int count = 0;
-        for(Application application: all_applications){
-            if(application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING){
-                ++count;
+            List<Application> all_applications = listMyApplicationsByResumes(myResumes);
+            int count = 0;
+            for(Application application: all_applications){
+                if(application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING){
+                    ++count;
+                }
             }
+            req.setAttribute("savedResumesCount", myResumes.size());
+            req.setAttribute("submittedApplicationsCount", all_applications.size());
+            req.setAttribute("underReviewApplicationsCount", count);
+        }
+        else if (userRole == "MO"){
+            List<Job> myJobs = this.jobRepository.listByPoster(currentUser.getId());
+
+            List<Application> all_applications = listMyApplicationsByJobs(myJobs);
+            int count = 0;
+            for(Application application: all_applications){
+                if(application.getStatus() == ApplicationStatus.PENDING || application.getStatus() == ApplicationStatus.REVIEWING){
+                    ++count;
+                }
+            }
+
+            req.setAttribute("postedVacanciesCount", myJobs.size());
+            req.setAttribute("receivedApplicationsCount", count);
+        }
+        else if (userRole == "ADMIN"){
+            List<User> users = this.userRepository.listAll();
+
+            int totalTAsCount = 0;
+            for(User user:users){
+                if(user.getRole() == UserRole.TA){
+                    ++totalTAsCount;
+                }
+            }
+
+            List<Job> allJobs = jobRepository.listAll();
+
+            int activeVacanciesCount = 0;
+            for(Job job: allJobs){
+                if(job.getStatus() == JobStatus.OPEN){
+                    ++activeVacanciesCount;
+                }
+            }
+
+            req.setAttribute("totalTAsCount", totalTAsCount);
+            req.setAttribute("activeVacanciesCount", activeVacanciesCount);
         }
 
-        req.setAttribute("savedResumesCount", this.resumeRepository.listAll().size());
-        req.setAttribute("submittedApplicationsCount", all_applications.size());
-        req.setAttribute("underReviewApplicationsCount", count);
 
         // 4. 准备近期活动列表 (Mock Data)
         List<Activity> activities = new ArrayList<>();
