@@ -62,6 +62,7 @@
                 <c:set var="deptLabel"   value="${empty userProfile.department or userProfile.department == 'None' ? 'Department not set' : userProfile.department}" />
                 <c:set var="state"       value="${empty pageState ? 'normal' : pageState}" />
                 <c:set var="notifOn"     value="${userProfile.notificationsEnabled == true}" />
+                <c:set var="departmentValue" value="${userProfile.department == 'None' ? '' : userProfile.department}" />
 
                 <%-- ── Page header ──────────────────────────────────────────────── --%>
                 <div class="portal-page-header mb-6">
@@ -71,32 +72,22 @@
                     </div>
                 </div>
 
-                <%-- ── Toast banners ─────────────────────────────────────────────── --%>
-                <c:if test="${state == 'updateSuccess'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-emerald-600">check_circle</span>
-                        <p class="text-sm font-semibold text-emerald-800"><c:out value="${successMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'updateFailure'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-red-500">error</span>
-                        <p class="text-sm font-semibold text-red-700"><c:out value="${errorMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'pwdSuccess'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-emerald-600">lock_open</span>
-                        <p class="text-sm font-semibold text-emerald-800"><c:out value="${successMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'pwdFailure'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-red-500">lock</span>
-                        <p class="text-sm font-semibold text-red-700"><c:out value="${errorMessage}"/></p>
-                    </div>
-                </c:if>
+                <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
+                    <jsp:param name="containerClass" value="mb-6" />
+                </jsp:include>
 
+                <c:choose>
+                    <c:when test="${state == 'loadError'}">
+                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                            <jsp:param name="variant" value="error" />
+                            <jsp:param name="icon" value="settings_alert" />
+                            <jsp:param name="title" value="Settings unavailable" />
+                            <jsp:param name="message" value="We couldn't load your account settings right now. Please refresh the page or try again in a moment." />
+                            <jsp:param name="actionHref" value="${pageContext.request.contextPath}/settings" />
+                            <jsp:param name="actionLabel" value="Try Again" />
+                        </jsp:include>
+                    </c:when>
+                    <c:otherwise>
                 <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.3fr_0.7fr]">
 
                     <%-- ════════════ LEFT COLUMN ════════════ --%>
@@ -192,7 +183,7 @@
                                     <div>
                                         <label class="settings-label">Department</label>
                                         <input type="text" name="department"
-                                               value="${userProfile.department == 'None' ? '' : userProfile.department}"
+                                               value="<c:out value='${departmentValue}'/>"
                                                class="settings-input" placeholder="e.g. Computer Science" />
                                     </div>
                                     <div>
@@ -340,37 +331,41 @@
                         </p>
                     </div>
                 </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </main>
     </div>
 </div>
 
 <script>
-    // Client-side confirm-password match check
-    const newPwd     = document.getElementById('newPwd');
+    const newPwd = document.getElementById('newPwd');
     const confirmPwd = document.getElementById('confirmPwd');
-    const mismatch   = document.getElementById('pwdMismatch');
-    const submitBtn  = document.getElementById('pwdSubmitBtn');
+    const mismatch = document.getElementById('pwdMismatch');
+    const submitBtn = document.getElementById('pwdSubmitBtn');
+    const passwordForm = document.getElementById('pwdForm');
 
-    function checkMatch() {
-        if (confirmPwd.value && newPwd.value !== confirmPwd.value) {
-            mismatch.classList.remove('hidden');
-            submitBtn.disabled = true;
-        } else {
-            mismatch.classList.add('hidden');
-            submitBtn.disabled = false;
+    if (newPwd && confirmPwd && mismatch && submitBtn && passwordForm) {
+        function checkMatch() {
+            if (confirmPwd.value && newPwd.value !== confirmPwd.value) {
+                mismatch.classList.remove('hidden');
+                submitBtn.disabled = true;
+            } else {
+                mismatch.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
         }
+
+        newPwd.addEventListener('input', checkMatch);
+        confirmPwd.addEventListener('input', checkMatch);
+
+        passwordForm.addEventListener('submit', function(e) {
+            if (newPwd.value !== confirmPwd.value) {
+                e.preventDefault();
+                mismatch.classList.remove('hidden');
+            }
+        });
     }
-
-    newPwd.addEventListener('input', checkMatch);
-    confirmPwd.addEventListener('input', checkMatch);
-
-    document.getElementById('pwdForm').addEventListener('submit', function(e) {
-        if (newPwd.value !== confirmPwd.value) {
-            e.preventDefault();
-            mismatch.classList.remove('hidden');
-        }
-    });
 </script>
 </body>
 </html>

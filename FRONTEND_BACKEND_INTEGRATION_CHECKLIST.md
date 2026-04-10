@@ -245,21 +245,24 @@ Sidebar 会读取：
 - `normal`
 - `updateSuccess`
 - `updateFailure`
+- `pwdSuccess`
+- `pwdFailure`
 - `loadError`
 
-### 6.4 当前页面范围
+### 6.4 当前实现与待确认范围
 
-这一轮 Settings 页面已经明确为只读展示页：
+当前代码实现已经包含：
 
-- 当前没有编辑表单
-- 当前没有 profile update action
-- 页面只负责展示资料和反馈状态
+- 资料编辑表单
+- 改密码表单
+- `POST /settings` 下的 `updateProfile` / `changePassword`
+- 对应的 `updateSuccess` / `updateFailure` / `pwdSuccess` / `pwdFailure` 状态
 
 联调建议：
 
-- 后端这轮只需要先把 `GET /settings` 渲染稳定
-- `updateSuccess` / `updateFailure` 可以先作为 redirect 后的展示状态保留
-- 真正的设置更新接口可以放到下一轮
+- 这部分需要前后端和页面 owner 先确认：这一轮是否接受保留“可编辑资料 + 改密码”
+- 如果接受，就继续按当前实现联调，并把合同补齐到和现状一致
+- 如果不接受，就要把页面和 servlet 一起回退到只读 baseline，而不是只改文档
 
 ## 7. 额外合同缺口
 
@@ -303,7 +306,7 @@ Sidebar 会读取：
 - [ ] 所有已登录页面统一提供 header 所需用户展示字段
 - [ ] 所有已登录页面统一提供 `profileCompletionPercentage`，避免 sidebar 退回 `0%`
 - [ ] Messages 最终字段命名不再使用旧 fallback 字段名
-- [ ] Settings 本轮范围已确认为只读展示，不临时新增未定义更新接口
+- [ ] Settings 本轮范围已确认：保留当前可编辑实现，或明确回退到只读 baseline
 - [ ] Applications 列表已按合同提供 `department`（可空）、`vacancyId`（可空）及 `pageState`（建议）
 - [ ] 未登录访问 portal 页面时的 redirect 行为已实现
 
