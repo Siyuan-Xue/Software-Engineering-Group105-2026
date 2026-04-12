@@ -1,3 +1,7 @@
+<%--
+  单个 Vacancy 详情页：必须由 query 参数 vacancyId 定位资源；详情对象来自 request attribute `vacancy`。
+  无 vacancy 时展示 notFound 状态页而非抛错，便于用户理解与返回列表（也是 TA/MO 差异化最明显的页面之一）。
+--%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
@@ -56,6 +60,7 @@
                                 <jsp:param name="actionLabel" value="${language == 'zh' ? '返回岗位列表' : 'Back to Vacancies'}" />
                             </jsp:include>
                         </c:when>
+                        <%-- vacancy 为空：无效或已删除的 vacancyId；与 loadError 区分（后者为加载过程异常）。 --%>
                         <c:when test="${empty vacancy}">
                             <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                                 <jsp:param name="variant" value="notFound" />
@@ -77,6 +82,7 @@
                                             <h2 class="text-3xl font-black text-slate-900 tracking-tight"><c:out value="${vacancy.title}"/></h2>
                                             <p class="text-lg text-slate-500 mt-1"><c:out value="${vacancy.department}"/></p>
                                         </div>
+                                        <%-- MO 仅当 isOwner 显示编辑；TA 等在 else 显示申请（与角色权限展示约定一致）。 --%>
                                         <c:choose>
                                             <c:when test="${userRole == 'MO'}">
                                                 <c:if test="${vacancy.isOwner}">
@@ -115,6 +121,7 @@
                                 </div>
 
                                 <div class="p-8 space-y-8">
+                                    <%-- description：单段文本；与契约 Vacancy.description 对应。 --%>
                                     <section>
                                         <h3 class="text-xl font-bold text-slate-900 mb-4">${language == 'zh' ? '岗位描述' : 'Description'}</h3>
                                         <p class="text-slate-600 leading-relaxed">
@@ -122,6 +129,7 @@
                                         </p>
                                     </section>
 
+                                    <%-- requirements：后端通常为 List<String>，逐条列出；与契约中 Vacancy 结构一致。 --%>
                                     <section>
                                         <h3 class="text-xl font-bold text-slate-900 mb-4">${language == 'zh' ? '岗位要求' : 'Requirements'}</h3>
                                         <ul class="space-y-3">
@@ -133,9 +141,11 @@
                                             </c:forEach>
                                         </ul>
                                     </section>
+                                    <%-- responsibilities 在契约中同为 List<String>；若产品需要展示，可在此复用与 requirements 相同的列表模式。 --%>
                                 </div>
                             </div>
 
+                            <%-- 申请弹窗依赖后端注入的 resumeList（契约）：无简历时 inline_state 提示 noResumeAvailable 语义，并禁用提交。 --%>
                             <!-- Apply Modal -->
                             <div id="applyModal" style="display:none" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                                 <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl" style="max-height:90vh;overflow-y:auto">
@@ -203,6 +213,7 @@
                             </div>
 
                             <script>
+                                <%-- 与列表页传入的 vacancyId 一致，供 AI 排序等请求定位岗位 --%>
                                 var JOB_ID = '${vacancy.vacancyId}';
                                 var CTX    = '${pageContext.request.contextPath}';
 

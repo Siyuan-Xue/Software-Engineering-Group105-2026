@@ -21,7 +21,7 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        // Use the database initialized by AppContextListener
+        // 与 AppContextListener 写入的同一套用户数据源绑定，避免登录校验与启动时种子账号脱节
         com.bupt.ta.persistence.TaDatabase database = com.bupt.ta.persistence.DatabaseProvider.get(getServletContext());
         this.authService = new AuthService(database.users());
     }
@@ -58,6 +58,7 @@ public class LoginServlet extends HttpServlet {
             // 登录成功！
             User realUser = userOpt.get();
             HttpSession session = req.getSession(true);
+            // session 身份供 AuthFilter 注入 request、后续页面与 Servlet 共用
             session.setAttribute("currentUser", realUser);
             session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, I18n.normalizeLanguage(realUser.getPreferredLanguage()));
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(realUser.getPreferredAppearance()));

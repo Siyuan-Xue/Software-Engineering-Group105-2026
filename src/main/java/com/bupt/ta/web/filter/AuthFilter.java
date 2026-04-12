@@ -19,6 +19,9 @@ import java.util.Map;
  * 1. 拦截所有请求，校验用户是否登录。
  * 2. 如果未登录，重定向到 /login。
  * 3. 如果已登录，在 request 中注入全局共享数据（Header、Sidebar 需要的字段）。
+ * <p>
+ * 已登录时注入 {@code currentUser} 会话数据对应的展示字段，并设置 {@code userRole}，
+ * 供 JSP 做导航与按钮的条件渲染；真正的授权仍应在各 Servlet 中校验，Filter 只解决「全站一致带上身份上下文」。
  */
 @WebFilter("/*") // 拦截所有请求，我们在代码里手动放行静态资源和登录页
 public class AuthFilter implements Filter {
@@ -100,6 +103,7 @@ public class AuthFilter implements Filter {
 
         req.setAttribute("userName", fullName);
         req.setAttribute("userProfile", userProfile);
+        // 与前端契约中的 userRole 对齐，JSP 用 EL 比较 TA/MO/ADMIN 即可分支 UI
         req.setAttribute("userRole", currentUser.getRole().name());
 
         // 4.2 动态计算并注入 sidebar 需要的 profileCompletionPercentage

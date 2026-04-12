@@ -10,6 +10,9 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 
+/**
+ * 启动时写入默认测试账号（TA / MO / ADMIN），供 demo 与集成联调；数据源与 {@link com.bupt.ta.web.servlet.LoginServlet} 共用，避免“能登录的用户不存在于库中”。
+ */
 @WebListener
 public class AppContextListener implements ServletContextListener {
     private static final String DEFAULT_USER_EMAIL = "test@example.com";

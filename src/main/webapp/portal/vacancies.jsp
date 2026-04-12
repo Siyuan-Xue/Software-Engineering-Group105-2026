@@ -1,3 +1,8 @@
+<%--
+  Vacancies 主列表页（前后端联调核心页之一）：列表数据由后端放入 request attribute `vacancies`，
+  本页用 JSTL/EL 做动态渲染，便于与contract中的 keyword / department / term / userRole 字段对齐。
+  角色相关按钮仅在视图层按 userRole 条件展示；最终能否发布/申请仍以后端校验为准。
+--%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -105,6 +110,7 @@
                         <p class="portal-page-copy">${language == 'zh' ? '浏览并申请各院系开放的助教岗位。' : 'Browse and apply for open Teaching Assistant positions across departments.'}</p>
                     </div>
                     <div class="flex gap-3">
+                        <%-- MO：发布入口；TA：列表增强能力。仅展示层区分角色，权限以服务端为准。 --%>
                         <c:if test="${userRole == 'MO'}">
                             <button class="portal-btn portal-btn-primary" title="${language == 'zh' ? '发布新岗位' : 'Post a new vacancy'}" onclick="openCreateVacancyModal()">
                                 <span class="material-symbols-outlined text-sm">add</span>
@@ -136,6 +142,7 @@
                     </button>
                 </div>
 
+                <%-- GET 筛选：keyword / department / term 与接口契约一致，便于 Servlet 解析并与列表查询复用同一套参数名。 --%>
                 <!-- Search and Filters -->
                 <form id="filterForm" action="${pageContext.request.contextPath}/vacancies" method="GET" class="portal-filter-bar">
                     <input type="hidden" name="page" value="1">
@@ -188,6 +195,7 @@
                     <jsp:param name="containerClass" value="mb-6" />
                 </jsp:include>
 
+                <%-- loadError：后端异常；否则根据 vacancies 是否为空展示列表或空状态（空列表可能表示无数据或无匹配筛选，具体文案由产品与后端约定）。 --%>
                 <c:choose>
                     <c:when test="${pageState == 'loadError'}">
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
@@ -217,6 +225,7 @@
                             </div>
                         </c:if>
 
+                        <%-- 列表数据来自 request attribute `vacancies`（契约字段 vacancyId 用于跳转详情）。 --%>
                         <!-- Vacancy List -->
                         <div class="space-y-4" id="vacancyList">
                             <c:choose>
@@ -269,6 +278,7 @@
                                                     </div>
                                                 </div>
 
+                                                <%-- MO：仅 owner 显示编辑；详情链与 TA 一致使用 vacancyId。非 MO 走 TA 分支（收藏/申请入口）。 --%>
                                                 <!-- Right actions -->
                                                 <div class="flex flex-row md:flex-col justify-between items-end gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                                                     <c:choose>

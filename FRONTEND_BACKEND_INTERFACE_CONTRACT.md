@@ -2,6 +2,13 @@
 
 This document outlines the standardized interface contract between the frontend JSP pages and the backend Java Servlets.
 
+**设计意图（为何需要这份契约）**  
+前后端并行开发时，若各自约定 route、HTTP method、request parameter / attribute 名称，联调阶段会出现「Servlet 读了 A 字段、JSP 写了 B 字段」这类隐性 bug。统一命名与入口，可以让接口讨论集中在契约文档上，而不是散落在聊天记录里。  
+`errorMessage` / `successMessage` 作为唯一反馈通道，是为了让 JSP 里已有的一套 flash / 提示组件可复用：后端无论 forward 还是 redirect，只要写入这两个 attribute（或按约定带 query），前端展示路径一致，避免每种操作各发明一种提示字段。  
+注入 `userRole` 是为了在 **view 层** 做轻量条件渲染（导航、按钮显隐）：真正的权限校验仍必须在 Servlet / Service；JSP 只根据角色决定「给用户看什么」，不替代鉴权。  
+区分 **TA / MO / ADMIN** 是因为业务职责不同：助教侧重申请与简历，模块负责人侧重发布与维护岗位，管理员侧重全局工作量视图；三类角色在同一套页面骨架上走不同入口，契约里写清楚可减少误用接口。  
+每条能力拆成 **Route URL**（浏览器与表单 action）、**JSP View File**（实际渲染文件）、**Servlet**（处理类）三列，是因为一次用户操作往往「URL → Filter → Servlet → forward 到 JSP」链路较长；拆开写便于查映射、也方便新人对照 `web.xml` / `@WebServlet`。**Supported Page States** 列出页面在数据为空、加载失败、资源不存在等下的 UI 分支名，便于与 JSP 里 `pageState` / 条件标签对齐，减少「状态名口头约定」的歧义。
+
 ## Global Rules
 
 ### A. Global Naming Rules
@@ -21,7 +28,7 @@ This document outlines the standardized interface contract between the frontend 
 - `successMessage`: Standard attribute for success feedback
 
 ### B. Global Message Passing Rules
-- 所有页面统一使用 `errorMessage` 和 `successMessage` 作为 Request Attributes 传递反馈信息。
+- 所有页面统一使用 `errorMessage` 和 `successMessage` 作为 Request Attributes 传递反馈信息（与 § 开头说明一致：统一通道便于 JSP 组件化展示与联调排查）。
 - `errorMessage` (String): 用于显示错误警告（例如：“Invalid credentials”、“Failed to load data”）。
 - `successMessage` (String): 用于显示成功提示（例如：“Application submitted successfully”、“Profile updated”）。
 - JSP 页面中已内置对应的 UI 组件，当这些 attribute 不为空时会自动显示。
@@ -35,7 +42,7 @@ This document outlines the standardized interface contract between the frontend 
 - 所有需要登录的页面，后端都应在 Request Attributes 中注入 `userRole` (String)，以便前端根据角色渲染不同的导航栏或操作按钮。
 
 ### D. Global Page State Rules
-- 状态命名统一风格：使用 camelCase 命名状态（如 `normal`, `empty`, `notFound`）。
+- 状态命名统一风格：使用 camelCase 命名状态（如 `normal`, `empty`, `notFound`）。在契约中列出 **Supported Page States** 是为了让后端设置 `pageState`（或等价 attribute）时与 JSP 分支一一对应，避免「口头约定」导致空状态/错误态串线。
 - JSP 页面如何基于状态和 attribute 展示不同内容：JSP 页面主要通过 JSTL 的 `<c:choose>`, `<c:when>`, `<c:if>` 标签，根据 Request Attributes 的值（如列表是否为空、对象是否为 null）来决定渲染哪个状态的 UI。
 
 ---

@@ -1,3 +1,7 @@
+<%--
+  Login 页：认证入口（仅负责收集凭据并 POST 到 LoginServlet）。
+  刻意保持轻逻辑：不在此根据角色分支 UI，角色由登录成功后的 session / AuthFilter 注入的 userRole 决定，避免前后端各写一套角色规则。
+--%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
@@ -44,10 +48,12 @@
         <h2 class="text-3xl font-black mb-2">${i18n['login.welcomeBack']}</h2>
         <p class="text-slate-500 mb-8">${i18n['login.copy']}</p>
 
+        <%-- 与接口契约一致：Servlet 设置 errorMessage / successMessage，本页统一走 flash 组件展示（含 Filter 重定向带 query 再转 attribute 的场景）。 --%>
         <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
             <jsp:param name="containerClass" value="mb-6" />
         </jsp:include>
 
+        <%-- 仅提交 email + password：与 Login Action 契约对齐；角色不在表单中传递，由后端认证后写入 session。 --%>
         <form action="${pageContext.request.contextPath}/login" method="POST" class="space-y-5">
             <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${i18n['login.emailLabel']}</label>
