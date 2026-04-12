@@ -284,7 +284,7 @@
                                                     <c:choose>
                                                         <c:when test="${userRole == 'MO'}">
                                                             <div class="flex flex-col items-center gap-1.5">
-                                                                <c:if test="${vacancy.isOwner}">
+                                                                <c:if test="${vacancy.owner}">
                                                                     <button type="button" class="portal-btn portal-btn-secondary whitespace-nowrap" title="${language == 'zh' ? '编辑该岗位' : 'Edit this vacancy'}">
                                                                         <span class="material-symbols-outlined text-sm">edit</span>
                                                                         ${language == 'zh' ? '编辑' : 'Edit'}

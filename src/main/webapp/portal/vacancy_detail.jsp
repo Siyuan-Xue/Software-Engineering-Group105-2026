@@ -85,7 +85,7 @@
                                         <%-- MO 仅当 isOwner 显示编辑；TA 等在 else 显示申请（与角色权限展示约定一致）。 --%>
                                         <c:choose>
                                             <c:when test="${userRole == 'MO'}">
-                                                <c:if test="${vacancy.isOwner}">
+                                                <c:if test="${vacancy.owner}">
                                                     <button class="portal-btn portal-btn-secondary">
                                                         <span class="material-symbols-outlined text-sm">edit</span>
                                                         ${language == 'zh' ? '编辑岗位' : 'Edit Vacancy'}
