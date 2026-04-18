@@ -1,10 +1,10 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.JobService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -42,7 +42,7 @@ public class VacanciesServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
-        this.jobService = new JobService(database.jobs());
+        this.jobService = new JobService(database);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class VacanciesServlet extends HttpServlet {
             int page          = parsePage(req.getParameter("page"));
 
             Map<UUID, User> userById = database.users()
-                    .listAll()
+                    .findAll()
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 

@@ -1,12 +1,14 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.JobType;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.Skill;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.service.ResumeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -38,7 +40,7 @@ public class VacancyDetailServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
-        this.resumeService = new ResumeService(database.resumes());
+        this.resumeService = new ResumeService(database);
     }
 
     @Override
@@ -52,7 +54,7 @@ public class VacancyDetailServlet extends HttpServlet {
             }
 
             Map<UUID, User> userById = database.users()
-                    .listAll()
+                    .findAll()
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 
@@ -115,6 +117,12 @@ public class VacancyDetailServlet extends HttpServlet {
     }
 
     private List<String> buildRequirements(Job job) {
+        List<String> structuredRequirements = database.jobRequirements().listByJobId(job.getId()).stream()
+                .map(requirement -> toRequirementLabel(requirement))
+                .toList();
+        if (!structuredRequirements.isEmpty()) {
+            return structuredRequirements;
+        }
         if (job.getType() == JobType.INVIGILATION) {
             return List.of(
                     "Strong attention to detail during invigilation sessions.",
@@ -134,6 +142,15 @@ public class VacancyDetailServlet extends HttpServlet {
                 "Professional communication and teamwork skills.",
                 "Ability to meet deadlines and follow role responsibilities."
         );
+    }
+
+    private String toRequirementLabel(JobRequirement requirement) {
+        String skillName = database.skills().findById(requirement.getSkillId())
+                .map(Skill::getName)
+                .orElse("Unknown skill");
+        String prefix = requirement.isRequired() ? "Required" : "Preferred";
+        String level = requirement.getMinProficiency() == null ? "" : " (" + requirement.getMinProficiency() + "+)";
+        return prefix + ": " + skillName + level;
     }
 
     private UUID parseVacancyId(String rawVacancyId) {

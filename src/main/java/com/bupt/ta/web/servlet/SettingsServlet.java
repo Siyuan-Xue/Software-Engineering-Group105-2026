@@ -1,9 +1,9 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

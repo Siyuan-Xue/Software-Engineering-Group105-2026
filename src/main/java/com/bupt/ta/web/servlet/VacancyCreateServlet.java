@@ -1,12 +1,12 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.JobStatus;
-import com.bupt.ta.model.enums.JobType;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.service.JobService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -33,7 +33,7 @@ public class VacancyCreateServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
-        this.jobService = new JobService(database.jobs());
+        this.jobService = new JobService(database);
     }
 
     @Override

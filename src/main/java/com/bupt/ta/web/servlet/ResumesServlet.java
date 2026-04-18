@@ -1,12 +1,14 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.config.AppConfig;
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.DegreeLevel;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,22 +47,23 @@ import java.util.stream.Collectors;
 public class ResumesServlet extends HttpServlet {
 
     private static final String VIEW_PATH   = "/portal/resumes.jsp";
-    private static final String UPLOAD_DIR  = "data/resumes/uploads";
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault());
 
     private TaDatabase    database;
     private ResumeService resumeService;
     private ObjectMapper  objectMapper;
+    private Path uploadDir;
 
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
-        this.resumeService = new ResumeService(database.resumes());
-        this.objectMapper  = new ObjectMapper();
+        this.resumeService = new ResumeService(database);
+        this.objectMapper  = AppConfig.createObjectMapper();
+        this.uploadDir = AppConfig.resolveDataDirectory().resolve("resumes").resolve("uploads");
 
         try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
+            Files.createDirectories(uploadDir);
         } catch (IOException e) {
             throw new ServletException("Cannot create upload directory", e);
         }
@@ -153,8 +156,6 @@ public class ResumesServlet extends HttpServlet {
             }
 
             // Use absolute path so Files.copy() (not Part.write) goes to the right place
-            Path uploadDir  = Paths.get(UPLOAD_DIR).toAbsolutePath();
-            Files.createDirectories(uploadDir);
             String savedName  = user.getId() + "_" + UUID.randomUUID() + ext;
             Path   uploadPath = uploadDir.resolve(savedName);
 
@@ -246,7 +247,9 @@ public class ResumesServlet extends HttpServlet {
             final Resume chosen = target;
 
             // Gather open vacancies for context
-            List<Job> openJobs = database.jobs().listOpen(Instant.now());
+            JobQuery query = new JobQuery();
+            query.setNow(Instant.now());
+            List<Job> openJobs = database.jobs().listOpen(query);
             List<String> vacancyTitles = openJobs.stream()
                     .map(Job::getTitle)
                     .collect(Collectors.toList());

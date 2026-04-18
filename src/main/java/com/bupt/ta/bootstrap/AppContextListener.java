@@ -1,10 +1,10 @@
 package com.bupt.ta.bootstrap;
 
-import com.bupt.ta.config.DatabaseConfig;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.UserRole;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.config.AppConfig;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -24,11 +24,11 @@ public class AppContextListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        TaDatabase database = TaDatabase.open(DatabaseConfig.defaultConfig());
+        DatabaseProvider.init(sce.getServletContext(), AppConfig.resolveDataDirectory());
+        TaDatabase database = DatabaseProvider.get(sce.getServletContext());
         ensureDefaultUser(database, sce);
         ensureUser(database, sce, MO_USER_EMAIL, "Module Organiser", UserRole.MO);
         ensureUser(database, sce, ADMIN_USER_EMAIL, "System Admin", UserRole.ADMIN);
-        DatabaseProvider.bind(sce.getServletContext(), database);
     }
 
     private void ensureDefaultUser(TaDatabase database, ServletContextEvent sce) {

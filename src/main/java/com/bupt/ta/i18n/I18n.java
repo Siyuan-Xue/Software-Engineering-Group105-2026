@@ -1,6 +1,6 @@
 package com.bupt.ta.i18n;
 
-import com.bupt.ta.model.User;
+import com.bupt.ta.domain.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 

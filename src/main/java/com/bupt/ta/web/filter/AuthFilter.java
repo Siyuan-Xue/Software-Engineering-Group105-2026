@@ -1,7 +1,7 @@
 package com.bupt.ta.web.filter;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.User;
+import com.bupt.ta.domain.entity.User;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,7 +53,6 @@ public class AuthFilter implements Filter {
 
         // 1. 定义白名单（放行登录页、注销动作、以及所有静态资源）
         if (route.equals("/") ||
-            route.equals("/db-demo") ||
             route.equals("/login") || 
             route.equals("/logout") || 
             route.startsWith("/css/") || 

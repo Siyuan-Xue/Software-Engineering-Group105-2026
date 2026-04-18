@@ -1,7 +1,9 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
-import com.bupt.ta.model.User;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.AuthService;
 
 import jakarta.servlet.ServletException;
@@ -21,9 +23,8 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        // 与 AppContextListener 写入的同一套用户数据源绑定，避免登录校验与启动时种子账号脱节
-        com.bupt.ta.persistence.TaDatabase database = com.bupt.ta.persistence.DatabaseProvider.get(getServletContext());
-        this.authService = new AuthService(database.users());
+        TaDatabase database = DatabaseProvider.get(getServletContext());
+        this.authService = new AuthService(database);
     }
 
     @Override
