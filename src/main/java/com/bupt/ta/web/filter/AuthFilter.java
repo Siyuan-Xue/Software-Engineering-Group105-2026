@@ -50,15 +50,20 @@ public class AuthFilter implements Filter {
         String path = req.getRequestURI();
         String contextPath = req.getContextPath();
         String route = path.substring(contextPath.length());
+        boolean dbDemoRoute = route.equals("/db-demo");
 
         // 1. 定义白名单（放行登录页、注销动作、以及所有静态资源）
         if (route.equals("/") ||
             route.equals("/login") || 
-            route.equals("/logout") || 
+            route.equals("/logout") ||
+            dbDemoRoute ||
             route.startsWith("/css/") || 
             route.startsWith("/js/") || 
             route.startsWith("/images/") ||
             route.startsWith("/assets/")) {
+            if (dbDemoRoute && currentUser == null) {
+                applyGuestProfile(req, language, appearance);
+            }
             chain.doFilter(request, response);
             return;
         }
@@ -155,5 +160,26 @@ public class AuthFilter implements Filter {
             }
         }
         return I18n.DEFAULT_APPEARANCE;
+    }
+
+    private void applyGuestProfile(HttpServletRequest req, String language, String appearance) {
+        Map<String, Object> userProfile = new HashMap<>();
+        userProfile.put("firstName", "DB");
+        userProfile.put("lastName", "Demo");
+        userProfile.put("fullName", "DB Demo");
+        userProfile.put("email", "demo@local");
+        userProfile.put("phone", "");
+        userProfile.put("department", "System Demo");
+        userProfile.put("studentId", "");
+        userProfile.put("bio", "Public demo mode");
+        userProfile.put("notificationsEnabled", false);
+        userProfile.put("preferredLanguage", language);
+        userProfile.put("preferredAppearance", appearance);
+
+        req.setAttribute("userName", "DB Demo");
+        req.setAttribute("userProfile", userProfile);
+        req.setAttribute("userRole", "DEMO");
+        req.setAttribute("profileCompletionPercentage", 100);
+        req.setAttribute("userRoleLabel", "Public Demo");
     }
 }
