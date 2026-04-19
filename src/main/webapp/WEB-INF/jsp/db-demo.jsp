@@ -50,18 +50,21 @@
                     <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                         <div class="max-w-3xl">
                             <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Unified Database Demo</p>
-                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900">/db-demo now uses the current JSON database stack</h1>
+                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900">/db-demo now covers all 11 JSON tables</h1>
                             <p class="mt-3 text-sm leading-6 text-slate-600">
-                                This page exercises the full frontend → servlet → service → <code>TaDatabase</code> → JSON file flow.
-                                It never reads or writes <code>data/*.json</code> directly. All operations go through
+                                This page exercises the full frontend -> servlet -> service -> <code>TaDatabase</code> -> JSON file flow.
+                                It never reads or writes <code>data/*.json</code> directly. Every write goes through
                                 <code>DatabaseProvider.get(servletContext)</code> and the current repository/service APIs.
+                            </p>
+                            <p class="mt-3 text-sm leading-6 text-slate-600">
+                                Fresh data directories are auto-seeded with three default users and baseline skills, so this page is usable on the very first run in any new location.
                             </p>
                         </div>
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-inner lg:w-[25rem]">
                             <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Data Directory</p>
                             <p class="mt-2 break-all font-medium text-slate-800"><c:out value="${dataDirectory}"/></p>
                             <p class="mt-3 text-xs leading-5 text-slate-500">
-                                Suggested flow: create a TA user, create a resume, create an open job, submit an application, then move it through review and offer acceptance.
+                                Suggested flow: confirm the seeded users and skills, create a resume, attach resume skills, create a job, attach job requirements, submit an application, then run match analysis and move the application through offer acceptance.
                             </p>
                         </div>
                     </div>
@@ -95,7 +98,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <h2 class="text-xl font-black text-slate-900">User Form</h2>
-                                <p class="mt-1 text-sm text-slate-500">Create or update a user through <code>db.users().save(...)</code>.</p>
+                                <p class="mt-1 text-sm text-slate-500">Create or update a user through <code>db.users().save(...)</code>. The first run already seeds TA, MO, and Admin defaults.</p>
                             </div>
                             <c:if test="${editEntity == 'user'}">
                                 <a href="${pageContext.request.contextPath}/db-demo#users-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
@@ -186,6 +189,81 @@
                                         </td>
                                         <td class="px-6 py-4 text-right">
                                             <a href="${pageContext.request.contextPath}/db-demo?editEntity=user&editId=${user.id}#users-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="skills-section" class="demo-split">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black text-slate-900">Skill Form</h2>
+                                <p class="mt-1 text-sm text-slate-500">Create or update canonical skills through <code>db.skills().save(...)</code>. Fresh databases already start with a baseline skill set.</p>
+                            </div>
+                            <c:if test="${editEntity == 'skill'}">
+                                <a href="${pageContext.request.contextPath}/db-demo#skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                            </c:if>
+                        </div>
+
+                        <form action="${pageContext.request.contextPath}/db-demo#skills-section" method="post" class="mt-6 space-y-4">
+                            <input type="hidden" name="operation" value="skill-save" />
+                            <input type="hidden" name="section" value="skills-section" />
+                            <input type="hidden" name="id" value="${editingSkill.id}" />
+
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Skill Name</label>
+                                <input type="text" name="name" value="${editingSkill.name}" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30"/>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Category</label>
+                                <select name="category" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select category</option>
+                                    <c:forEach items="${skillCategories}" var="category">
+                                        <option value="${category}" ${editEntity == 'skill' && editingSkill.category == category ? 'selected' : ''}><c:out value="${category}"/></option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Description</label>
+                                <textarea name="description" rows="4" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30"><c:out value="${editingSkill.description}"/></textarea>
+                            </div>
+                            <button type="submit" class="w-full rounded-xl bg-primary px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+                                ${editEntity == 'skill' ? 'Update Skill' : 'Create Skill'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <h2 class="text-lg font-black text-slate-900">Skills</h2>
+                            <span class="text-sm text-slate-500"><c:out value="${skills.size()}"/> records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-[0.2em] text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-3">Skill</th>
+                                    <th class="px-6 py-3">Category</th>
+                                    <th class="px-6 py-3">Description</th>
+                                    <th class="px-6 py-3 text-right">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                <c:forEach items="${skills}" var="skill">
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <p class="font-semibold text-slate-900"><c:out value="${skill.name}"/></p>
+                                            <p class="mt-1 text-[11px] text-slate-400"><c:out value="${skill.id}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-600"><c:out value="${skill.category}"/></td>
+                                        <td class="px-6 py-4 text-xs text-slate-500"><c:out value="${empty skill.description ? '—' : skill.description}"/></td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=skill&editId=${skill.id}#skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -294,6 +372,104 @@
                                         <td class="px-6 py-4 text-xs text-slate-500"><c:out value="${resume.availabilitySlots.size()}"/> slot(s)</td>
                                         <td class="px-6 py-4 text-right">
                                             <a href="${pageContext.request.contextPath}/db-demo?editEntity=resume&editId=${resume.id}#resumes-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="resume-skills-section" class="demo-split">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black text-slate-900">Resume Skill Form</h2>
+                                <p class="mt-1 text-sm text-slate-500">Bind a skill to a resume through <code>db.resumeSkills().save(...)</code>. This is the left half of the match model.</p>
+                            </div>
+                            <c:if test="${editEntity == 'resumeSkill'}">
+                                <a href="${pageContext.request.contextPath}/db-demo#resume-skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                            </c:if>
+                        </div>
+
+                        <form action="${pageContext.request.contextPath}/db-demo#resume-skills-section" method="post" class="mt-6 space-y-4">
+                            <input type="hidden" name="operation" value="resume-skill-save" />
+                            <input type="hidden" name="section" value="resume-skills-section" />
+                            <input type="hidden" name="id" value="${editingResumeSkill.id}" />
+
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Resume</label>
+                                <select name="resumeId" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select resume</option>
+                                    <c:forEach items="${resumes}" var="resume">
+                                        <option value="${resume.id}" ${editEntity == 'resumeSkill' && editingResumeSkill.resumeId == resume.id ? 'selected' : ''}>
+                                            <c:out value="${resume.title}"/> · <c:out value="${userLabelsById[resume.userId]}"/>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Skill</label>
+                                <select name="skillId" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select skill</option>
+                                    <c:forEach items="${skills}" var="skill">
+                                        <option value="${skill.id}" ${editEntity == 'resumeSkill' && editingResumeSkill.skillId == skill.id ? 'selected' : ''}>
+                                            <c:out value="${skill.name}"/> · <c:out value="${skill.category}"/>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Proficiency</label>
+                                    <select name="proficiency" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                        <option value="">Select proficiency</option>
+                                        <c:forEach items="${proficiencyLevels}" var="level">
+                                            <option value="${level}" ${editEntity == 'resumeSkill' && editingResumeSkill.proficiency == level ? 'selected' : ''}><c:out value="${level}"/></option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Years of Experience</label>
+                                    <input type="number" min="0" name="yearsExp" value="${empty editingResumeSkill.yearsExp ? 0 : editingResumeSkill.yearsExp}" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30"/>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full rounded-xl bg-primary px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+                                ${editEntity == 'resumeSkill' ? 'Update Resume Skill' : 'Create Resume Skill'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <h2 class="text-lg font-black text-slate-900">Resume Skills</h2>
+                            <span class="text-sm text-slate-500"><c:out value="${resumeSkills.size()}"/> records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-[0.2em] text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-3">Resume</th>
+                                    <th class="px-6 py-3">Skill</th>
+                                    <th class="px-6 py-3">Level</th>
+                                    <th class="px-6 py-3 text-right">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                <c:forEach items="${resumeSkills}" var="resumeSkill">
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <p class="font-semibold text-slate-900"><c:out value="${resumeLabelsById[resumeSkill.resumeId]}"/></p>
+                                            <p class="mt-1 text-[11px] text-slate-400"><c:out value="${resumeSkill.id}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-600"><c:out value="${skillLabelsById[resumeSkill.skillId]}"/></td>
+                                        <td class="px-6 py-4 text-xs text-slate-500">
+                                            <p><c:out value="${resumeSkill.proficiency}"/></p>
+                                            <p class="mt-1"><c:out value="${resumeSkill.yearsExp}"/> year(s)</p>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=resumeSkill&editId=${resumeSkill.id}#resume-skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -448,6 +624,104 @@
                     </div>
                 </section>
 
+                <section id="job-requirements-section" class="demo-split">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-black text-slate-900">Job Requirement Form</h2>
+                                <p class="mt-1 text-sm text-slate-500">Attach required or optional skills to a job through <code>db.jobRequirements().save(...)</code>. This is the right half of the match model.</p>
+                            </div>
+                            <c:if test="${editEntity == 'jobRequirement'}">
+                                <a href="${pageContext.request.contextPath}/db-demo#job-requirements-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                            </c:if>
+                        </div>
+
+                        <form action="${pageContext.request.contextPath}/db-demo#job-requirements-section" method="post" class="mt-6 space-y-4">
+                            <input type="hidden" name="operation" value="job-requirement-save" />
+                            <input type="hidden" name="section" value="job-requirements-section" />
+                            <input type="hidden" name="id" value="${editingJobRequirement.id}" />
+
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Job</label>
+                                <select name="jobId" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select job</option>
+                                    <c:forEach items="${jobs}" var="job">
+                                        <option value="${job.id}" ${editEntity == 'jobRequirement' && editingJobRequirement.jobId == job.id ? 'selected' : ''}>
+                                            <c:out value="${job.title}"/> · <c:out value="${job.status}"/>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Skill</label>
+                                <select name="skillId" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select skill</option>
+                                    <c:forEach items="${skills}" var="skill">
+                                        <option value="${skill.id}" ${editEntity == 'jobRequirement' && editingJobRequirement.skillId == skill.id ? 'selected' : ''}>
+                                            <c:out value="${skill.name}"/> · <c:out value="${skill.category}"/>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                                    <input type="checkbox" name="required" value="true" ${editEntity == 'jobRequirement' ? (editingJobRequirement.required ? 'checked' : '') : 'checked'}/>
+                                    Mark as required
+                                </label>
+                                <div>
+                                    <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Minimum Proficiency</label>
+                                    <select name="minProficiency" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                        <option value="">Select level</option>
+                                        <c:forEach items="${proficiencyLevels}" var="level">
+                                            <option value="${level}" ${editEntity == 'jobRequirement' && editingJobRequirement.minProficiency == level ? 'selected' : ''}><c:out value="${level}"/></option>
+                                        </c:forEach>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full rounded-xl bg-primary px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+                                ${editEntity == 'jobRequirement' ? 'Update Job Requirement' : 'Create Job Requirement'}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <h2 class="text-lg font-black text-slate-900">Job Requirements</h2>
+                            <span class="text-sm text-slate-500"><c:out value="${jobRequirements.size()}"/> records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-[0.2em] text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-3">Job</th>
+                                    <th class="px-6 py-3">Skill</th>
+                                    <th class="px-6 py-3">Rule</th>
+                                    <th class="px-6 py-3 text-right">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                <c:forEach items="${jobRequirements}" var="requirement">
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <p class="font-semibold text-slate-900"><c:out value="${jobLabelsById[requirement.jobId]}"/></p>
+                                            <p class="mt-1 text-[11px] text-slate-400"><c:out value="${requirement.id}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-600"><c:out value="${skillLabelsById[requirement.skillId]}"/></td>
+                                        <td class="px-6 py-4 text-xs text-slate-500">
+                                            <p><c:out value="${requirement.required ? 'Required' : 'Optional'}"/></p>
+                                            <p class="mt-1"><c:out value="${requirement.minProficiency}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=jobRequirement&editId=${requirement.id}#job-requirements-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <section id="applications-section" class="demo-split">
                     <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                         <div>
@@ -573,6 +847,82 @@
                     </div>
                 </section>
 
+                <section id="match-scores-section" class="demo-split">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div>
+                            <h2 class="text-xl font-black text-slate-900">Match Analysis</h2>
+                            <p class="mt-1 text-sm text-slate-500">Runs <code>MatchingService.runAnalysis(...)</code> and writes to <code>match_scores</code>, <code>notifications</code>, and <code>audit_logs</code>.</p>
+                        </div>
+
+                        <form action="${pageContext.request.contextPath}/db-demo#match-scores-section" method="post" class="mt-6 space-y-4">
+                            <input type="hidden" name="operation" value="match-score-refresh" />
+                            <input type="hidden" name="section" value="match-scores-section" />
+
+                            <div>
+                                <label class="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-400">Application</label>
+                                <select name="applicationId" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary/30">
+                                    <option value="">Select application</option>
+                                    <c:forEach items="${applications}" var="application">
+                                        <option value="${application.id}">
+                                            <c:out value="${resumeLabelsById[application.resumeId]}"/> -> <c:out value="${jobLabelsById[application.jobId]}"/>
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                                <p class="font-semibold text-slate-900">What this does</p>
+                                <p class="mt-2 leading-6">The service compares <code>resume_skills</code> against <code>job_requirements</code>, computes coverage and score fields, and persists the refreshed analysis as a reusable row in <code>match_scores.json</code>.</p>
+                            </div>
+                            <button type="submit" class="w-full rounded-xl bg-primary px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+                                Run / Refresh Match Analysis
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <h2 class="text-lg font-black text-slate-900">Match Scores</h2>
+                            <span class="text-sm text-slate-500"><c:out value="${matchScores.size()}"/> records</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-[0.2em] text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-3">Application</th>
+                                    <th class="px-6 py-3">Scores</th>
+                                    <th class="px-6 py-3">Coverage</th>
+                                    <th class="px-6 py-3">AI</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                <c:forEach items="${matchScores}" var="score">
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <p class="font-semibold text-slate-900"><c:out value="${applicationLabelsById[score.applicationId]}"/></p>
+                                            <p class="mt-1 text-[11px] text-slate-400"><c:out value="${score.id}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-600">
+                                            <p>Rule: <c:out value="${score.ruleScore}"/></p>
+                                            <p class="mt-1">AI: <c:out value="${score.aiScore}"/></p>
+                                            <p class="mt-1 font-semibold text-slate-900">Final: <c:out value="${score.finalScore}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-500">
+                                            <p>Coverage: <c:out value="${score.skillCoveragePct}"/>%</p>
+                                            <p class="mt-1">Missing required: <c:out value="${score.missingRequiredCount}"/></p>
+                                            <p class="mt-1">Remaining hours: <c:out value="${score.workloadRemainingHours}"/></p>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs text-slate-500">
+                                            <p>Recommend: <c:out value="${score.aiRecommend}"/></p>
+                                            <p class="mt-1"><c:out value="${empty score.aiExplanation ? '—' : score.aiExplanation}"/></p>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="grid gap-6 xl:grid-cols-3">
                     <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                         <div class="border-b border-slate-200 px-6 py-4">
@@ -589,7 +939,7 @@
                                         <div class="px-6 py-4">
                                             <p class="font-semibold text-slate-900"><c:out value="${notification.title}"/></p>
                                             <p class="mt-1 text-xs text-slate-600"><c:out value="${notification.message}"/></p>
-                                            <p class="mt-2 text-[11px] text-slate-400"><c:out value="${notification.entityType}"/> · <c:out value="${notification.createdAt}"/></p>
+                                            <p class="mt-2 text-[11px] text-slate-400"><c:out value="${userLabelsById[notification.userId]}"/> · <c:out value="${notification.entityType}"/> · <c:out value="${notification.createdAt}"/></p>
                                         </div>
                                     </c:forEach>
                                 </c:otherwise>
@@ -633,9 +983,10 @@
                                 <c:otherwise>
                                     <c:forEach items="${recentWorkloadRecords}" var="workloadRecord">
                                         <div class="px-6 py-4">
-                                            <p class="font-semibold text-slate-900"><c:out value="${workloadRecord.semester}"/> · <c:out value="${workloadRecord.status}"/></p>
-                                            <p class="mt-1 text-xs text-slate-600">Hours: <c:out value="${workloadRecord.assignedHours}"/></p>
-                                            <p class="mt-2 text-[11px] text-slate-400"><c:out value="${workloadRecord.applicationId}"/></p>
+                                            <p class="font-semibold text-slate-900"><c:out value="${userLabelsById[workloadRecord.taId]}"/></p>
+                                            <p class="mt-1 text-xs text-slate-600"><c:out value="${jobLabelsById[workloadRecord.jobId]}"/></p>
+                                            <p class="mt-1 text-xs text-slate-600"><c:out value="${workloadRecord.semester}"/> · <c:out value="${workloadRecord.status}"/></p>
+                                            <p class="mt-2 text-[11px] text-slate-400">Hours: <c:out value="${workloadRecord.assignedHours}"/> · Application: <c:out value="${workloadRecord.applicationId}"/></p>
                                         </div>
                                     </c:forEach>
                                 </c:otherwise>
