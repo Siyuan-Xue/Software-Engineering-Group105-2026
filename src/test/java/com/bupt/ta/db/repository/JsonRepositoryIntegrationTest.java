@@ -45,12 +45,12 @@ class JsonRepositoryIntegrationTest {
         assertThrows(ConstraintViolationException.class, () -> db.users().save(duplicate));
 
         Skill skill = new Skill();
-        skill.setName("Java");
+        skill.setName("Rust");
         skill.setCategory(SkillCategory.PROGRAMMING);
         db.skills().save(skill);
 
         Skill duplicateSkill = new Skill();
-        duplicateSkill.setName("java");
+        duplicateSkill.setName("rust");
         duplicateSkill.setCategory(SkillCategory.PROGRAMMING);
         assertThrows(ConstraintViolationException.class, () -> db.skills().save(duplicateSkill));
     }
@@ -59,7 +59,7 @@ class JsonRepositoryIntegrationTest {
     void jobApplicationAndWorkloadQueriesShouldBehaveSemantically() {
         TaDatabase db = db();
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
-        User mo = db.users().save(user("mo@example.com", UserRole.MO, "MO User"));
+        User mo = db.users().save(user("repository-mo@example.com", UserRole.MO, "MO User"));
 
         Resume resume = new Resume();
         resume.setUserId(ta.getId());

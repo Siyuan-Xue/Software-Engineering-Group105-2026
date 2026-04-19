@@ -37,7 +37,7 @@ class MatchingServiceTest {
         MatchingService service = new MatchingService(db);
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
-        User mo = db.users().save(user("mo@example.com", UserRole.MO, "MO User"));
+        User mo = db.users().save(user("matching-mo@example.com", UserRole.MO, "MO User"));
 
         Resume resume = new Resume();
         resume.setUserId(ta.getId());
@@ -55,7 +55,7 @@ class MatchingServiceTest {
         job = db.jobs().save(job);
 
         Skill java = new Skill();
-        java.setName("Java");
+        java.setName("Kotlin");
         java.setCategory(SkillCategory.PROGRAMMING);
         java = db.skills().save(java);
 

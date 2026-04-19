@@ -48,6 +48,8 @@ class AppContextListenerIntegrationTest {
             assertTrue(database.users().findByEmail("test@example.com").isPresent());
             assertTrue(database.users().findByEmail("mo@example.com").isPresent());
             assertTrue(database.users().findByEmail("admin@example.com").isPresent());
+            assertTrue(database.skills().findByNameIgnoreCase("Java").isPresent());
+            assertTrue(database.skills().findByNameIgnoreCase("Tutoring").isPresent());
         } finally {
             System.clearProperty("ta105.data.dir");
         }

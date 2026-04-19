@@ -28,7 +28,7 @@ class TaDatabaseIntegrationTest {
     Path tempDir;
 
     @Test
-    void openShouldCreateAllElevenTableFiles() {
+    void openShouldCreateAllElevenTableFilesAndSeedDefaults() {
         TaDatabase database = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
 
         List<String> expected = List.of(
@@ -37,7 +37,11 @@ class TaDatabaseIntegrationTest {
                 "match_scores.json", "notifications.json", "audit_logs.json"
         );
         expected.forEach(file -> assertTrue(Files.exists(tempDir.resolve(file))));
-        assertTrue(database.users().findAll().isEmpty());
+        assertTrue(database.users().findByEmail("test@example.com").isPresent());
+        assertTrue(database.users().findByEmail("mo@example.com").isPresent());
+        assertTrue(database.users().findByEmail("admin@example.com").isPresent());
+        assertTrue(database.skills().findByNameIgnoreCase("Java").isPresent());
+        assertTrue(database.skills().findAll().size() >= 5);
     }
 
     @Test
@@ -58,7 +62,7 @@ class TaDatabaseIntegrationTest {
         resume = database.resumes().save(resume);
 
         User mo = new User();
-        mo.setEmail("mo@example.com");
+        mo.setEmail("atomic-mo@example.com");
         mo.setPasswordHash("hash");
         mo.setRole(UserRole.MO);
         mo.setFullName("MO User");

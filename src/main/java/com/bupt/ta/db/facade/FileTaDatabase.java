@@ -108,6 +108,7 @@ public class FileTaDatabase implements TaDatabase {
         this.matchScoreRepository = new JsonMatchScoreRepository(matchScores);
         this.notificationRepository = new JsonNotificationRepository(notifications);
         this.auditLogRepository = new JsonAuditLogRepository(auditLogs);
+        DatabaseSeeder.seedIfNeeded(this);
     }
 
     public static TaDatabase open(JsonStoreConfig config) {

@@ -33,7 +33,7 @@ class ApplicationServiceTest {
         ApplicationService service = new ApplicationService(db);
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
-        User mo = db.users().save(user("mo@example.com", UserRole.MO, "MO User"));
+        User mo = db.users().save(user("application-mo@example.com", UserRole.MO, "MO User"));
         Resume resume = db.resumes().save(resume(ta.getId()));
         Job job = db.jobs().save(job(mo.getId(), "Java TA"));
 
@@ -58,7 +58,7 @@ class ApplicationServiceTest {
         ResumeService resumeService = new ResumeService(db);
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
-        User mo = db.users().save(user("mo@example.com", UserRole.MO, "MO User"));
+        User mo = db.users().save(user("application-delete-mo@example.com", UserRole.MO, "MO User"));
         Resume resume = db.resumes().save(resume(ta.getId()));
         Job job = db.jobs().save(job(mo.getId(), "Algorithms TA"));
 

@@ -31,7 +31,7 @@ class JobServiceTest {
         JobService service = new JobService(db);
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
-        User mo = db.users().save(user("mo@example.com", UserRole.MO, "MO User"));
+        User mo = db.users().save(user("job-service-mo@example.com", UserRole.MO, "MO User"));
         Resume resume = new Resume();
         resume.setUserId(ta.getId());
         resume.setTitle("Resume");
