@@ -6,12 +6,16 @@ import com.bupt.ta.db.facade.FileTaDatabase;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.util.PasswordUtil;
 import org.junit.jupiter.api.Test;
@@ -29,9 +33,13 @@ class DbDemoServiceTest {
     Path tempDir;
 
     @Test
-    void demoFlowShouldWriteAcrossRepositoriesUsingUnifiedDatabaseEntry() {
+    void demoFlowShouldCoverSeedDataMatchingAndOfferAcceptance() {
         TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
         DbDemoService service = new DbDemoService(db);
+
+        assertTrue(db.users().findByEmail("test@example.com").isPresent());
+        assertTrue(db.users().findByEmail("mo@example.com").isPresent());
+        Skill java = db.skills().findByNameIgnoreCase("Java").orElseThrow();
 
         User ta = new User();
         ta.setEmail("db-demo-ta@example.com");
@@ -41,7 +49,7 @@ class DbDemoServiceTest {
         ta = service.saveUser(ta, "secret123");
 
         User mo = new User();
-        mo.setEmail("db-demo-mo@example.com");
+        mo.setEmail("db-demo-custom-mo@example.com");
         mo.setFullName("DB Demo MO");
         mo.setRole(UserRole.MO);
         mo = service.saveUser(mo, "secret123");
@@ -60,6 +68,13 @@ class DbDemoServiceTest {
                 ]
                 """);
 
+        ResumeSkill resumeSkill = new ResumeSkill();
+        resumeSkill.setResumeId(resume.getId());
+        resumeSkill.setSkillId(java.getId());
+        resumeSkill.setProficiency(ProficiencyLevel.ADVANCED);
+        resumeSkill.setYearsExp(2);
+        service.saveResumeSkill(resumeSkill);
+
         Job job = new Job();
         job.setPostedBy(mo.getId());
         job.setTitle("Database Demo Job");
@@ -70,20 +85,38 @@ class DbDemoServiceTest {
         job.setDeadline(Instant.now().plusSeconds(7200));
         job = service.saveJob(job);
 
+        JobRequirement requirement = new JobRequirement();
+        requirement.setJobId(job.getId());
+        requirement.setSkillId(java.getId());
+        requirement.setRequired(true);
+        requirement.setMinProficiency(ProficiencyLevel.INTERMEDIATE);
+        service.saveJobRequirement(requirement);
+
         Application application = service.submitApplication(resume.getId(), job.getId(), "Please consider me.");
+        service.refreshMatchScore(application.getId());
         service.startReview(application.getId());
         service.sendOffer(application.getId());
         service.acceptOffer(application.getId());
 
+        var resumeId = resume.getId();
+        var jobId = job.getId();
+        assertEquals(1, db.resumeSkills().findAll().stream().filter(item -> item.getResumeId().equals(resumeId)).count());
+        assertEquals(1, db.jobRequirements().findAll().stream().filter(item -> item.getJobId().equals(jobId)).count());
+        assertEquals(1, db.matchScores().findAll().size());
         assertEquals(1, db.workloadRecords().findAll().size());
-        assertTrue(db.notifications().findAll().size() >= 3);
-        assertTrue(db.auditLogs().findAll().size() >= 3);
+        assertTrue(db.notifications().findAll().size() >= 4);
+        assertTrue(db.auditLogs().findAll().size() >= 4);
         assertEquals(ApplicationStatus.ACCEPTED, db.applications().findById(application.getId()).orElseThrow().getStatus());
         assertEquals(1, db.resumes().findById(resume.getId()).orElseThrow().getAvailabilitySlots().size());
-        assertEquals(2, service.listTableCounts().stream()
+        assertTrue(service.listTableCounts().stream()
                 .filter(table -> table.getTableName().equals("users"))
                 .findFirst()
                 .orElseThrow()
-                .getRowCount());
+                .getRowCount() >= 5);
+        assertTrue(service.listTableCounts().stream()
+                .filter(table -> table.getTableName().equals("skills"))
+                .findFirst()
+                .orElseThrow()
+                .getRowCount() >= 6);
     }
 }

@@ -5,11 +5,16 @@ import com.bupt.ta.db.core.ConstraintViolationException;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.SkillCategory;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.service.DbDemoService;
 import jakarta.servlet.ServletException;
@@ -92,6 +97,28 @@ public class DbDemoServlet extends HttpServlet {
                 dbDemoService.saveJob(job);
                 yield isUpdate ? "Job updated through JobService." : "Job created through JobService.";
             }
+            case "skill-save" -> {
+                Skill skill = readSkillFromRequest(req);
+                boolean isUpdate = skill.getId() != null;
+                dbDemoService.saveSkill(skill);
+                yield isUpdate ? "Skill updated through SkillRepository." : "Skill created through SkillRepository.";
+            }
+            case "resume-skill-save" -> {
+                ResumeSkill resumeSkill = readResumeSkillFromRequest(req);
+                boolean isUpdate = resumeSkill.getId() != null;
+                dbDemoService.saveResumeSkill(resumeSkill);
+                yield isUpdate ? "Resume skill updated through ResumeSkillRepository." : "Resume skill created through ResumeSkillRepository.";
+            }
+            case "job-requirement-save" -> {
+                JobRequirement requirement = readJobRequirementFromRequest(req);
+                boolean isUpdate = requirement.getId() != null;
+                dbDemoService.saveJobRequirement(requirement);
+                yield isUpdate ? "Job requirement updated through JobRequirementRepository." : "Job requirement created through JobRequirementRepository.";
+            }
+            case "match-score-refresh" -> {
+                dbDemoService.refreshMatchScore(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Match score refreshed through MatchingService.";
+            }
             case "application-submit" -> {
                 UUID resumeId = requireUuid(req.getParameter("resumeId"), "Resume is required");
                 UUID jobId = requireUuid(req.getParameter("jobId"), "Job is required");
@@ -139,6 +166,10 @@ public class DbDemoServlet extends HttpServlet {
         req.setAttribute("resumes", dbDemoService.listResumes());
         req.setAttribute("jobs", dbDemoService.listJobs());
         req.setAttribute("applications", dbDemoService.listApplications());
+        req.setAttribute("skills", dbDemoService.listSkills());
+        req.setAttribute("resumeSkills", dbDemoService.listResumeSkills());
+        req.setAttribute("jobRequirements", dbDemoService.listJobRequirements());
+        req.setAttribute("matchScores", dbDemoService.listMatchScores());
         req.setAttribute("recentNotifications", dbDemoService.listRecentNotifications(10));
         req.setAttribute("recentAuditLogs", dbDemoService.listRecentAuditLogs(10));
         req.setAttribute("recentWorkloadRecords", dbDemoService.listRecentWorkloadRecords(10));
@@ -147,10 +178,14 @@ public class DbDemoServlet extends HttpServlet {
         req.setAttribute("degreeLevels", DegreeLevel.values());
         req.setAttribute("jobTypes", JobType.values());
         req.setAttribute("jobStatuses", JobStatus.values());
+        req.setAttribute("skillCategories", SkillCategory.values());
+        req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
 
         req.setAttribute("userLabelsById", dbDemoService.buildUserLabels());
         req.setAttribute("resumeLabelsById", dbDemoService.buildResumeLabels());
         req.setAttribute("jobLabelsById", dbDemoService.buildJobLabels());
+        req.setAttribute("skillLabelsById", dbDemoService.buildSkillLabels());
+        req.setAttribute("applicationLabelsById", dbDemoService.buildApplicationLabels());
         req.setAttribute("dataDirectory", AppConfig.resolveDataDirectory().toString());
         req.setAttribute("defaultDeadlineValue", LocalDateTime.now().plusDays(7).format(DATETIME_INPUT_FORMAT));
 
@@ -187,6 +222,12 @@ public class DbDemoServlet extends HttpServlet {
             }
             case "job" -> req.setAttribute("editingJob",
                     dbDemoService.findJob(editId).orElseThrow(() -> new ConstraintViolationException("Job not found: " + editId)));
+            case "skill" -> req.setAttribute("editingSkill",
+                    dbDemoService.findSkill(editId).orElseThrow(() -> new ConstraintViolationException("Skill not found: " + editId)));
+            case "resumeSkill" -> req.setAttribute("editingResumeSkill",
+                    dbDemoService.findResumeSkill(editId).orElseThrow(() -> new ConstraintViolationException("Resume skill not found: " + editId)));
+            case "jobRequirement" -> req.setAttribute("editingJobRequirement",
+                    dbDemoService.findJobRequirement(editId).orElseThrow(() -> new ConstraintViolationException("Job requirement not found: " + editId)));
             default -> throw new ConstraintViolationException("Unsupported edit entity: " + editEntity);
         }
     }
@@ -208,6 +249,18 @@ public class DbDemoServlet extends HttpServlet {
             case "job-save" -> {
                 req.setAttribute("editEntity", "job");
                 req.setAttribute("editingJob", readJobFromRequest(req));
+            }
+            case "skill-save" -> {
+                req.setAttribute("editEntity", "skill");
+                req.setAttribute("editingSkill", readSkillFromRequest(req));
+            }
+            case "resume-skill-save" -> {
+                req.setAttribute("editEntity", "resumeSkill");
+                req.setAttribute("editingResumeSkill", readResumeSkillFromRequest(req));
+            }
+            case "job-requirement-save" -> {
+                req.setAttribute("editEntity", "jobRequirement");
+                req.setAttribute("editingJobRequirement", readJobRequirementFromRequest(req));
             }
             default -> {
             }
@@ -233,7 +286,7 @@ public class DbDemoServlet extends HttpServlet {
         user.setDepartment(normalize(req.getParameter("department")));
         user.setStudentId(normalize(req.getParameter("studentId")));
         user.setBio(normalize(req.getParameter("bio")));
-        user.setActive(!"false".equalsIgnoreCase(req.getParameter("active")));
+        user.setActive("true".equalsIgnoreCase(req.getParameter("active")));
         return user;
     }
 
@@ -266,6 +319,35 @@ public class DbDemoServlet extends HttpServlet {
         job.setDeadline(parseInstant(req.getParameter("deadline")));
         job.setHourlyRate(parseBigDecimal(req.getParameter("hourlyRate")));
         return job;
+    }
+
+    private Skill readSkillFromRequest(HttpServletRequest req) {
+        Skill skill = new Skill();
+        skill.setId(optionalUuid(req.getParameter("id")));
+        skill.setName(normalize(req.getParameter("name")));
+        skill.setCategory(parseEnum(SkillCategory.class, req.getParameter("category"), "Skill category is invalid"));
+        skill.setDescription(normalize(req.getParameter("description")));
+        return skill;
+    }
+
+    private ResumeSkill readResumeSkillFromRequest(HttpServletRequest req) {
+        ResumeSkill resumeSkill = new ResumeSkill();
+        resumeSkill.setId(optionalUuid(req.getParameter("id")));
+        resumeSkill.setResumeId(requireUuid(req.getParameter("resumeId"), "Resume is required"));
+        resumeSkill.setSkillId(requireUuid(req.getParameter("skillId"), "Skill is required"));
+        resumeSkill.setProficiency(parseEnum(ProficiencyLevel.class, req.getParameter("proficiency"), "Proficiency is invalid"));
+        resumeSkill.setYearsExp(parseInt(req.getParameter("yearsExp"), 0));
+        return resumeSkill;
+    }
+
+    private JobRequirement readJobRequirementFromRequest(HttpServletRequest req) {
+        JobRequirement requirement = new JobRequirement();
+        requirement.setId(optionalUuid(req.getParameter("id")));
+        requirement.setJobId(requireUuid(req.getParameter("jobId"), "Job is required"));
+        requirement.setSkillId(requireUuid(req.getParameter("skillId"), "Skill is required"));
+        requirement.setRequired("true".equalsIgnoreCase(req.getParameter("required")));
+        requirement.setMinProficiency(parseEnum(ProficiencyLevel.class, req.getParameter("minProficiency"), "Minimum proficiency is invalid"));
+        return requirement;
     }
 
     private UUID optionalUuid(String value) {

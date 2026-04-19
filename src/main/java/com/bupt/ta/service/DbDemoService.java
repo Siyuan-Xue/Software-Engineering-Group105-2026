@@ -6,11 +6,17 @@ import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.AuditLog;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.MatchScore;
 import com.bupt.ta.domain.entity.Notification;
 import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.entity.WorkloadRecord;
 import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.SkillCategory;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.domain.value.AvailabilitySlot;
 import com.bupt.ta.util.PasswordUtil;
@@ -20,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +39,7 @@ public class DbDemoService {
     private final ResumeService resumeService;
     private final JobService jobService;
     private final ApplicationService applicationService;
+    private final MatchingService matchingService;
     private final ObjectMapper mapper;
 
     public DbDemoService(TaDatabase db) {
@@ -39,6 +47,7 @@ public class DbDemoService {
         this.resumeService = new ResumeService(db);
         this.jobService = new JobService(db);
         this.applicationService = new ApplicationService(db);
+        this.matchingService = new MatchingService(db);
         this.mapper = JsonMapperFactory.create();
     }
 
@@ -69,6 +78,31 @@ public class DbDemoService {
     public List<Application> listApplications() {
         return db.applications().findAll().stream()
                 .sorted(Comparator.comparing(Application::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public List<Skill> listSkills() {
+        return db.skills().findAll().stream()
+                .sorted(Comparator.comparing(Skill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public List<ResumeSkill> listResumeSkills() {
+        return db.resumeSkills().findAll().stream()
+                .sorted(Comparator.comparing(ResumeSkill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public List<JobRequirement> listJobRequirements() {
+        return db.jobRequirements().findAll().stream()
+                .sorted(Comparator.comparing(JobRequirement::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public List<MatchScore> listMatchScores() {
+        return db.matchScores().findAll().stream()
+                .sorted(Comparator.comparing(MatchScore::getComputedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(MatchScore::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -123,6 +157,18 @@ public class DbDemoService {
 
     public Optional<Application> findApplication(UUID applicationId) {
         return db.applications().findById(applicationId);
+    }
+
+    public Optional<Skill> findSkill(UUID skillId) {
+        return db.skills().findById(skillId);
+    }
+
+    public Optional<ResumeSkill> findResumeSkill(UUID resumeSkillId) {
+        return db.resumeSkills().findById(resumeSkillId);
+    }
+
+    public Optional<JobRequirement> findJobRequirement(UUID requirementId) {
+        return db.jobRequirements().findById(requirementId);
     }
 
     public User saveUser(User submitted, String plainPassword) {
@@ -193,6 +239,84 @@ public class DbDemoService {
         return jobService.save(toSave);
     }
 
+    public Skill saveSkill(Skill submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Skill submission is required");
+        }
+        requireNonBlank(submitted.getName(), "Skill name must not be blank");
+        if (submitted.getCategory() == null) {
+            throw new ConstraintViolationException("Skill category must not be null");
+        }
+
+        Skill toSave = submitted.getId() == null
+                ? new Skill()
+                : db.skills().findById(submitted.getId())
+                        .map(existing -> mergeSkill(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Skill not found: " + submitted.getId()));
+
+        toSave.setName(submitted.getName().trim());
+        toSave.setCategory(submitted.getCategory());
+        toSave.setDescription(trimToNull(submitted.getDescription()));
+        return db.skills().save(toSave);
+    }
+
+    public ResumeSkill saveResumeSkill(ResumeSkill submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Resume skill submission is required");
+        }
+        requireResume(submitted.getResumeId());
+        requireSkill(submitted.getSkillId());
+        if (submitted.getProficiency() == null) {
+            throw new ConstraintViolationException("Resume skill proficiency must not be null");
+        }
+        if (submitted.getYearsExp() < 0) {
+            throw new ConstraintViolationException("Resume skill yearsExp must not be negative");
+        }
+        ensureResumeSkillUnique(submitted);
+
+        ResumeSkill toSave = submitted.getId() == null
+                ? new ResumeSkill()
+                : db.resumeSkills().findById(submitted.getId())
+                        .map(existing -> mergeResumeSkill(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Resume skill not found: " + submitted.getId()));
+
+        toSave.setResumeId(submitted.getResumeId());
+        toSave.setSkillId(submitted.getSkillId());
+        toSave.setProficiency(submitted.getProficiency());
+        toSave.setYearsExp(submitted.getYearsExp());
+        return db.resumeSkills().save(toSave);
+    }
+
+    public JobRequirement saveJobRequirement(JobRequirement submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Job requirement submission is required");
+        }
+        requireJob(submitted.getJobId());
+        requireSkill(submitted.getSkillId());
+        if (submitted.getMinProficiency() == null) {
+            throw new ConstraintViolationException("Job requirement proficiency must not be null");
+        }
+        ensureJobRequirementUnique(submitted);
+
+        JobRequirement toSave = submitted.getId() == null
+                ? new JobRequirement()
+                : db.jobRequirements().findById(submitted.getId())
+                        .map(existing -> mergeJobRequirement(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Job requirement not found: " + submitted.getId()));
+
+        toSave.setJobId(submitted.getJobId());
+        toSave.setSkillId(submitted.getSkillId());
+        toSave.setRequired(submitted.isRequired());
+        toSave.setMinProficiency(submitted.getMinProficiency());
+        return db.jobRequirements().save(toSave);
+    }
+
+    public MatchScore refreshMatchScore(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Job job = requireJob(application.getJobId());
+        return matchingService.runAnalysis(job.getPostedBy(), applicationId);
+    }
+
     public Application submitApplication(UUID resumeId, UUID jobId, String coverLetter) {
         Resume resume = requireResume(resumeId);
         requireJob(jobId);
@@ -256,7 +380,7 @@ public class DbDemoService {
                 User::getId,
                 user -> user.getFullName() + " (" + user.getEmail() + ")",
                 (left, right) -> left,
-                java.util.LinkedHashMap::new
+                LinkedHashMap::new
         ));
     }
 
@@ -265,7 +389,7 @@ public class DbDemoService {
                 Resume::getId,
                 resume -> resume.getTitle() + " [" + resume.getUserId() + "]",
                 (left, right) -> left,
-                java.util.LinkedHashMap::new
+                LinkedHashMap::new
         ));
     }
 
@@ -274,7 +398,25 @@ public class DbDemoService {
                 Job::getId,
                 job -> job.getTitle() + " [" + job.getStatus() + "]",
                 (left, right) -> left,
-                java.util.LinkedHashMap::new
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildSkillLabels() {
+        return listSkills().stream().collect(java.util.stream.Collectors.toMap(
+                Skill::getId,
+                skill -> skill.getName() + " (" + skill.getCategory() + ")",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildApplicationLabels() {
+        return listApplications().stream().collect(java.util.stream.Collectors.toMap(
+                Application::getId,
+                application -> application.getId() + " [" + application.getStatus() + "]",
+                (left, right) -> left,
+                LinkedHashMap::new
         ));
     }
 
@@ -323,6 +465,35 @@ public class DbDemoService {
         return merged;
     }
 
+    private Skill mergeSkill(Skill existing, Skill submitted) {
+        Skill merged = mapper.convertValue(existing, Skill.class);
+        merged.setId(existing.getId());
+        merged.setName(submitted.getName());
+        merged.setCategory(submitted.getCategory());
+        merged.setDescription(submitted.getDescription());
+        return merged;
+    }
+
+    private ResumeSkill mergeResumeSkill(ResumeSkill existing, ResumeSkill submitted) {
+        ResumeSkill merged = mapper.convertValue(existing, ResumeSkill.class);
+        merged.setId(existing.getId());
+        merged.setResumeId(submitted.getResumeId());
+        merged.setSkillId(submitted.getSkillId());
+        merged.setProficiency(submitted.getProficiency());
+        merged.setYearsExp(submitted.getYearsExp());
+        return merged;
+    }
+
+    private JobRequirement mergeJobRequirement(JobRequirement existing, JobRequirement submitted) {
+        JobRequirement merged = mapper.convertValue(existing, JobRequirement.class);
+        merged.setId(existing.getId());
+        merged.setJobId(submitted.getJobId());
+        merged.setSkillId(submitted.getSkillId());
+        merged.setRequired(submitted.isRequired());
+        merged.setMinProficiency(submitted.getMinProficiency());
+        return merged;
+    }
+
     private List<AvailabilitySlot> parseAvailabilitySlots(String value) {
         if (value == null || value.isBlank()) {
             return List.of();
@@ -331,6 +502,24 @@ public class DbDemoService {
             return mapper.readValue(value, AVAILABILITY_TYPE);
         } catch (IOException e) {
             throw new ConstraintViolationException("Availability slots must be a valid JSON array");
+        }
+    }
+
+    private void ensureResumeSkillUnique(ResumeSkill submitted) {
+        boolean duplicate = db.resumeSkills().listByResumeId(submitted.getResumeId()).stream()
+                .anyMatch(existing -> existing.getSkillId().equals(submitted.getSkillId())
+                        && !existing.getId().equals(submitted.getId()));
+        if (duplicate) {
+            throw new ConstraintViolationException("This resume already references the selected skill");
+        }
+    }
+
+    private void ensureJobRequirementUnique(JobRequirement submitted) {
+        boolean duplicate = db.jobRequirements().listByJobId(submitted.getJobId()).stream()
+                .anyMatch(existing -> existing.getSkillId().equals(submitted.getSkillId())
+                        && !existing.getId().equals(submitted.getId()));
+        if (duplicate) {
+            throw new ConstraintViolationException("This job already references the selected skill");
         }
     }
 
@@ -347,6 +536,11 @@ public class DbDemoService {
     private Application requireApplication(UUID applicationId) {
         return db.applications().findById(applicationId)
                 .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
+    }
+
+    private Skill requireSkill(UUID skillId) {
+        return db.skills().findById(skillId)
+                .orElseThrow(() -> new ConstraintViolationException("Skill not found: " + skillId));
     }
 
     private void requireNonBlank(String value, String message) {
