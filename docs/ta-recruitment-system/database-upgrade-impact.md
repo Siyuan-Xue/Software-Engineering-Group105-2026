@@ -82,13 +82,19 @@ db.jobs().listOpen(query);
 
 当前项目中的兼容 Service 已经帮现有页面兜住，但新代码请直接用 `JobQuery`。
 
-### 2.5 旧的 `/db-demo` 已下线
+### 2.5 `/db-demo` 不再作为正式业务联调基线
 
-不要再依赖：
+当前代码现实：
 
-- `/db-demo`
-- `DbDemoService`
-- 对旧 4 表样例的手工 CRUD 测试入口
+- 仓库里仍然保留了 `/db-demo`
+- `DbDemoService` 也仍然存在
+- 该页面现在更像数据库能力演示和调试入口，而不是正式业务流程的一部分
+
+联调建议：
+
+- 不要把 `/db-demo` 当作业务页面实现标准
+- 不要把 `DbDemoService` 当作 portal 业务 servlet 的目标结构
+- 正式联调仍应以 `/dashboard`、`/vacancies`、`/applications`、`/resumes`、`/settings`、`/workloads` 等业务路由为准
 
 ## 3. 对前端同学的必要修改
 

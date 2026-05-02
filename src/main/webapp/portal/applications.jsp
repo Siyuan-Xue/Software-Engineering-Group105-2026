@@ -52,8 +52,8 @@
                             <p class="portal-page-copy">${language == 'zh' ? '跟踪你已提交的课程与项目申请进度。' : 'Track the progress of your submitted module and program applications.'}</p>
                         </div>
                         <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
-                            <span class="material-symbols-outlined text-sm">add</span>
-                            ${language == 'zh' ? '新建申请' : 'New Application'}
+                            <span class="material-symbols-outlined text-sm">search</span>
+                            ${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}
                         </a>
                     </div>
 
@@ -72,9 +72,13 @@
                                 <div class="relative group">
                                     <select name="status" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none pr-8">
                                         <option value="">${language == 'zh' ? '状态：全部' : 'Status: All'}</option>
+                                        <option value="Submitted" ${param.status == 'Submitted' ? 'selected' : ''}>${language == 'zh' ? '已提交' : 'Submitted'}</option>
                                         <option value="Under Review" ${param.status == 'Under Review' ? 'selected' : ''}>${language == 'zh' ? '审核中' : 'Under Review'}</option>
+                                        <option value="Offer Pending" ${param.status == 'Offer Pending' ? 'selected' : ''}>${language == 'zh' ? '待确认录用' : 'Offer Pending'}</option>
                                         <option value="Accepted" ${param.status == 'Accepted' ? 'selected' : ''}>${language == 'zh' ? '已录用' : 'Accepted'}</option>
                                         <option value="Rejected" ${param.status == 'Rejected' ? 'selected' : ''}>${language == 'zh' ? '已拒绝' : 'Rejected'}</option>
+                                        <option value="Declined" ${param.status == 'Declined' ? 'selected' : ''}>${language == 'zh' ? '已拒绝录用' : 'Declined'}</option>
+                                        <option value="Withdrawn" ${param.status == 'Withdrawn' ? 'selected' : ''}>${language == 'zh' ? '已撤回' : 'Withdrawn'}</option>
                                     </select>
                                     <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">expand_more</span>
                                 </div>
@@ -183,13 +187,28 @@
                                                                             ${language == 'zh' ? '已录用' : 'Accepted'}
                                                                         </span>
                                                                     </c:when>
+                                                                    <c:when test="${app.status == 'Offer Pending'}">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                                                            ${language == 'zh' ? '待确认录用' : 'Offer Pending'}
+                                                                        </span>
+                                                                    </c:when>
                                                                     <c:when test="${app.status == 'Rejected'}">
                                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
                                                                             ${language == 'zh' ? '已拒绝' : 'Rejected'}
                                                                         </span>
                                                                     </c:when>
+                                                                    <c:when test="${app.status == 'Declined'}">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
+                                                                            ${language == 'zh' ? '已拒绝录用' : 'Declined'}
+                                                                        </span>
+                                                                    </c:when>
+                                                                    <c:when test="${app.status == 'Withdrawn'}">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">
+                                                                            ${language == 'zh' ? '已撤回' : 'Withdrawn'}
+                                                                        </span>
+                                                                    </c:when>
                                                                     <c:otherwise>
-                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${app.status == 'Submitted' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}">
                                                                             <c:choose>
                                                                                 <c:when test="${app.status == 'Under Review'}">${language == 'zh' ? '审核中' : 'Under Review'}</c:when>
                                                                                 <c:when test="${app.status == 'Submitted'}">${language == 'zh' ? '已提交' : 'Submitted'}</c:when>

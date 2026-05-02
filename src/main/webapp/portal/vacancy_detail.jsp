@@ -85,17 +85,31 @@
                                         <%-- MO 仅当 isOwner 显示编辑；TA 等在 else 显示申请（与角色权限展示约定一致）。 --%>
                                         <c:choose>
                                             <c:when test="${userRole == 'MO'}">
-                                                <c:if test="${vacancy.owner}">
-                                                    <button class="portal-btn portal-btn-secondary">
-                                                        <span class="material-symbols-outlined text-sm">edit</span>
-                                                        ${language == 'zh' ? '编辑岗位' : 'Edit Vacancy'}
-                                                    </button>
-                                                </c:if>
+                                                <c:choose>
+                                                    <c:when test="${vacancy.owner}">
+                                                        <button class="portal-btn portal-btn-secondary">
+                                                            <span class="material-symbols-outlined text-sm">edit</span>
+                                                            ${language == 'zh' ? '编辑岗位' : 'Edit Vacancy'}
+                                                        </button>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                                                            <span class="material-symbols-outlined text-base">visibility</span>
+                                                            ${language == 'zh' ? '仅查看' : 'View Only'}
+                                                        </span>
+                                                    </c:otherwise>
+                                                </c:choose>
                                             </c:when>
-                                            <c:otherwise>
+                                            <c:when test="${userRole == 'TA'}">
                                                 <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
                                                     ${language == 'zh' ? '立即申请' : 'Apply Now'}
                                                 </button>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                                                    <span class="material-symbols-outlined text-base">admin_panel_settings</span>
+                                                    ${language == 'zh' ? '管理员查看' : 'Admin View'}
+                                                </span>
                                             </c:otherwise>
                                         </c:choose>
                                     </div>
@@ -132,14 +146,26 @@
                                     <%-- requirements：后端通常为 List<String>，逐条列出；与契约中 Vacancy 结构一致。 --%>
                                     <section>
                                         <h3 class="text-xl font-bold text-slate-900 mb-4">${language == 'zh' ? '岗位要求' : 'Requirements'}</h3>
-                                        <ul class="space-y-3">
-                                            <c:forEach items="${vacancy.requirements}" var="requirement">
-                                                <li class="flex gap-3 text-slate-600">
-                                                    <span class="material-symbols-outlined text-primary text-lg">check_circle</span>
-                                                    <span class="text-sm"><c:out value="${requirement}"/></span>
-                                                </li>
-                                            </c:forEach>
-                                        </ul>
+                                        <c:choose>
+                                            <c:when test="${empty vacancy.requirements}">
+                                                <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
+                                                    <jsp:param name="icon" value="fact_check" />
+                                                    <jsp:param name="title" value="${language == 'zh' ? '要求信息待补充' : 'Requirements pending'}" />
+                                                    <jsp:param name="message" value="${language == 'zh' ? '该岗位暂未提供结构化要求说明，请稍后再查看或联系课程负责人。' : 'Structured requirement details are not available for this vacancy yet. Please check back later or contact the module owner.'}" />
+                                                    <jsp:param name="containerClass" value="px-0 py-2" />
+                                                </jsp:include>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <ul class="space-y-3">
+                                                    <c:forEach items="${vacancy.requirements}" var="requirement">
+                                                        <li class="flex gap-3 text-slate-600">
+                                                            <span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                                                            <span class="text-sm"><c:out value="${requirement}"/></span>
+                                                        </li>
+                                                    </c:forEach>
+                                                </ul>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </section>
                                     <%-- responsibilities 在契约中同为 List<String>；若产品需要展示，可在此复用与 requirements 相同的列表模式。 --%>
                                 </div>

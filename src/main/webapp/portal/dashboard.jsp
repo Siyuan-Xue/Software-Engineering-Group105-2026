@@ -44,6 +44,9 @@
                     <c:set var="profileCompletion" value="${empty profileCompletionPercentage ? 0 : profileCompletionPercentage}" />
                     <c:set var="activitiesEmpty" value="${dashboardState == 'emptyActivities' or empty recentActivities}" />
                     <c:set var="deadlinesEmpty" value="${dashboardState == 'emptyDeadlines' or empty upcomingDeadlines}" />
+                    <c:set var="isTA" value="${userRole == 'TA'}" />
+                    <c:set var="isMO" value="${userRole == 'MO'}" />
+                    <c:set var="isAdmin" value="${userRole == 'ADMIN'}" />
                     <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp" />
                     <c:choose>
                         <c:when test="${dashboardState == 'loadError'}">
@@ -64,22 +67,60 @@
                                             <p class="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">${language == 'zh' ? '仪表盘状态' : 'Dashboard Status'}</p>
                                             <c:choose>
                                                 <c:when test="${activitiesEmpty and deadlinesEmpty}">
-                                                    <h3 class="mt-2 text-lg font-bold text-slate-900">${language == 'zh' ? '你的仪表盘已准备就绪。' : 'Your dashboard is ready to populate.'}</h3>
-                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${language == 'zh' ? '开始浏览岗位并完善个人资料后，近期活动和截止日期就会显示在这里。' : 'Start browsing vacancies and updating your profile. Recent activity and deadlines will appear here as soon as your application journey begins.'}</p>
+                                                    <h3 class="mt-2 text-lg font-bold text-slate-900">
+                                                        <c:choose>
+                                                            <c:when test="${isMO}">${language == 'zh' ? '你的招聘看板已准备就绪。' : 'Your hiring dashboard is ready to populate.'}</c:when>
+                                                            <c:when test="${isAdmin}">${language == 'zh' ? '你的管理看板已准备就绪。' : 'Your admin dashboard is ready to populate.'}</c:when>
+                                                            <c:otherwise>${language == 'zh' ? '你的仪表盘已准备就绪。' : 'Your dashboard is ready to populate.'}</c:otherwise>
+                                                        </c:choose>
+                                                    </h3>
+                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                                                        <c:choose>
+                                                            <c:when test="${isMO}">${language == 'zh' ? '发布岗位、查看申请后，最近动态和即将到期事项会显示在这里。' : 'Publish vacancies and review applications. Recent activity and deadlines will appear here as soon as your hiring workflow starts moving.'}</c:when>
+                                                            <c:when test="${isAdmin}">${language == 'zh' ? '当系统产生更多岗位和分配记录后，管理概览和提醒会显示在这里。' : 'As the system accumulates more vacancies and assignments, operational updates and reminders will appear here.'}</c:when>
+                                                            <c:otherwise>${language == 'zh' ? '开始浏览岗位并完善个人资料后，近期活动和截止日期就会显示在这里。' : 'Start browsing vacancies and updating your profile. Recent activity and deadlines will appear here as soon as your application journey begins.'}</c:otherwise>
+                                                        </c:choose>
+                                                    </p>
                                                 </c:when>
                                                 <c:when test="${activitiesEmpty}">
                                                     <h3 class="mt-2 text-lg font-bold text-slate-900">${language == 'zh' ? '活动记录仍为空。' : 'Activity feed is still empty.'}</h3>
-                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${language == 'zh' ? '当你提交申请、上传简历或收到院系更新后，最新动态会自动显示在这里。' : 'Once you apply, upload resumes, or receive updates from departments, your latest activity will appear here automatically.'}</p>
+                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                                                        <c:choose>
+                                                            <c:when test="${isMO}">${language == 'zh' ? '当你发布岗位、收到申请或更新招聘信息后，最新动态会自动显示在这里。' : 'Once you post vacancies, receive applications, or update hiring details, your latest activity will appear here automatically.'}</c:when>
+                                                            <c:when test="${isAdmin}">${language == 'zh' ? '当系统产生新的工作量或岗位变更时，管理动态会显示在这里。' : 'Administrative updates will show up here when workload changes or vacancy events occur in the system.'}</c:when>
+                                                            <c:otherwise>${language == 'zh' ? '当你提交申请、上传简历或收到院系更新后，最新动态会自动显示在这里。' : 'Once you apply, upload resumes, or receive updates from departments, your latest activity will appear here automatically.'}</c:otherwise>
+                                                        </c:choose>
+                                                    </p>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <h3 class="mt-2 text-lg font-bold text-slate-900">${language == 'zh' ? '当前没有即将到期的事项。' : 'No deadlines are due right now.'}</h3>
-                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">${language == 'zh' ? '你目前一切正常，请留意新的岗位和即将开放的申请窗口。' : 'You are all caught up for the moment. Keep an eye on new vacancies and upcoming application windows.'}</p>
+                                                    <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                                                        <c:choose>
+                                                            <c:when test="${isMO}">${language == 'zh' ? '你目前已处理完紧急事项，可以继续发布或调整岗位。' : 'You are currently caught up. You can keep posting or refining vacancies as needed.'}</c:when>
+                                                            <c:when test="${isAdmin}">${language == 'zh' ? '目前没有需要立刻处理的管理提醒，请继续关注工作量和岗位变化。' : 'There are no urgent admin reminders right now. Continue monitoring workloads and vacancy changes.'}</c:when>
+                                                            <c:otherwise>${language == 'zh' ? '你目前一切正常，请留意新的岗位和即将开放的申请窗口。' : 'You are all caught up for the moment. Keep an eye on new vacancies and upcoming application windows.'}</c:otherwise>
+                                                        </c:choose>
+                                                    </p>
                                                 </c:otherwise>
                                             </c:choose>
                                         </div>
-                                        <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
-                                            ${language == 'zh' ? '浏览岗位' : 'Explore Vacancies'}
-                                        </a>
+                                        <c:choose>
+                                            <c:when test="${isMO}">
+                                                <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
+                                                    ${language == 'zh' ? '管理岗位' : 'Manage Vacancies'}
+                                                </a>
+                                            </c:when>
+                                            <c:when test="${isAdmin}">
+                                                <a href="${pageContext.request.contextPath}/workloads" class="portal-btn portal-btn-primary">
+                                                    ${language == 'zh' ? '查看工作量' : 'Review Workloads'}
+                                                </a>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
+                                                    ${language == 'zh' ? '浏览岗位' : 'Explore Vacancies'}
+                                                </a>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                 </div>
                             </c:if>
@@ -91,32 +132,72 @@
                                     <p class="portal-page-copy">
                                         <c:choose>
                                             <c:when test="${activitiesEmpty and deadlinesEmpty}">
-                                                ${language == 'zh' ? '通过完善资料、上传简历并浏览开放岗位，开启你的申请流程。' : 'Build momentum by preparing your profile, uploading resumes, and exploring open TA opportunities.'}
+                                                <c:choose>
+                                                    <c:when test="${isMO}">${language == 'zh' ? '发布岗位、查看申请并维护招聘进度，开始你的招聘流程。' : 'Kick off your hiring workflow by publishing vacancies, reviewing applications, and keeping your recruitment pipeline moving.'}</c:when>
+                                                    <c:when test="${isAdmin}">${language == 'zh' ? '从工作量和开放岗位概览开始，持续跟进系统运行情况。' : 'Start from the workload and open-vacancy overview to keep track of overall system operations.'}</c:when>
+                                                    <c:otherwise>${language == 'zh' ? '通过完善资料、上传简历并浏览开放岗位，开启你的申请流程。' : 'Build momentum by preparing your profile, uploading resumes, and exploring open TA opportunities.'}</c:otherwise>
+                                                </c:choose>
                                             </c:when>
                                             <c:when test="${activitiesEmpty}">
-                                                ${language == 'zh' ? '你的仪表盘已配置完成。只要你开始在系统中操作，活动记录就会逐步显示。' : 'Your dashboard is set up. The activity feed will start filling up as soon as you take action in the portal.'}
+                                                <c:choose>
+                                                    <c:when test="${isMO}">${language == 'zh' ? '你的招聘看板已经就绪。只要你开始发布和处理岗位，活动记录就会逐步显示。' : 'Your hiring dashboard is set up. The activity feed will start filling up as soon as you begin posting and managing vacancies.'}</c:when>
+                                                    <c:when test="${isAdmin}">${language == 'zh' ? '你的管理看板已经就绪。随着系统产生新数据，活动记录会逐步显示。' : 'Your admin dashboard is set up. The activity feed will populate as the system generates more operational data.'}</c:when>
+                                                    <c:otherwise>${language == 'zh' ? '你的仪表盘已配置完成。只要你开始在系统中操作，活动记录就会逐步显示。' : 'Your dashboard is set up. The activity feed will start filling up as soon as you take action in the portal.'}</c:otherwise>
+                                                </c:choose>
                                             </c:when>
                                             <c:when test="${deadlinesEmpty}">
-                                                ${language == 'zh' ? '你的申请概览情况良好，请继续关注新的截止日期和提醒。' : 'Your application overview is in good shape. Watch this space for new deadlines and reminders.'}
+                                                <c:choose>
+                                                    <c:when test="${isMO}">${language == 'zh' ? '你的招聘概览情况良好，请继续关注新的申请和岗位截止日期。' : 'Your hiring overview is in good shape. Watch this space for new applications and vacancy deadlines.'}</c:when>
+                                                    <c:when test="${isAdmin}">${language == 'zh' ? '你的管理概览情况良好，请继续关注新的工作量和系统提醒。' : 'Your operational overview is in good shape. Watch this space for new workload updates and system reminders.'}</c:when>
+                                                    <c:otherwise>${language == 'zh' ? '你的申请概览情况良好，请继续关注新的截止日期和提醒。' : 'Your application overview is in good shape. Watch this space for new deadlines and reminders.'}</c:otherwise>
+                                                </c:choose>
                                             </c:when>
                                             <c:otherwise>
-                                                ${language == 'zh' ? '这里是你今天的申请概览。' : 'Here is a summary of your academic journey today.'}
+                                                <c:choose>
+                                                    <c:when test="${isMO}">${language == 'zh' ? '这里是你今天的招聘概览。' : 'Here is a summary of your hiring workflow today.'}</c:when>
+                                                    <c:when test="${isAdmin}">${language == 'zh' ? '这里是你今天的系统概览。' : 'Here is a snapshot of system operations today.'}</c:when>
+                                                    <c:otherwise>${language == 'zh' ? '这里是你今天的申请概览。' : 'Here is a summary of your academic journey today.'}</c:otherwise>
+                                                </c:choose>
                                             </c:otherwise>
                                         </c:choose>
                                     </p>
                                 </div>
                                 <div class="flex flex-wrap gap-3">
-                                    <a href="${pageContext.request.contextPath}/resumes" class="portal-btn portal-btn-primary">
-                                        <span class="material-symbols-outlined text-lg">upload</span>
-                                        <c:choose>
-                                            <c:when test="${resumeCount == 0}">${language == 'zh' ? '上传第一份简历' : 'Upload First Resume'}</c:when>
-                                            <c:otherwise>${language == 'zh' ? '管理简历' : 'Manage Resumes'}</c:otherwise>
-                                        </c:choose>
-                                    </a>
-                                    <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary text-primary">
-                                        <span class="material-symbols-outlined text-lg">search</span>
-                                        ${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}
-                                    </a>
+                                    <c:choose>
+                                        <c:when test="${isMO}">
+                                            <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
+                                                <span class="material-symbols-outlined text-lg">post_add</span>
+                                                ${language == 'zh' ? '管理岗位' : 'Manage Vacancies'}
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/applications" class="portal-btn portal-btn-secondary text-primary">
+                                                <span class="material-symbols-outlined text-lg">work_history</span>
+                                                ${language == 'zh' ? '查看申请' : 'Review Applications'}
+                                            </a>
+                                        </c:when>
+                                        <c:when test="${isAdmin}">
+                                            <a href="${pageContext.request.contextPath}/workloads" class="portal-btn portal-btn-primary">
+                                                <span class="material-symbols-outlined text-lg">group</span>
+                                                ${language == 'zh' ? '查看工作量' : 'Review Workloads'}
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/settings" class="portal-btn portal-btn-secondary text-primary">
+                                                <span class="material-symbols-outlined text-lg">settings</span>
+                                                ${language == 'zh' ? '系统设置' : 'Review Settings'}
+                                            </a>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <a href="${pageContext.request.contextPath}/resumes" class="portal-btn portal-btn-primary">
+                                                <span class="material-symbols-outlined text-lg">upload</span>
+                                                <c:choose>
+                                                    <c:when test="${resumeCount == 0}">${language == 'zh' ? '上传第一份简历' : 'Upload First Resume'}</c:when>
+                                                    <c:otherwise>${language == 'zh' ? '管理简历' : 'Manage Resumes'}</c:otherwise>
+                                                </c:choose>
+                                            </a>
+                                            <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary text-primary">
+                                                <span class="material-symbols-outlined text-lg">search</span>
+                                                ${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}
+                                            </a>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
 
@@ -209,7 +290,14 @@
                                 <div class="lg:col-span-2 space-y-4">
                                     <div class="portal-section-bar">
                                         <h3 class="portal-section-title">${language == 'zh' ? '近期活动' : 'Recent Activities'}</h3>
-                                        <a href="${pageContext.request.contextPath}/applications" class="portal-section-link">${language == 'zh' ? '查看申请' : 'View Applications'}</a>
+                                        <c:choose>
+                                            <c:when test="${isAdmin}">
+                                                <a href="${pageContext.request.contextPath}/workloads" class="portal-section-link">${language == 'zh' ? '查看工作量' : 'View Workloads'}</a>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <a href="${pageContext.request.contextPath}/applications" class="portal-section-link">${language == 'zh' ? '查看申请' : 'View Applications'}</a>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                     <div class="portal-panel overflow-hidden">
                                         <div class="divide-y divide-primary/5">

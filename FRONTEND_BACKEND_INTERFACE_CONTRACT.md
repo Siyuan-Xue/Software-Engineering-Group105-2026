@@ -451,17 +451,20 @@ This document outlines the standardized interface contract between the frontend 
 5. **Authentication Required:** Yes
 6. **Method:** `GET`
 7. **Description:** 渲染用户设置页面。
-8. **Request Parameters:** None
+8. **Request Parameters:**
+   - `state` (String, optional): 由 `POST /settings` redirect 回来时携带，用于标识反馈状态
+   - `successMessage` (String, optional): 成功反馈文案
+   - `errorMessage` (String, optional): 失败反馈文案
 9. **Request Attributes:**
    - `userProfile` (UserProfile): 用户个人资料
-   - `pageState` (String, optional): 页面状态，支持 `normal`、`updateSuccess`、`updateFailure`、`pwdSuccess`、`pwdFailure`、`loadError`
+   - `pageState` (String, optional): 页面状态，支持 `normal`、`updateSuccess`、`updateFailure`、`pwdSuccess`、`pwdFailure`、`prefSuccess`、`prefFailure`、`loadError`
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** 页面包含资料更新表单和密码更新表单，均提交到 `POST /settings`
+10. **Form Submission:** 页面包含资料更新、偏好更新、密码更新三个表单，均提交到 `POST /settings`
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
-13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `pwdSuccess`, `pwdFailure`, `loadError`
-14. **Main Functionalities:** 查看和更新个人资料及偏好设置。
+13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `pwdSuccess`, `pwdFailure`, `prefSuccess`, `prefFailure`, `loadError`
+14. **Main Functionalities:** 查看和更新个人资料、密码及界面偏好设置。
 15. **Object Structure:**
     - **`UserProfile`**
       - `firstName` (String)
@@ -473,6 +476,11 @@ This document outlines the standardized interface contract between the frontend 
       - `department` (String)
       - `bio` (String)
       - `notificationsEnabled` (Boolean)
+      - `preferredLanguage` (String): `en` / `zh`
+      - `preferredAppearance` (String): `light` / `dark`
+16. **Rendering Notes:**
+    - `loadError` 会渲染独立的错误状态卡片。
+    - 其余成功/失败状态仍渲染正常页面布局，并通过共享 `flash_messages` 组件展示 `errorMessage` / `successMessage`。
 
 ### 7.2. Update Profile Action
 1. **Page Name:** Settings Update Profile Action
@@ -516,6 +524,25 @@ This document outlines the standardized interface contract between the frontend 
 12. **Failure Behavior:** Redirect 到 `GET /settings?state=pwdFailure&errorMessage=...`
 13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
 14. **Main Functionalities:** 校验密码并在成功后刷新当前会话用户数据。
+
+### 7.4. Update Preferences Action
+1. **Page Name:** Settings Update Preferences Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 更新用户的界面语言和外观模式偏好。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `updatePreferences`
+   - `preferredLanguage` (String, required): `en` 或 `zh`
+   - `preferredAppearance` (String, required): `light` 或 `dark`
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=prefSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=prefFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 保存用户的国际化与主题偏好，并刷新当前会话中的语言/外观设置。
 
 ---
 

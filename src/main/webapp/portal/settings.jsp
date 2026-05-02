@@ -83,10 +83,10 @@
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                             <jsp:param name="variant" value="error" />
                             <jsp:param name="icon" value="settings_alert" />
-                            <jsp:param name="title" value="Settings unavailable" />
-                            <jsp:param name="message" value="We couldn't load your account settings right now. Please refresh the page or try again in a moment." />
+                            <jsp:param name="title" value="${i18n['settings.loadErrorTitle']}" />
+                            <jsp:param name="message" value="${i18n['settings.loadErrorMessage']}" />
                             <jsp:param name="actionHref" value="${pageContext.request.contextPath}/settings" />
-                            <jsp:param name="actionLabel" value="Try Again" />
+                            <jsp:param name="actionLabel" value="${i18n['common.tryAgain']}" />
                         </jsp:include>
                     </c:when>
                     <c:otherwise>

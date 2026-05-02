@@ -1,6 +1,6 @@
 # Frontend-Backend Integration Checklist
 
-更新时间：2026-04-07
+更新时间：2026-05-02
 
 关联文件：
 - `FRONTEND_BACKEND_INTERFACE_CONTRACT.md`
@@ -13,8 +13,19 @@
 ## 1. 当前状态概览
 
 - 前端 JSP 页面、公共提示组件、空状态组件、header/sidebar、portal 样式已经整理完。
-- 当前 Java Web 层只有 `EncodingFilter`，还没有任何 `@WebServlet` 或 `web.xml` servlet 映射。
-- 这意味着联调前最关键的工作不是继续改 JSP，而是让后端按既定路由和 request attribute 把页面喂起来。
+- 当前 Java Web 层已经有大部分 portal 路由和 `AuthFilter` 共享注入逻辑；不再是只有基础 filter 的阶段。
+- `settings` 已经接到真实 servlet，当前支持资料更新、改密码、语言/外观偏好。
+- 当前最大的联调缺口仍然是 `messages`，因为项目里还没有对应的 `MessagesServlet`。
+
+### 1.1 升级文档与代码现实差异
+
+以下几项当前需要按“代码现实”理解，而不是只按升级说明文档理解：
+
+- `/db-demo` 当前仍然存在，`DbDemoServlet` 和 `DbDemoService` 也仍在仓库中；它更像数据库能力演示入口，不应被当作正式业务联调基线。
+- `messages` 仍然没有后端 servlet；因此虽然数据库模块已经升级，消息链路依然未闭环。
+- `settings` 已经进一步扩展到资料更新、改密码、语言/外观偏好，范围比早期 checklist 和部分口头说明更大。
+
+联调时建议优先以当前代码和本 checklist 为准，再回头校正文档。
 
 ## 2. 全局联调结论
 
@@ -24,18 +35,21 @@
 
 | 页面/动作 | 方法 | 前端当前使用的路由 | 状态 |
 |---|---|---|---|
-| Login page | `GET` | `/login` | 合同已定义，后端待实现 |
-| Login action | `POST` | `/login` | 合同已定义，后端待实现 |
-| Logout action | `POST` | `/logout` | 前端已固定为 `POST`，建议后端按 `POST` 实现 |
-| Dashboard | `GET` | `/dashboard` | 合同已定义，后端待实现 |
-| Vacancies | `GET` | `/vacancies` | 合同已定义，后端待实现 |
-| Vacancy detail | `GET` | `/vacancy` | 合同已定义，后端待实现 |
-| Submit application | `POST` | `/application` | 合同已定义，后端待实现 |
-| Applications | `GET` | `/applications` | 合同已定义，后端待实现 |
-| Resumes | `GET` | `/resumes` | 合同已定义，后端待实现 |
-| Messages page | `GET` | `/messages` | 合同已定义，后端待实现 |
+| Login page | `GET` | `/login` | 已实现 |
+| Login action | `POST` | `/login` | 已实现 |
+| Logout action | `POST` | `/logout` | 已实现，前端固定为 `POST` |
+| Dashboard | `GET` | `/dashboard` | 已实现 |
+| Vacancies | `GET` | `/vacancies` | 已实现 |
+| Vacancy detail | `GET` | `/vacancy` | 已实现 |
+| Submit application | `POST` | `/application` | 已实现 |
+| Applications | `GET` | `/applications` | 已实现 |
+| Resumes page | `GET` | `/resumes` | 已实现 |
+| Resumes upload | `POST` | `/resumes` | 已实现 |
+| Messages page | `GET` | `/messages` | 前端已就绪，后端待实现 |
 | Messages send action | `POST` | `/messages` | 前端已使用，合同已补充，后端待实现 |
-| Settings | `GET` | `/settings` | 合同已定义，后端待实现 |
+| Settings page | `GET` | `/settings` | 已实现 |
+| Settings action | `POST` | `/settings` | 已实现 |
+| Workloads | `GET` | `/workloads` | 已实现 |
 
 ### 2.2 全局提示信息
 
@@ -63,11 +77,11 @@
 - 未登录用户访问 portal 路由时，后端应重定向到 `/login`
 - 可附带 `errorMessage=Please log in to access this page`
 
-当前待实现：
+当前状态：
 
-- 实际登录校验
-- Session 建立与销毁
-- 鉴权拦截逻辑
+- `AuthFilter` 已经负责登录校验和共享 request attribute 注入
+- Session 建立与销毁已接入 `LoginServlet` / `LogoutServlet`
+- 真正仍待后端补齐的主链路是 `messages`
 
 ## 3. Shared Layout 联调检查
 
@@ -227,11 +241,14 @@ Sidebar 会读取：
 ### 6.1 必传 attributes
 
 - `userProfile`
+- `pageState`
 - `errorMessage` optional
 - `successMessage` optional
 
 ### 6.2 `userProfile` 当前需要的字段
 
+- `fullName`
+- `phone`
 - `firstName`
 - `lastName`
 - `email`
@@ -239,6 +256,8 @@ Sidebar 会读取：
 - `department`
 - `bio`
 - `notificationsEnabled`
+- `preferredLanguage`
+- `preferredAppearance`
 
 ### 6.3 支持状态
 
@@ -247,6 +266,8 @@ Sidebar 会读取：
 - `updateFailure`
 - `pwdSuccess`
 - `pwdFailure`
+- `prefSuccess`
+- `prefFailure`
 - `loadError`
 
 ### 6.4 当前实现范围（已确认保留）
@@ -254,9 +275,22 @@ Sidebar 会读取：
 当前代码实现已经包含：
 
 - 资料编辑表单
+- 偏好设置表单
 - 改密码表单
-- `POST /settings` 下的 `updateProfile` / `changePassword`
-- 对应的 `updateSuccess` / `updateFailure` / `pwdSuccess` / `pwdFailure` 状态
+- `POST /settings` 下的 `updateProfile` / `changePassword` / `updatePreferences`
+- 对应的 `updateSuccess` / `updateFailure` / `pwdSuccess` / `pwdFailure` / `prefSuccess` / `prefFailure` 状态
+
+### 6.5 当前展示行为
+
+- `loadError` 会渲染独立的错误状态卡片
+- 其余成功/失败状态继续渲染正常页面，并通过 `flash_messages` 展示 `errorMessage` / `successMessage`
+
+### 6.6 本轮联调需要确认的点
+
+- `GET /settings` 返回的 `userProfile` 是否包含 `preferredLanguage` / `preferredAppearance`
+- `POST /settings` 的 `action=updatePreferences` 是否和合同保持一致
+- `prefSuccess` / `prefFailure` 的 redirect 参数是否稳定
+- 语言切换后 `header/sidebar/settings` 是否都跟着当前 session 语言刷新
 
 联调建议：
 
