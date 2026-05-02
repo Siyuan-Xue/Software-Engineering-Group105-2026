@@ -1,8 +1,7 @@
 package com.bupt.ta.config;
 
+import com.bupt.ta.db.core.JsonMapperFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,10 +14,7 @@ public final class AppConfig {
     }
 
     public static ObjectMapper createObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return objectMapper;
+        return JsonMapperFactory.create();
     }
 
     public static Path resolveDataDirectory() {

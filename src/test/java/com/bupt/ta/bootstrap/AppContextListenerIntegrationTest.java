@@ -1,7 +1,7 @@
 package com.bupt.ta.bootstrap;
 
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import org.junit.jupiter.api.Test;
@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AppContextListenerIntegrationTest {
 
@@ -44,6 +45,11 @@ class AppContextListenerIntegrationTest {
             TaDatabase database = DatabaseProvider.get(servletContext);
             assertNotNull(database);
             assertSame(database, DatabaseProvider.get(servletContext));
+            assertTrue(database.users().findByEmail("test@example.com").isPresent());
+            assertTrue(database.users().findByEmail("mo@example.com").isPresent());
+            assertTrue(database.users().findByEmail("admin@example.com").isPresent());
+            assertTrue(database.skills().findByNameIgnoreCase("Java").isPresent());
+            assertTrue(database.skills().findByNameIgnoreCase("Tutoring").isPresent());
         } finally {
             System.clearProperty("ta105.data.dir");
         }

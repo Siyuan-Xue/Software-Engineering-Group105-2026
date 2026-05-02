@@ -22,7 +22,7 @@ Wang Ruijia [wang_ruijia@bupt.edu.cn](mailto:wang_ruijia@bupt.edu.cn)
 - OpenJDK 25.0.2 (or any Java 17+ runtime)
 - Tomcat 11
 - Servlet API (Jakarta) + JSP
-- Jackson JSON persistence
+- Jackson-powered local JSON database
 - JUnit 6
 - Maven WAR project
 
@@ -30,9 +30,15 @@ Wang Ruijia [wang_ruijia@bupt.edu.cn](mailto:wang_ruijia@bupt.edu.cn)
 
 - 单 WAR 同源部署
 - 前端：JSP 页面与共享组件
-- 后端：Servlet/JSP Web 应用 + 基于文件的持久化层
-- 数据存储：`data/*.json`，不使用数据库
+- 后端：Servlet/JSP Web 应用 + `TaDatabase` 统一数据库门面
+- 数据存储：`data/*.json`，Sprint 3 终态 11 表，不使用外部数据库
 - 注解注册：`@WebFilter`，`web.xml` 仅保留最小描述符
+
+## Database Docs
+
+- 数据层设计总入口：[docs/ta-recruitment-system/README.md](./docs/ta-recruitment-system/README.md)
+- 后端使用指南：[docs/ta-recruitment-system/backend-database-usage.md](./docs/ta-recruitment-system/backend-database-usage.md)
+- 升级影响说明：[docs/ta-recruitment-system/database-upgrade-impact.md](./docs/ta-recruitment-system/database-upgrade-impact.md)
 
 ## Project Layout
 
@@ -44,15 +50,35 @@ Wang Ruijia [wang_ruijia@bupt.edu.cn](mailto:wang_ruijia@bupt.edu.cn)
         ├── java/com/bupt/ta/
         │   ├── config/
         │   ├── bootstrap/
+        │   ├── domain/
+        │   │   ├── entity/
+        │   │   ├── enums/
+        │   │   └── value/
+        │   ├── db/
+        │   │   ├── core/
+        │   │   ├── store/
+        │   │   ├── repository/
+        │   │   └── facade/
         │   ├── model/
-        │   ├── persistence/
-        │   ├── repository/
         │   ├── service/
         │   └── web/
         ├── test/
         └── webapp/
             ├── index.jsp
             └── portal/
+├── docs/ta-recruitment-system/
+└── data/
+    ├── users.json
+    ├── resumes.json
+    ├── jobs.json
+    ├── applications.json
+    ├── skills.json
+    ├── resume_skills.json
+    ├── job_requirements.json
+    ├── workload_records.json
+    ├── match_scores.json
+    ├── notifications.json
+    └── audit_logs.json
 ```
 
 ## macOS 从零安装并运行（Homebrew）
@@ -126,14 +152,24 @@ brew services start tomcat
 
 - 默认：`./data`
 - 可覆盖：`-Dta105.data.dir=/absolute/path/to/data`
+- 新系统要求使用全新的空 `data/` 目录
+- 不做旧版 4 表 JSON 的自动迁移；若检测到旧数据目录，启动会失败并提示先备份/清空
 
 数据库层使用方式：
 
 ```java
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.value.JobQuery;
+import java.time.Instant;
+
 TaDatabase db = DatabaseProvider.get(servletContext);
+
 db.users().findByEmail("user@example.com");
 db.resumes().listByUserId(userId);
-db.jobs().listOpen(Instant.now());
+JobQuery query = new JobQuery();
+query.setNow(Instant.now());
+db.jobs().listOpen(query);
 db.applications().listByJobId(jobId);
 ```
 
@@ -268,4 +304,3 @@ Copy-Item target\ta105.war -Destination "D:\path\to\apache-tomcat-11.x\webapps\t
 cd "D:\path\to\apache-tomcat-11.x\bin"
 .\catalina.bat start
 ```
-

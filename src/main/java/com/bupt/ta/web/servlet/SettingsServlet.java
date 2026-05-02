@@ -1,8 +1,9 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -59,6 +60,8 @@ public class SettingsServlet extends HttpServlet {
         String action = normalize(req.getParameter("action"));
         if ("changePassword".equals(action)) {
             handleChangePassword(req, resp, currentUser);
+        } else if ("updatePreferences".equals(action)) {
+            handleUpdatePreferences(req, resp, currentUser);
         } else {
             handleUpdateProfile(req, resp, currentUser);
         }
@@ -68,8 +71,9 @@ public class SettingsServlet extends HttpServlet {
 
     private void handleUpdateProfile(HttpServletRequest req, HttpServletResponse resp, User currentUser)
             throws IOException {
+        String language = resolveLanguage(req, currentUser);
         try {
-            String fullName  = require(req.getParameter("fullName"), "Full name is required.");
+            String fullName  = require(req.getParameter("fullName"), I18n.message(language, "msg.fullNameRequired"));
             String phone     = normalize(req.getParameter("phone"));
             String department = normalize(req.getParameter("department"));
             String studentId = normalize(req.getParameter("studentId"));
@@ -84,43 +88,82 @@ public class SettingsServlet extends HttpServlet {
             currentUser.setNotificationsEnabled(notificationsEnabled);
 
             User saved = database.users().save(currentUser);
-            req.getSession(true).setAttribute("currentUser", saved);
+            HttpSession session = req.getSession(true);
+            session.setAttribute("currentUser", saved);
+            session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, language);
+            session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(saved.getPreferredAppearance()));
 
-            redirect(resp, req, "updateSuccess", "successMessage", "Profile updated successfully.");
+            redirect(resp, req, "updateSuccess", "successMessage", I18n.message(language, "msg.profileUpdated"));
         } catch (RuntimeException ex) {
             redirect(resp, req, "updateFailure", "errorMessage",
-                    ex.getMessage() != null ? ex.getMessage() : "Failed to save profile.");
+                    ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.profileSaveFailed"));
         }
     }
 
     private void handleChangePassword(HttpServletRequest req, HttpServletResponse resp, User currentUser)
             throws IOException {
+        String language = resolveLanguage(req, currentUser);
         try {
-            String currentPassword = require(req.getParameter("currentPassword"), "Current password is required.");
-            String newPassword     = require(req.getParameter("newPassword"), "New password is required.");
-            String confirmPassword = require(req.getParameter("confirmPassword"), "Please confirm your new password.");
+            String currentPassword = require(req.getParameter("currentPassword"), I18n.message(language, "msg.currentPasswordRequired"));
+            String newPassword     = require(req.getParameter("newPassword"), I18n.message(language, "msg.newPasswordRequired"));
+            String confirmPassword = require(req.getParameter("confirmPassword"), I18n.message(language, "msg.confirmPasswordRequired"));
 
             if (!PasswordUtil.checkPassword(currentPassword, currentUser.getPasswordHash())) {
-                redirect(resp, req, "pwdFailure", "errorMessage", "Current password is incorrect.");
+                redirect(resp, req, "pwdFailure", "errorMessage", I18n.message(language, "msg.currentPasswordIncorrect"));
                 return;
             }
             if (!newPassword.equals(confirmPassword)) {
-                redirect(resp, req, "pwdFailure", "errorMessage", "New passwords do not match.");
+                redirect(resp, req, "pwdFailure", "errorMessage", I18n.message(language, "msg.passwordMismatch"));
                 return;
             }
             if (newPassword.length() < 8) {
-                redirect(resp, req, "pwdFailure", "errorMessage", "New password must be at least 8 characters.");
+                redirect(resp, req, "pwdFailure", "errorMessage", I18n.message(language, "msg.passwordTooShort"));
                 return;
             }
 
             currentUser.setPasswordHash(PasswordUtil.hashPassword(newPassword));
             User saved = database.users().save(currentUser);
-            req.getSession(true).setAttribute("currentUser", saved);
+            HttpSession session = req.getSession(true);
+            session.setAttribute("currentUser", saved);
+            session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, language);
+            session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(saved.getPreferredAppearance()));
 
-            redirect(resp, req, "pwdSuccess", "successMessage", "Password changed successfully.");
+            redirect(resp, req, "pwdSuccess", "successMessage", I18n.message(language, "msg.passwordChanged"));
         } catch (RuntimeException ex) {
             redirect(resp, req, "pwdFailure", "errorMessage",
-                    ex.getMessage() != null ? ex.getMessage() : "Failed to change password.");
+                    ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.passwordChangeFailed"));
+        }
+    }
+
+    private void handleUpdatePreferences(HttpServletRequest req, HttpServletResponse resp, User currentUser)
+            throws IOException {
+        String preferredLanguage = normalize(req.getParameter("preferredLanguage"));
+        String preferredAppearance = normalize(req.getParameter("preferredAppearance"));
+        if (preferredLanguage == null) {
+            String language = resolveLanguage(req, currentUser);
+            redirect(resp, req, "prefFailure", "errorMessage", I18n.message(language, "msg.languageRequired"));
+            return;
+        }
+        if (preferredAppearance == null) {
+            String language = resolveLanguage(req, currentUser);
+            redirect(resp, req, "prefFailure", "errorMessage", I18n.message(language, "msg.appearanceRequired"));
+            return;
+        }
+
+        String language = I18n.normalizeLanguage(preferredLanguage);
+        String appearance = I18n.normalizeAppearance(preferredAppearance);
+        try {
+            currentUser.setPreferredLanguage(language);
+            currentUser.setPreferredAppearance(appearance);
+            User saved = database.users().save(currentUser);
+            HttpSession session = req.getSession(true);
+            session.setAttribute("currentUser", saved);
+            session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, language);
+            session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, appearance);
+            redirect(resp, req, "prefSuccess", "successMessage", I18n.message(language, "msg.preferencesUpdated"));
+        } catch (RuntimeException ex) {
+            redirect(resp, req, "prefFailure", "errorMessage",
+                    ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.preferencesUpdateFailed"));
         }
     }
 
@@ -140,6 +183,8 @@ public class SettingsServlet extends HttpServlet {
         profile.put("studentId", safe(user.getStudentId(), ""));
         profile.put("bio", safe(user.getBio(), ""));
         profile.put("notificationsEnabled", user.isNotificationsEnabled());
+        profile.put("preferredLanguage", I18n.normalizeLanguage(user.getPreferredLanguage()));
+        profile.put("preferredAppearance", I18n.normalizeAppearance(user.getPreferredAppearance()));
         return profile;
     }
 
@@ -170,5 +215,19 @@ public class SettingsServlet extends HttpServlet {
 
     private String safe(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String resolveLanguage(HttpServletRequest req, User currentUser) {
+        if (currentUser != null && currentUser.getPreferredLanguage() != null) {
+            return I18n.normalizeLanguage(currentUser.getPreferredLanguage());
+        }
+        HttpSession session = req.getSession(false);
+        if (session != null) {
+            Object language = session.getAttribute(I18n.SESSION_LANGUAGE_ATTR);
+            if (language instanceof String value) {
+                return I18n.normalizeLanguage(value);
+            }
+        }
+        return I18n.DEFAULT_LANGUAGE;
     }
 }

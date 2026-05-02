@@ -1,28 +1,193 @@
 package com.bupt.ta.service;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.repository.JobRepository;
+import com.bupt.ta.db.core.ConstraintViolationException;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Application;
+import com.bupt.ta.domain.entity.AuditLog;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Notification;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.ApplicationStatus;
+import com.bupt.ta.domain.enums.AuditAction;
+import com.bupt.ta.domain.enums.EntityType;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.NotificationType;
+import com.bupt.ta.domain.enums.UserRole;
+import com.bupt.ta.domain.value.JobQuery;
+import com.bupt.ta.db.core.JsonMapperFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class JobService {
-    private final JobRepository jobRepository;
+    private static final Set<ApplicationStatus> IN_PROGRESS_APPLICATIONS = Set.of(
+            ApplicationStatus.PENDING,
+            ApplicationStatus.REVIEWING,
+            ApplicationStatus.OFFER_PENDING
+    );
 
-    public JobService(JobRepository jobRepository) {
-        this.jobRepository = jobRepository;
+    private final TaDatabase db;
+    private final ObjectMapper mapper = JsonMapperFactory.create();
+
+    public JobService(TaDatabase db) {
+        this.db = db;
     }
 
     public List<Job> listOpen(Instant now) {
-        return jobRepository.listOpen(now);
+        JobQuery query = new JobQuery();
+        query.setNow(now);
+        return db.jobs().listOpen(query);
+    }
+
+    public List<Job> listOpen(JobQuery query) {
+        return db.jobs().listOpen(query);
     }
 
     public List<Job> listByPoster(UUID posterId) {
-        return jobRepository.listByPoster(posterId);
+        return db.jobs().listByPoster(posterId);
     }
 
     public Job save(Job job) {
-        return jobRepository.save(job);
+        UUID operatorId = job.getPostedBy();
+        return job.getId() == null ? createDraft(job) : update(operatorId, job);
+    }
+
+    public Job createDraft(Job job) {
+        validateJob(job);
+        if (job.getStatus() == null) {
+            job.setStatus(JobStatus.DRAFT);
+        }
+        Job saved = db.jobs().save(job);
+        appendAudit(job.getPostedBy(), AuditAction.CREATE, EntityType.JOB, null, saved);
+        return saved;
+    }
+
+    public Job publish(UUID operatorId, UUID jobId) {
+        return changeStatus(operatorId, jobId, JobStatus.OPEN);
+    }
+
+    public Job update(UUID operatorId, Job job) {
+        Job existing = db.jobs().findById(job.getId())
+                .orElseThrow(() -> new ConstraintViolationException("Job not found: " + job.getId()));
+        validateJob(job);
+        Job saved = db.jobs().save(job);
+        appendAudit(operatorId, AuditAction.UPDATE, EntityType.JOB, existing, saved);
+        return saved;
+    }
+
+    public Job changeStatus(UUID operatorId, UUID jobId, JobStatus status) {
+        Job existing = db.jobs().findById(jobId)
+                .orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
+        Job updated = mapper.convertValue(existing, Job.class);
+        updated.setStatus(status);
+
+        if (status != JobStatus.CANCELLED) {
+            Job saved = db.jobs().save(updated);
+            appendAudit(operatorId, AuditAction.STATUS_CHANGE, EntityType.JOB, existing, saved);
+            return saved;
+        }
+
+        db.executeAtomically(() -> {
+            Job cancelled = db.jobs().save(updated);
+            for (Application application : db.applications().listByStatuses(jobId, List.copyOf(IN_PROGRESS_APPLICATIONS))) {
+                Application mutated = mapper.convertValue(application, Application.class);
+                mutated.setStatus(ApplicationStatus.WITHDRAWN);
+                db.applications().save(mutated);
+                notifyResumeOwner(mutated.getResumeId(),
+                        NotificationType.APPLICATION_STATUS,
+                        "Application withdrawn",
+                        "Your application was withdrawn because the job was cancelled.",
+                        EntityType.APPLICATION,
+                        mutated.getId());
+            }
+            appendAudit(operatorId, AuditAction.STATUS_CHANGE, EntityType.JOB, existing, cancelled);
+        });
+        return db.jobs().findById(jobId).orElseThrow();
+    }
+
+    public void replaceRequirements(UUID operatorId, UUID jobId, List<JobRequirement> requirements) {
+        db.jobs().findById(jobId).orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
+        db.executeAtomically(() -> {
+            List<JobRequirement> retained = db.jobRequirements().findAll().stream()
+                    .filter(requirement -> !jobId.equals(requirement.getJobId()))
+                    .toList();
+            db.jobRequirements().findAll().forEach(requirement -> {
+                if (jobId.equals(requirement.getJobId())) {
+                    db.jobRequirements().delete(requirement.getId());
+                }
+            });
+            for (JobRequirement requirement : requirements) {
+                requirement.setJobId(jobId);
+                db.jobRequirements().save(requirement);
+            }
+        });
+        appendAudit(operatorId, AuditAction.UPDATE, EntityType.JOB_REQUIREMENT, null, null);
+    }
+
+    private void validateJob(Job job) {
+        if (job.getPostedBy() == null) {
+            throw new ConstraintViolationException("Job postedBy must not be null");
+        }
+        User poster = db.users().findById(job.getPostedBy())
+                .orElseThrow(() -> new ConstraintViolationException("Job poster does not exist: " + job.getPostedBy()));
+        if (poster.getRole() != UserRole.MO && poster.getRole() != UserRole.ADMIN) {
+            throw new ConstraintViolationException("Job poster must be an MO or ADMIN user");
+        }
+        if (job.getTitle() == null || job.getTitle().isBlank()) {
+            throw new ConstraintViolationException("Job title must not be blank");
+        }
+        if (job.getDeadline() == null) {
+            throw new ConstraintViolationException("Job deadline must not be null");
+        }
+        LocalDate start = job.getStartDate();
+        LocalDate end = job.getEndDate();
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new ConstraintViolationException("Job endDate must not be before startDate");
+        }
+        job.setTitle(job.getTitle().trim());
+    }
+
+    private void notifyResumeOwner(UUID resumeId,
+                                   NotificationType type,
+                                   String title,
+                                   String message,
+                                   EntityType entityType,
+                                   UUID entityId) {
+        Resume resume = db.resumes().findById(resumeId).orElse(null);
+        if (resume == null) {
+            return;
+        }
+        Notification notification = new Notification();
+        notification.setUserId(resume.getUserId());
+        notification.setNotifType(type);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setEntityType(entityType);
+        notification.setEntityId(entityId);
+        db.notifications().save(notification);
+    }
+
+    private void appendAudit(UUID operatorId, AuditAction action, EntityType entityType, Object oldValue, Object newValue) {
+        AuditLog log = new AuditLog();
+        log.setOperatorId(operatorId);
+        log.setAction(action);
+        log.setEntityType(entityType);
+        if (newValue instanceof Job job) {
+            log.setEntityId(job.getId());
+        }
+        if (oldValue != null) {
+            log.setOldValue(mapper.valueToTree(oldValue));
+        }
+        if (newValue != null) {
+            log.setNewValue(mapper.valueToTree(newValue));
+        }
+        log.setOperatedAt(Instant.now());
+        db.auditLogs().append(log);
     }
 }

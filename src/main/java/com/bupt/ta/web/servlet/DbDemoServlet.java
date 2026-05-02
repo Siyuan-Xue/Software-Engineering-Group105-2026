@@ -1,18 +1,22 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.config.AppConfig;
-import com.bupt.ta.model.Application;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.ApplicationStatus;
-import com.bupt.ta.model.enums.DegreeLevel;
-import com.bupt.ta.model.enums.JobStatus;
-import com.bupt.ta.model.enums.JobType;
-import com.bupt.ta.model.enums.UserRole;
-import com.bupt.ta.persistence.DatabaseProvider;
+import com.bupt.ta.db.core.ConstraintViolationException;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.domain.entity.Application;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.SkillCategory;
+import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.service.DbDemoService;
-import com.bupt.ta.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -27,380 +31,323 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @WebServlet("/db-demo")
 public class DbDemoServlet extends HttpServlet {
     private static final String VIEW_PATH = "/WEB-INF/jsp/db-demo.jsp";
     private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
+    private static final DateTimeFormatter DATETIME_INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     private DbDemoService dbDemoService;
 
-    public DbDemoServlet() {
-    }
-
-    DbDemoServlet(DbDemoService dbDemoService) {
-        this.dbDemoService = dbDemoService;
-    }
-
     @Override
     public void init() {
-        if (dbDemoService == null) {
-            dbDemoService = DbDemoService.from(DatabaseProvider.get(getServletContext()));
-        }
+        this.dbDemoService = new DbDemoService(DatabaseProvider.get(getServletContext()));
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        applyMessageAttributes(request);
-        forwardPage(request, response);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        applyFlashMessages(req);
+        safelyApplyEditSelection(req);
+        populatePageData(req);
+        req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String entity = normalize(request.getParameter("entity"));
-        String operation = normalize(request.getParameter("operation"));
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String operation = normalize(req.getParameter("operation"));
+        String section = normalize(req.getParameter("section"));
+        String targetSection = section == null ? "overview-section" : section;
 
         try {
-            String successMessage = handlePost(entity, operation, request);
-            response.sendRedirect(buildRedirectUrl(request, "successMessage", successMessage));
-        } catch (RuntimeException e) {
-            request.setAttribute("errorMessage", e.getMessage());
-            if (isUpsertOperation(operation)) {
-                request.setAttribute("editEntity", entity);
-                try {
-                    populateEditingEntityFromSubmission(request, entity);
-                } catch (RuntimeException ignored) {
-                    clearEditingAttributes(request);
-                }
-            }
-            forwardPage(request, response);
+            String successMessage = handleOperation(operation, req);
+            resp.sendRedirect(buildRedirectUrl(req, targetSection, "successMessage", successMessage));
+        } catch (RuntimeException ex) {
+            req.setAttribute("errorMessage", ex.getMessage());
+            repopulateSubmittedEntity(req, operation);
+            populatePageData(req);
+            req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
         }
     }
 
-    private String handlePost(String entity, String operation, HttpServletRequest request) {
-        if (entity == null || operation == null) {
-            throw new IllegalArgumentException("Both entity and operation are required");
+    private String handleOperation(String operation, HttpServletRequest req) {
+        if (operation == null) {
+            throw new ConstraintViolationException("An operation is required");
         }
 
-        return switch (entity) {
-            case "user" -> handleUserOperation(operation, request);
-            case "resume" -> handleResumeOperation(operation, request);
-            case "job" -> handleJobOperation(operation, request);
-            case "application" -> handleApplicationOperation(operation, request);
-            default -> throw new IllegalArgumentException("Unsupported entity: " + entity);
-        };
-    }
-
-    private String handleUserOperation(String operation, HttpServletRequest request) {
         return switch (operation) {
-            case "create", "update" -> {
-                User user = readUserFromRequest(request);
+            case "user-save" -> {
+                User user = readUserFromRequest(req);
                 boolean isUpdate = user.getId() != null;
-                dbDemoService.saveUser(user);
-                yield isUpdate ? "User updated successfully" : "User created successfully";
+                dbDemoService.saveUser(user, req.getParameter("plainPassword"));
+                yield isUpdate ? "User updated through TaDatabase." : "User created through TaDatabase.";
             }
-            case "deactivate" -> {
-                UUID id = requireUuid(request.getParameter("id"), "User id is required");
-                dbDemoService.deactivateUser(id);
-                yield "User deactivated successfully";
-            }
-            case "activate" -> {
-                UUID id = requireUuid(request.getParameter("id"), "User id is required");
-                dbDemoService.activateUser(id);
-                yield "User activated successfully";
-            }
-            default -> throw new IllegalArgumentException("Unsupported user operation: " + operation);
-        };
-    }
-
-    private String handleResumeOperation(String operation, HttpServletRequest request) {
-        return switch (operation) {
-            case "create", "update" -> {
-                Resume resume = readResumeFromRequest(request);
+            case "resume-save" -> {
+                Resume resume = readResumeFromRequest(req);
                 boolean isUpdate = resume.getId() != null;
-                dbDemoService.saveResume(resume);
-                yield isUpdate ? "Resume updated successfully" : "Resume created successfully";
+                dbDemoService.saveResume(resume, req.getParameter("availabilitySlotsJson"));
+                yield isUpdate ? "Resume updated and persisted to JSON." : "Resume created and persisted to JSON.";
             }
-            case "delete" -> {
-                UUID id = requireUuid(request.getParameter("id"), "Resume id is required");
-                dbDemoService.deleteResume(id);
-                yield "Resume deleted successfully";
-            }
-            default -> throw new IllegalArgumentException("Unsupported resume operation: " + operation);
-        };
-    }
-
-    private String handleJobOperation(String operation, HttpServletRequest request) {
-        return switch (operation) {
-            case "create", "update" -> {
-                Job job = readJobFromRequest(request);
+            case "job-save" -> {
+                Job job = readJobFromRequest(req);
                 boolean isUpdate = job.getId() != null;
                 dbDemoService.saveJob(job);
-                yield isUpdate ? "Job updated successfully" : "Job created successfully";
+                yield isUpdate ? "Job updated through JobService." : "Job created through JobService.";
             }
-            case "delete" -> {
-                UUID id = requireUuid(request.getParameter("id"), "Job id is required");
-                dbDemoService.deleteJob(id);
-                yield "Job deleted successfully";
+            case "skill-save" -> {
+                Skill skill = readSkillFromRequest(req);
+                boolean isUpdate = skill.getId() != null;
+                dbDemoService.saveSkill(skill);
+                yield isUpdate ? "Skill updated through SkillRepository." : "Skill created through SkillRepository.";
             }
-            default -> throw new IllegalArgumentException("Unsupported job operation: " + operation);
+            case "resume-skill-save" -> {
+                ResumeSkill resumeSkill = readResumeSkillFromRequest(req);
+                boolean isUpdate = resumeSkill.getId() != null;
+                dbDemoService.saveResumeSkill(resumeSkill);
+                yield isUpdate ? "Resume skill updated through ResumeSkillRepository." : "Resume skill created through ResumeSkillRepository.";
+            }
+            case "job-requirement-save" -> {
+                JobRequirement requirement = readJobRequirementFromRequest(req);
+                boolean isUpdate = requirement.getId() != null;
+                dbDemoService.saveJobRequirement(requirement);
+                yield isUpdate ? "Job requirement updated through JobRequirementRepository." : "Job requirement created through JobRequirementRepository.";
+            }
+            case "match-score-refresh" -> {
+                dbDemoService.refreshMatchScore(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Match score refreshed through MatchingService.";
+            }
+            case "application-submit" -> {
+                UUID resumeId = requireUuid(req.getParameter("resumeId"), "Resume is required");
+                UUID jobId = requireUuid(req.getParameter("jobId"), "Job is required");
+                dbDemoService.submitApplication(resumeId, jobId, req.getParameter("coverLetter"));
+                yield "Application submitted. Applications, notifications, and audit logs were updated.";
+            }
+            case "application-review" -> {
+                dbDemoService.startReview(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Application moved to REVIEWING.";
+            }
+            case "application-offer" -> {
+                dbDemoService.sendOffer(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Offer sent to the applicant.";
+            }
+            case "application-accept" -> {
+                dbDemoService.acceptOffer(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Offer accepted. Workload, notifications, and audit logs were updated.";
+            }
+            case "application-decline" -> {
+                dbDemoService.declineOffer(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Offer declined by the applicant.";
+            }
+            case "application-withdraw" -> {
+                dbDemoService.withdraw(requireUuid(req.getParameter("applicationId"), "Application is required"));
+                yield "Application withdrawn by the applicant.";
+            }
+            case "application-reject" -> {
+                dbDemoService.reject(
+                        requireUuid(req.getParameter("applicationId"), "Application is required"),
+                        req.getParameter("rejectionNote"));
+                yield "Application rejected by the recruiter.";
+            }
+            case "job-cancel" -> {
+                dbDemoService.cancelJob(requireUuid(req.getParameter("jobId"), "Job is required"));
+                yield "Job cancelled. In-progress applications were withdrawn.";
+            }
+            default -> throw new ConstraintViolationException("Unsupported db-demo operation: " + operation);
         };
     }
 
-    private String handleApplicationOperation(String operation, HttpServletRequest request) {
-        return switch (operation) {
-            case "create", "update" -> {
-                Application application = readApplicationFromRequest(request);
-                boolean isUpdate = application.getId() != null;
-                dbDemoService.saveApplication(application);
-                yield isUpdate ? "Application updated successfully" : "Application created successfully";
-            }
-            case "delete" -> {
-                UUID id = requireUuid(request.getParameter("id"), "Application id is required");
-                dbDemoService.deleteApplication(id);
-                yield "Application deleted successfully";
-            }
-            default -> throw new IllegalArgumentException("Unsupported application operation: " + operation);
-        };
+    private void populatePageData(HttpServletRequest req) {
+        req.setAttribute("tableCounts", dbDemoService.listTableCounts());
+        req.setAttribute("users", dbDemoService.listUsers());
+        req.setAttribute("recruiterUsers", dbDemoService.listRecruiters());
+        req.setAttribute("resumes", dbDemoService.listResumes());
+        req.setAttribute("jobs", dbDemoService.listJobs());
+        req.setAttribute("applications", dbDemoService.listApplications());
+        req.setAttribute("skills", dbDemoService.listSkills());
+        req.setAttribute("resumeSkills", dbDemoService.listResumeSkills());
+        req.setAttribute("jobRequirements", dbDemoService.listJobRequirements());
+        req.setAttribute("matchScores", dbDemoService.listMatchScores());
+        req.setAttribute("recentNotifications", dbDemoService.listRecentNotifications(10));
+        req.setAttribute("recentAuditLogs", dbDemoService.listRecentAuditLogs(10));
+        req.setAttribute("recentWorkloadRecords", dbDemoService.listRecentWorkloadRecords(10));
+
+        req.setAttribute("roles", UserRole.values());
+        req.setAttribute("degreeLevels", DegreeLevel.values());
+        req.setAttribute("jobTypes", JobType.values());
+        req.setAttribute("jobStatuses", JobStatus.values());
+        req.setAttribute("skillCategories", SkillCategory.values());
+        req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
+
+        req.setAttribute("userLabelsById", dbDemoService.buildUserLabels());
+        req.setAttribute("resumeLabelsById", dbDemoService.buildResumeLabels());
+        req.setAttribute("jobLabelsById", dbDemoService.buildJobLabels());
+        req.setAttribute("skillLabelsById", dbDemoService.buildSkillLabels());
+        req.setAttribute("applicationLabelsById", dbDemoService.buildApplicationLabels());
+        req.setAttribute("dataDirectory", AppConfig.resolveDataDirectory().toString());
+        req.setAttribute("defaultDeadlineValue", LocalDateTime.now().plusDays(7).format(DATETIME_INPUT_FORMAT));
+
+        populateEditingDateFields(req);
     }
 
-    private void forwardPage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        populatePageData(request);
-        request.getRequestDispatcher(VIEW_PATH).forward(request, response);
-    }
-
-    private void populatePageData(HttpServletRequest request) {
-        List<User> users = dbDemoService.listUsers();
-        List<Resume> resumes = dbDemoService.listResumes();
-        List<Job> jobs = dbDemoService.listJobs();
-        List<Application> applications = dbDemoService.listApplications();
-
-        request.setAttribute("users", users);
-        request.setAttribute("recruiterUsers", users.stream()
-                .filter(user -> user.getRole() == UserRole.MO || user.getRole() == UserRole.ADMIN)
-                .toList());
-        request.setAttribute("resumes", resumes);
-        request.setAttribute("jobs", jobs);
-        request.setAttribute("applications", applications);
-
-        request.setAttribute("roles", UserRole.values());
-        request.setAttribute("degreeLevels", DegreeLevel.values());
-        request.setAttribute("jobTypes", JobType.values());
-        request.setAttribute("jobStatuses", JobStatus.values());
-        request.setAttribute("applicationStatuses", ApplicationStatus.values());
-
-        request.setAttribute("userLabelsById", buildUserLabels(users));
-        request.setAttribute("resumeLabelsById", buildResumeLabels(resumes));
-        request.setAttribute("jobLabelsById", buildJobLabels(jobs));
-        request.setAttribute("dataDirectory", AppConfig.resolveDataDirectory().toString());
-
-        safelyApplyEditSelectionFromRequest(request);
-        populateEditingDateTimeValues(request);
-    }
-
-    private void safelyApplyEditSelectionFromRequest(HttpServletRequest request) {
-        try {
-            applyEditSelectionFromRequest(request);
-        } catch (IllegalArgumentException e) {
-            request.setAttribute("errorMessage", e.getMessage());
-            clearEditingAttributes(request);
+    private void applyFlashMessages(HttpServletRequest req) {
+        if (req.getAttribute("successMessage") == null) {
+            req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
+        }
+        if (req.getAttribute("errorMessage") == null) {
+            req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
         }
     }
 
-    private void applyMessageAttributes(HttpServletRequest request) {
-        if (request.getAttribute("successMessage") == null) {
-            request.setAttribute("successMessage", normalize(request.getParameter("successMessage")));
-        }
-        if (request.getAttribute("errorMessage") == null) {
-            request.setAttribute("errorMessage", normalize(request.getParameter("errorMessage")));
-        }
-    }
-
-    private void applyEditSelectionFromRequest(HttpServletRequest request) {
-        if (request.getAttribute("editEntity") != null) {
-            return;
-        }
-
-        String editEntity = normalize(request.getParameter("editEntity"));
-        String editIdValue = normalize(request.getParameter("editId"));
+    private void safelyApplyEditSelection(HttpServletRequest req) {
+        String editEntity = normalize(req.getParameter("editEntity"));
+        String editIdValue = normalize(req.getParameter("editId"));
         if (editEntity == null || editIdValue == null) {
             return;
         }
 
         UUID editId = requireUuid(editIdValue, "Edit id is invalid");
-        request.setAttribute("editEntity", editEntity);
+        req.setAttribute("editEntity", editEntity);
 
         switch (editEntity) {
-            case "user" -> request.setAttribute("editingUser",
-                    dbDemoService.findUser(editId).orElseThrow(() -> new IllegalArgumentException("User not found: " + editId)));
-            case "resume" -> request.setAttribute("editingResume",
-                    dbDemoService.findResume(editId).orElseThrow(() -> new IllegalArgumentException("Resume not found: " + editId)));
-            case "job" -> request.setAttribute("editingJob",
-                    dbDemoService.findJob(editId).orElseThrow(() -> new IllegalArgumentException("Job not found: " + editId)));
-            case "application" -> request.setAttribute("editingApplication",
-                    dbDemoService.findApplication(editId).orElseThrow(() -> new IllegalArgumentException("Application not found: " + editId)));
-            default -> throw new IllegalArgumentException("Unsupported editEntity: " + editEntity);
+            case "user" -> req.setAttribute("editingUser",
+                    dbDemoService.findUser(editId).orElseThrow(() -> new ConstraintViolationException("User not found: " + editId)));
+            case "resume" -> {
+                Resume resume = dbDemoService.findResume(editId)
+                        .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + editId));
+                req.setAttribute("editingResume", resume);
+                req.setAttribute("editingResumeAvailabilityJson", dbDemoService.availabilitySlotsJson(resume));
+            }
+            case "job" -> req.setAttribute("editingJob",
+                    dbDemoService.findJob(editId).orElseThrow(() -> new ConstraintViolationException("Job not found: " + editId)));
+            case "skill" -> req.setAttribute("editingSkill",
+                    dbDemoService.findSkill(editId).orElseThrow(() -> new ConstraintViolationException("Skill not found: " + editId)));
+            case "resumeSkill" -> req.setAttribute("editingResumeSkill",
+                    dbDemoService.findResumeSkill(editId).orElseThrow(() -> new ConstraintViolationException("Resume skill not found: " + editId)));
+            case "jobRequirement" -> req.setAttribute("editingJobRequirement",
+                    dbDemoService.findJobRequirement(editId).orElseThrow(() -> new ConstraintViolationException("Job requirement not found: " + editId)));
+            default -> throw new ConstraintViolationException("Unsupported edit entity: " + editEntity);
         }
     }
 
-    private void populateEditingEntityFromSubmission(HttpServletRequest request, String entity) {
-        if (entity == null) {
+    private void repopulateSubmittedEntity(HttpServletRequest req, String operation) {
+        if (operation == null) {
             return;
         }
-
-        switch (entity) {
-            case "user" -> request.setAttribute("editingUser", readUserFromRequest(request));
-            case "resume" -> request.setAttribute("editingResume", readResumeFromRequest(request));
-            case "job" -> request.setAttribute("editingJob", readJobFromRequest(request));
-            case "application" -> request.setAttribute("editingApplication", readApplicationFromRequest(request));
+        switch (operation) {
+            case "user-save" -> {
+                req.setAttribute("editEntity", "user");
+                req.setAttribute("editingUser", readUserFromRequest(req));
+            }
+            case "resume-save" -> {
+                req.setAttribute("editEntity", "resume");
+                req.setAttribute("editingResume", readResumeFromRequest(req));
+                req.setAttribute("editingResumeAvailabilityJson", valueOrEmpty(req.getParameter("availabilitySlotsJson")));
+            }
+            case "job-save" -> {
+                req.setAttribute("editEntity", "job");
+                req.setAttribute("editingJob", readJobFromRequest(req));
+            }
+            case "skill-save" -> {
+                req.setAttribute("editEntity", "skill");
+                req.setAttribute("editingSkill", readSkillFromRequest(req));
+            }
+            case "resume-skill-save" -> {
+                req.setAttribute("editEntity", "resumeSkill");
+                req.setAttribute("editingResumeSkill", readResumeSkillFromRequest(req));
+            }
+            case "job-requirement-save" -> {
+                req.setAttribute("editEntity", "jobRequirement");
+                req.setAttribute("editingJobRequirement", readJobRequirementFromRequest(req));
+            }
             default -> {
-                // Ignore unsupported entities because validation will already surface the error.
             }
         }
     }
 
-    private void clearEditingAttributes(HttpServletRequest request) {
-        request.removeAttribute("editEntity");
-        request.removeAttribute("editingUser");
-        request.removeAttribute("editingResume");
-        request.removeAttribute("editingJob");
-        request.removeAttribute("editingApplication");
-    }
-
-    private void populateEditingDateTimeValues(HttpServletRequest request) {
-        Job editingJob = (Job) request.getAttribute("editingJob");
-        if (editingJob != null) {
-            request.setAttribute("editingJobDeadlineValue", formatInstantForInput(editingJob.getDeadline()));
-        }
-
-        Application editingApplication = (Application) request.getAttribute("editingApplication");
-        if (editingApplication != null) {
-            request.setAttribute("editingApplicationReviewedAtValue", formatInstantForInput(editingApplication.getReviewedAt()));
-            request.setAttribute("editingApplicationTaRespondedAtValue", formatInstantForInput(editingApplication.getTaRespondedAt()));
+    private void populateEditingDateFields(HttpServletRequest req) {
+        Object editingJob = req.getAttribute("editingJob");
+        if (editingJob instanceof Job job) {
+            req.setAttribute("editingJobStartDateValue", job.getStartDate() == null ? "" : job.getStartDate().toString());
+            req.setAttribute("editingJobEndDateValue", job.getEndDate() == null ? "" : job.getEndDate().toString());
+            req.setAttribute("editingJobDeadlineValue", formatInstantForInput(job.getDeadline()));
         }
     }
 
-    private User readUserFromRequest(HttpServletRequest request) {
-        UUID id = optionalUuid(request.getParameter("id"));
-        Optional<User> existingUser = id == null ? Optional.empty() : dbDemoService.findUser(id);
-        User user = existingUser.orElseGet(User::new);
-        user.setId(id);
-        user.setEmail(normalize(request.getParameter("email")));
-        applyPasswordFromRequest(request, user, existingUser);
-        user.setFullName(normalize(request.getParameter("fullName")));
-        user.setPhone(normalize(request.getParameter("phone")));
-        user.setRole(parseEnum(request.getParameter("role"), UserRole.class, "User role is invalid"));
-        existingUser.ifPresent(existing -> user.setActive(existing.isActive()));
+    private User readUserFromRequest(HttpServletRequest req) {
+        User user = new User();
+        user.setId(optionalUuid(req.getParameter("id")));
+        user.setEmail(normalize(req.getParameter("email")));
+        user.setFullName(normalize(req.getParameter("fullName")));
+        user.setRole(parseEnum(UserRole.class, req.getParameter("role"), "User role is invalid"));
+        user.setPhone(normalize(req.getParameter("phone")));
+        user.setDepartment(normalize(req.getParameter("department")));
+        user.setStudentId(normalize(req.getParameter("studentId")));
+        user.setBio(normalize(req.getParameter("bio")));
+        user.setActive("true".equalsIgnoreCase(req.getParameter("active")));
         return user;
     }
 
-    private void applyPasswordFromRequest(HttpServletRequest request, User user, Optional<User> existingUser) {
-        String plainPassword = normalize(request.getParameter("password"));
-        if (plainPassword != null) {
-            user.setPasswordHash(PasswordUtil.hashPassword(plainPassword));
-            return;
-        }
-
-        user.setPasswordHash(existingUser.map(User::getPasswordHash).orElse(null));
-    }
-
-    private Resume readResumeFromRequest(HttpServletRequest request) {
+    private Resume readResumeFromRequest(HttpServletRequest req) {
         Resume resume = new Resume();
-        resume.setId(optionalUuid(request.getParameter("id")));
-        resume.setUserId(requireUuid(request.getParameter("userId"), "Resume userId is required"));
-        resume.setTitle(normalize(request.getParameter("title")));
-        resume.setDepartment(normalize(request.getParameter("department")));
-        resume.setDegreeLevel(parseEnum(request.getParameter("degreeLevel"), DegreeLevel.class, "Resume degreeLevel is invalid"));
-        resume.setGpa(parseBigDecimal(request.getParameter("gpa"), "Resume GPA is invalid"));
-        resume.setBio(request.getParameter("bio"));
-        resume.setMaxWeeklyHours(parseInteger(request.getParameter("maxWeeklyHours"), "Resume maxWeeklyHours is invalid"));
-        resume.setAvailabilityJson(request.getParameter("availabilityJson"));
+        resume.setId(optionalUuid(req.getParameter("id")));
+        resume.setUserId(requireUuid(req.getParameter("userId"), "Resume owner is required"));
+        resume.setTitle(normalize(req.getParameter("title")));
+        resume.setDepartment(normalize(req.getParameter("department")));
+        resume.setDegreeLevel(parseEnum(DegreeLevel.class, req.getParameter("degreeLevel"), "Degree level is invalid"));
+        resume.setGpa(parseBigDecimal(req.getParameter("gpa")));
+        resume.setMaxWeeklyHours(parseInt(req.getParameter("maxWeeklyHours"), 20));
+        resume.setBio(normalize(req.getParameter("bio")));
         return resume;
     }
 
-    private Job readJobFromRequest(HttpServletRequest request) {
+    private Job readJobFromRequest(HttpServletRequest req) {
         Job job = new Job();
-        job.setId(optionalUuid(request.getParameter("id")));
-        job.setPostedBy(requireUuid(request.getParameter("postedBy"), "Job postedBy is required"));
-        job.setTitle(normalize(request.getParameter("title")));
-        job.setModuleCode(normalize(request.getParameter("moduleCode")));
-        job.setType(parseEnum(request.getParameter("type"), JobType.class, "Job type is invalid"));
-        job.setStatus(parseEnum(request.getParameter("status"), JobStatus.class, "Job status is invalid"));
-        job.setDescription(request.getParameter("description"));
-        job.setRequiredHours(parseInteger(request.getParameter("requiredHours"), "Job requiredHours is invalid"));
-        job.setSlots(parseInteger(request.getParameter("slots"), "Job slots is invalid"));
-        job.setStartDate(parseLocalDate(request.getParameter("startDate"), "Job startDate is invalid"));
-        job.setEndDate(parseLocalDate(request.getParameter("endDate"), "Job endDate is invalid"));
-        job.setDeadline(parseInstant(request.getParameter("deadline"), "Job deadline is invalid"));
+        job.setId(optionalUuid(req.getParameter("id")));
+        job.setPostedBy(requireUuid(req.getParameter("postedBy"), "Job poster is required"));
+        job.setTitle(normalize(req.getParameter("title")));
+        job.setType(parseEnum(JobType.class, req.getParameter("type"), "Job type is invalid"));
+        job.setModuleCode(normalize(req.getParameter("moduleCode")));
+        job.setDescription(normalize(req.getParameter("description")));
+        job.setRequiredHours(parseInt(req.getParameter("requiredHours"), 10));
+        job.setSlots(parseInt(req.getParameter("slots"), 1));
+        job.setStatus(parseEnum(JobStatus.class, req.getParameter("status"), "Job status is invalid"));
+        job.setStartDate(parseLocalDate(req.getParameter("startDate")));
+        job.setEndDate(parseLocalDate(req.getParameter("endDate")));
+        job.setDeadline(parseInstant(req.getParameter("deadline")));
+        job.setHourlyRate(parseBigDecimal(req.getParameter("hourlyRate")));
         return job;
     }
 
-    private Application readApplicationFromRequest(HttpServletRequest request) {
-        Application application = new Application();
-        application.setId(optionalUuid(request.getParameter("id")));
-        application.setResumeId(requireUuid(request.getParameter("resumeId"), "Application resumeId is required"));
-        application.setJobId(requireUuid(request.getParameter("jobId"), "Application jobId is required"));
-        application.setStatus(parseEnum(request.getParameter("status"), ApplicationStatus.class, "Application status is invalid"));
-        application.setCoverLetter(request.getParameter("coverLetter"));
-        application.setReviewedBy(optionalUuid(request.getParameter("reviewedBy")));
-        application.setReviewedAt(parseInstant(request.getParameter("reviewedAt"), "Application reviewedAt is invalid"));
-        application.setMoNotes(request.getParameter("moNotes"));
-        application.setTaRespondedAt(parseInstant(request.getParameter("taRespondedAt"), "Application taRespondedAt is invalid"));
-        return application;
+    private Skill readSkillFromRequest(HttpServletRequest req) {
+        Skill skill = new Skill();
+        skill.setId(optionalUuid(req.getParameter("id")));
+        skill.setName(normalize(req.getParameter("name")));
+        skill.setCategory(parseEnum(SkillCategory.class, req.getParameter("category"), "Skill category is invalid"));
+        skill.setDescription(normalize(req.getParameter("description")));
+        return skill;
     }
 
-    private Map<UUID, String> buildUserLabels(List<User> users) {
-        Map<UUID, String> labels = new LinkedHashMap<>();
-        for (User user : users) {
-            labels.put(user.getId(), user.getFullName() + " (" + user.getEmail() + ")");
-        }
-        return labels;
+    private ResumeSkill readResumeSkillFromRequest(HttpServletRequest req) {
+        ResumeSkill resumeSkill = new ResumeSkill();
+        resumeSkill.setId(optionalUuid(req.getParameter("id")));
+        resumeSkill.setResumeId(requireUuid(req.getParameter("resumeId"), "Resume is required"));
+        resumeSkill.setSkillId(requireUuid(req.getParameter("skillId"), "Skill is required"));
+        resumeSkill.setProficiency(parseEnum(ProficiencyLevel.class, req.getParameter("proficiency"), "Proficiency is invalid"));
+        resumeSkill.setYearsExp(parseInt(req.getParameter("yearsExp"), 0));
+        return resumeSkill;
     }
 
-    private Map<UUID, String> buildResumeLabels(List<Resume> resumes) {
-        Map<UUID, String> labels = new LinkedHashMap<>();
-        for (Resume resume : resumes) {
-            labels.put(resume.getId(), resume.getTitle());
-        }
-        return labels;
-    }
-
-    private Map<UUID, String> buildJobLabels(List<Job> jobs) {
-        Map<UUID, String> labels = new LinkedHashMap<>();
-        for (Job job : jobs) {
-            labels.put(job.getId(), job.getTitle());
-        }
-        return labels;
-    }
-
-    private String buildRedirectUrl(HttpServletRequest request, String messageKey, String message) {
-        return request.getContextPath() + "/db-demo?" + messageKey + "="
-                + URLEncoder.encode(message, StandardCharsets.UTF_8);
-    }
-
-    private String formatInstantForInput(Instant value) {
-        if (value == null) {
-            return "";
-        }
-        return LocalDateTime.ofInstant(value, DEFAULT_ZONE).toString();
-    }
-
-    private boolean isUpsertOperation(String operation) {
-        return "create".equals(operation) || "update".equals(operation);
-    }
-
-    private UUID requireUuid(String value, String message) {
-        UUID uuid = optionalUuid(value);
-        if (uuid == null) {
-            throw new IllegalArgumentException(message);
-        }
-        return uuid;
+    private JobRequirement readJobRequirementFromRequest(HttpServletRequest req) {
+        JobRequirement requirement = new JobRequirement();
+        requirement.setId(optionalUuid(req.getParameter("id")));
+        requirement.setJobId(requireUuid(req.getParameter("jobId"), "Job is required"));
+        requirement.setSkillId(requireUuid(req.getParameter("skillId"), "Skill is required"));
+        requirement.setRequired("true".equalsIgnoreCase(req.getParameter("required")));
+        requirement.setMinProficiency(parseEnum(ProficiencyLevel.class, req.getParameter("minProficiency"), "Minimum proficiency is invalid"));
+        return requirement;
     }
 
     private UUID optionalUuid(String value) {
@@ -408,71 +355,86 @@ public class DbDemoServlet extends HttpServlet {
         if (normalized == null) {
             return null;
         }
+        return requireUuid(normalized, "UUID is invalid");
+    }
+
+    private UUID requireUuid(String value, String message) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            throw new ConstraintViolationException(message);
+        }
         try {
             return UUID.fromString(normalized);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UUID value: " + normalized, e);
+        } catch (IllegalArgumentException ex) {
+            throw new ConstraintViolationException(message);
         }
     }
 
-    private BigDecimal parseBigDecimal(String value, String message) {
-        String normalized = normalize(value);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return new BigDecimal(normalized);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(message, e);
-        }
-    }
-
-    private int parseInteger(String value, String message) {
-        String normalized = normalize(value);
-        if (normalized == null) {
-            throw new IllegalArgumentException(message);
-        }
-        try {
-            return Integer.parseInt(normalized);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(message, e);
-        }
-    }
-
-    private LocalDate parseLocalDate(String value, String message) {
-        String normalized = normalize(value);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(normalized);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException(message, e);
-        }
-    }
-
-    private Instant parseInstant(String value, String message) {
-        String normalized = normalize(value);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return LocalDateTime.parse(normalized).atZone(DEFAULT_ZONE).toInstant();
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException(message, e);
-        }
-    }
-
-    private <E extends Enum<E>> E parseEnum(String value, Class<E> enumType, String message) {
+    private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value, String message) {
         String normalized = normalize(value);
         if (normalized == null) {
             return null;
         }
         try {
             return Enum.valueOf(enumType, normalized);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(message, e);
+        } catch (IllegalArgumentException ex) {
+            throw new ConstraintViolationException(message);
         }
+    }
+
+    private int parseInt(String value, int defaultValue) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException ex) {
+            throw new ConstraintViolationException("Invalid number: " + value);
+        }
+    }
+
+    private BigDecimal parseBigDecimal(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return new BigDecimal(normalized);
+        } catch (NumberFormatException ex) {
+            throw new ConstraintViolationException("Invalid decimal number: " + value);
+        }
+    }
+
+    private LocalDate parseLocalDate(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(normalized);
+        } catch (DateTimeParseException ex) {
+            throw new ConstraintViolationException("Invalid date: " + value);
+        }
+    }
+
+    private Instant parseInstant(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(normalized, DATETIME_INPUT_FORMAT).atZone(DEFAULT_ZONE).toInstant();
+        } catch (DateTimeParseException ex) {
+            throw new ConstraintViolationException("Invalid datetime: " + value);
+        }
+    }
+
+    private String formatInstantForInput(Instant instant) {
+        if (instant == null) {
+            return "";
+        }
+        return DATETIME_INPUT_FORMAT.format(instant.atZone(DEFAULT_ZONE).toLocalDateTime());
     }
 
     private String normalize(String value) {
@@ -481,5 +443,14 @@ public class DbDemoServlet extends HttpServlet {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String buildRedirectUrl(HttpServletRequest req, String section, String key, String value) {
+        String encodedValue = URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+        return req.getContextPath() + "/db-demo?" + key + "=" + encodedValue + "#" + section;
     }
 }

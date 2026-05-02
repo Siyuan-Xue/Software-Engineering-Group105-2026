@@ -1,53 +1,70 @@
 package com.bupt.ta.persistence;
 
 import com.bupt.ta.config.DatabaseConfig;
-import com.bupt.ta.persistence.json.JsonApplicationRepository;
-import com.bupt.ta.persistence.json.JsonJobRepository;
-import com.bupt.ta.persistence.json.JsonResumeRepository;
-import com.bupt.ta.persistence.json.JsonUserRepository;
-import com.bupt.ta.repository.ApplicationRepository;
-import com.bupt.ta.repository.JobRepository;
-import com.bupt.ta.repository.ResumeRepository;
-import com.bupt.ta.repository.UserRepository;
+import com.bupt.ta.db.core.JsonStoreConfig;
 
+@Deprecated
 public final class TaDatabase {
-    private final UserRepository users;
-    private final ResumeRepository resumes;
-    private final JobRepository jobs;
-    private final ApplicationRepository applications;
+    private final com.bupt.ta.db.facade.TaDatabase delegate;
 
-    private TaDatabase(UserRepository users,
-                       ResumeRepository resumes,
-                       JobRepository jobs,
-                       ApplicationRepository applications) {
-        this.users = users;
-        this.resumes = resumes;
-        this.jobs = jobs;
-        this.applications = applications;
+    TaDatabase(com.bupt.ta.db.facade.TaDatabase delegate) {
+        this.delegate = delegate;
     }
 
     public static TaDatabase open(DatabaseConfig config) {
-        return new TaDatabase(
-                new JsonUserRepository(config),
-                new JsonResumeRepository(config),
-                new JsonJobRepository(config),
-                new JsonApplicationRepository(config)
-        );
+        return new TaDatabase(com.bupt.ta.db.facade.FileTaDatabase.open(
+                JsonStoreConfig.of(config.getDataDirectory(), config.getObjectMapper())));
     }
 
-    public UserRepository users() {
-        return users;
+    public com.bupt.ta.db.repository.UserRepository users() {
+        return delegate.users();
     }
 
-    public ResumeRepository resumes() {
-        return resumes;
+    public com.bupt.ta.db.repository.ResumeRepository resumes() {
+        return delegate.resumes();
     }
 
-    public JobRepository jobs() {
-        return jobs;
+    public com.bupt.ta.db.repository.JobRepository jobs() {
+        return delegate.jobs();
     }
 
-    public ApplicationRepository applications() {
-        return applications;
+    public com.bupt.ta.db.repository.ApplicationRepository applications() {
+        return delegate.applications();
+    }
+
+    public com.bupt.ta.db.repository.SkillRepository skills() {
+        return delegate.skills();
+    }
+
+    public com.bupt.ta.db.repository.ResumeSkillRepository resumeSkills() {
+        return delegate.resumeSkills();
+    }
+
+    public com.bupt.ta.db.repository.JobRequirementRepository jobRequirements() {
+        return delegate.jobRequirements();
+    }
+
+    public com.bupt.ta.db.repository.WorkloadRecordRepository workloadRecords() {
+        return delegate.workloadRecords();
+    }
+
+    public com.bupt.ta.db.repository.MatchScoreRepository matchScores() {
+        return delegate.matchScores();
+    }
+
+    public com.bupt.ta.db.repository.NotificationRepository notifications() {
+        return delegate.notifications();
+    }
+
+    public com.bupt.ta.db.repository.AuditLogRepository auditLogs() {
+        return delegate.auditLogs();
+    }
+
+    public void executeAtomically(Runnable action) {
+        delegate.executeAtomically(action);
+    }
+
+    com.bupt.ta.db.facade.TaDatabase unwrap() {
+        return delegate;
     }
 }

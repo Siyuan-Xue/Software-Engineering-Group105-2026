@@ -31,6 +31,8 @@ target/
 .DS_Store
 
 /.idea/
+/.codex/
+/.github/
 /target
 /docs
 # Local startup script (not for repo)
