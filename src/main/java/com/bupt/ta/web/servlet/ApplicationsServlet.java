@@ -52,17 +52,31 @@ public class ApplicationsServlet extends HttpServlet {
         req.setAttribute("successMessage", param(req, "successMessage"));
         req.setAttribute("errorMessage", param(req, "errorMessage"));
 
+        String userRole = (String) req.getAttribute("userRole");
+        
+        java.util.function.Predicate<Application> roleFilter;
+        if ("MO".equalsIgnoreCase(userRole)) {
+            // MO 逻辑：获取该用户发布的所有 Job ID
+            Set<UUID> postedJobIds = database.jobs().listByPoster(currentUser.getId()).stream()
+                    .map(Job::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            
+            roleFilter = app -> postedJobIds.contains(app.getJobId());
+        } else {
+            // TA 逻辑（默认）：获取该用户所有的 Resume ID
+            Set<UUID> myResumeIds = database.resumes().listByUserId(currentUser.getId()).stream()
+                    .map(Resume::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            
+            roleFilter = app -> myResumeIds.contains(app.getResumeId());
+        }
+
         String keyword = param(req, "keyword");
         String statusFilter = param(req, "status");
         String dateOrder = param(req, "date");
 
-        List<UUID> resumeIds = database.resumes().listByUserId(currentUser.getId()).stream()
-                .map(Resume::getId)
-                .toList();
-        Set<UUID> resumeIdSet = Set.copyOf(resumeIds);
-
         List<ApplicationDTO> applications = database.applications().findAll().stream()
-                .filter(application -> resumeIdSet.contains(application.getResumeId()))
+                .filter(roleFilter)
                 .map(this::toDto)
                 .filter(dto -> matchesKeyword(dto, keyword))
                 .filter(dto -> matchesStatus(dto, statusFilter))
