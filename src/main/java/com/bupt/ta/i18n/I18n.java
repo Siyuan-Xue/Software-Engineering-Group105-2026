@@ -139,7 +139,12 @@ public final class I18n {
             Map.entry("msg.resumeNotFound", "Resume not found."),
             Map.entry("msg.aiKeyMissing", "Qwen API key is not configured on this server. Please ask your administrator to add QWEN_API_KEY to Tomcat's setenv.bat."),
             Map.entry("msg.vacancyDetailLoadFailed", "Failed to load vacancy details. Please try again."),
-            Map.entry("msg.applicationsLoadFailed", "Failed to load applications. Please try again.")
+            Map.entry("msg.applicationsLoadFailed", "Failed to load applications. Please try again."),
+            Map.entry("msg.messagesLoadFailed", "Failed to load messages. Please try again."),
+            Map.entry("msg.messageSent", "Message sent."),
+            Map.entry("msg.messageSendFailed", "Failed to send message. Please try again."),
+            Map.entry("msg.messageContentRequired", "Conversation or message content cannot be empty."),
+            Map.entry("msg.invalidConversation", "Invalid conversation.")
     );
 
     private static final Map<String, String> ZH_MESSAGES = Map.ofEntries(
@@ -265,7 +270,12 @@ public final class I18n {
             Map.entry("msg.resumeNotFound", "未找到简历。"),
             Map.entry("msg.aiKeyMissing", "服务器未配置 QWEN_API_KEY，请联系管理员在 Tomcat 的 setenv.bat 中添加。"),
             Map.entry("msg.vacancyDetailLoadFailed", "岗位详情加载失败，请重试。"),
-            Map.entry("msg.applicationsLoadFailed", "申请列表加载失败，请重试。")
+            Map.entry("msg.applicationsLoadFailed", "申请列表加载失败，请重试。"),
+            Map.entry("msg.messagesLoadFailed", "加载消息失败，请重试。"),
+            Map.entry("msg.messageSent", "消息已发送。"),
+            Map.entry("msg.messageSendFailed", "发送消息失败，请重试。"),
+            Map.entry("msg.messageContentRequired", "会话或消息内容不能为空。"),
+            Map.entry("msg.invalidConversation", "无效的会话。")
     );
 
     private I18n() {

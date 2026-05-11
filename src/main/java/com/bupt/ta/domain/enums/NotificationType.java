@@ -6,5 +6,6 @@ public enum NotificationType {
     NEW_APPLICANT,
     OFFER_RECEIVED,
     SYSTEM,
-    WORKLOAD_ALERT
+    WORKLOAD_ALERT,
+    MESSAGE
 }
