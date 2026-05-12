@@ -1,4 +1,46 @@
 <style>
+    html,
+    body {
+        height: 100%;
+    }
+
+    body {
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col,
+    body > .relative.flex.min-h-screen.w-full.flex-col {
+        height: 100vh;
+        min-height: 100vh;
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col > header,
+    body > .relative.flex.min-h-screen.w-full.flex-col > header {
+        flex: 0 0 auto;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col > .flex.flex-1.overflow-hidden,
+    body > .relative.flex.min-h-screen.w-full.flex-col > .flex.flex-1.overflow-hidden {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col aside,
+    body > .relative.flex.min-h-screen.w-full.flex-col aside {
+        height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col main,
+    body > .relative.flex.min-h-screen.w-full.flex-col main {
+        min-height: 0;
+        height: 100%;
+        overscroll-behavior: contain;
+    }
+
     body[data-theme='dark'] {
         background: #020617;
         color: #e2e8f0;
