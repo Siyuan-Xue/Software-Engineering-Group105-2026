@@ -4,6 +4,8 @@ import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.JobService;
 import jakarta.servlet.ServletException;
@@ -20,7 +22,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -63,9 +68,11 @@ public class VacanciesServlet extends HttpServlet {
             User currentUser = session != null ? (User) session.getAttribute("currentUser") : null;
             Set<UUID> savedIds = resolveSavedIds(session);
 
+            Map<UUID, Set<String>> jobSkillNames = buildJobSkillNames();
+
             List<VacancyCardView> allCards = jobService.listOpen(Instant.now())
                     .stream()
-                    .filter(job -> matchesKeyword(job, keyword))
+                    .filter(job -> keyword == null || matchesKeyword(job, keyword) || matchesJobTags(job, keyword, jobSkillNames))
                     .filter(job -> matchesDepartment(job, department))
                     .filter(job -> matchesTerm(job, term))
                     .map(job -> toCard(job, userById, savedIds, currentUser))
@@ -141,6 +148,43 @@ public class VacanciesServlet extends HttpServlet {
                 .filter(v -> v != null && !v.isBlank())
                 .map(v -> v.toLowerCase(Locale.ROOT))
                 .anyMatch(v -> v.contains(normalized));
+    }
+
+    /**
+     * Build a map from job ID to lowercased skill-name set (one query, cached for the request).
+     */
+    private Map<UUID, Set<String>> buildJobSkillNames() {
+        Map<UUID, String> skillNames = database.skills().findAll().stream()
+                .collect(Collectors.toMap(Skill::getId, s -> s.getName().toLowerCase(Locale.ROOT)));
+
+        Map<UUID, Set<String>> result = new HashMap<>();
+        for (JobRequirement req : database.jobRequirements().findAll()) {
+            String name = skillNames.get(req.getSkillId());
+            if (name != null) {
+                result.computeIfAbsent(req.getJobId(), k -> new HashSet<>()).add(name);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Split keyword by whitespace into tokens. A job matches only when
+     * <em>every</em> token is a substring of some skill name linked to the job
+     * (case-insensitive AND logic).
+     */
+    private boolean matchesJobTags(Job job, String keyword, Map<UUID, Set<String>> jobSkillNames) {
+        if (keyword == null || keyword.isBlank()) return false;
+        String[] tokens = keyword.trim().split("\\s+");
+        if (tokens.length == 0) return false;
+
+        Set<String> skillSet = jobSkillNames.getOrDefault(job.getId(), Set.of());
+        if (skillSet.isEmpty()) return false;
+
+        return Arrays.stream(tokens)
+                .allMatch(token -> {
+                    String lower = token.toLowerCase(Locale.ROOT);
+                    return skillSet.stream().anyMatch(s -> s.toLowerCase(Locale.ROOT).contains(lower));
+                });
     }
 
     private boolean matchesDepartment(Job job, String department) {
