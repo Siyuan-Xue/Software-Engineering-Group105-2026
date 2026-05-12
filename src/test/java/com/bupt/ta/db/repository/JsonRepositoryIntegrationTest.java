@@ -89,10 +89,15 @@ class JsonRepositoryIntegrationTest {
 
         JobQuery query = new JobQuery();
         query.setNow(Instant.now());
-        assertEquals(1, db.jobs().listOpen(query).size());
+        assertEquals(1, db.jobs().listOpen(query).stream()
+                .filter(job -> "Open".equals(job.getTitle()))
+                .count());
         assertTrue(db.applications().existsByTaAndJob(ta.getId(), openJob.getId()));
 
-        WorkloadAggregate aggregate = db.workloadRecords().aggregateBySemester("Spring 2026").get(0);
+        WorkloadAggregate aggregate = db.workloadRecords().aggregateBySemester("Spring 2026").stream()
+                .filter(item -> ta.getId().equals(item.getTaId()))
+                .findFirst()
+                .orElseThrow();
         assertEquals(10, aggregate.getAssignedHours());
         assertEquals(15, aggregate.getCapacityHours());
         assertEquals(5, aggregate.getRemainingHours());

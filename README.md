@@ -143,7 +143,7 @@ brew services start tomcat
 运行项目：
 启动 Tomcat。
 访问 `http://localhost:8080/`（或你配置的端口），你将看到 QM HIRE 的落地页。
-测试账号：系统首次启动时会自动生成三个测试账号，密码均为 `password`：
+测试账号：系统首次启动空数据目录时会自动生成完整演示数据，包含账号、简历、岗位、申请、匹配分、工作量、通知、消息和审计日志。以下三个基础账号会始终出现在这套演示数据中，密码均为 `password`：
 - TA 账号：[test@example.com](mailto:test@example.com)
 - MO 账号：[mo@example.com](mailto:mo@example.com)
 - Admin 账号：[admin@example.com](mailto:admin@example.com)
@@ -153,6 +153,8 @@ brew services start tomcat
 - 默认：`./data`
 - 可覆盖：`-Dta105.data.dir=/absolute/path/to/data`
 - 新系统要求使用全新的空 `data/` 目录
+- 自动演示种子只在所有业务表为空时创建；只要数据目录里已有任何业务数据，系统就不会补种、覆盖或清空现有数据
+- 如果需要重新生成完整演示库，请先备份并清空当前数据目录
 - 不做旧版 4 表 JSON 的自动迁移；若检测到旧数据目录，启动会失败并提示先备份/清空
 
 数据库层使用方式：

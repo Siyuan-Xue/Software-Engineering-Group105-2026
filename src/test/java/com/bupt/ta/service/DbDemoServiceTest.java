@@ -36,6 +36,10 @@ class DbDemoServiceTest {
     void demoFlowShouldCoverSeedDataMatchingAndOfferAcceptance() {
         TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
         DbDemoService service = new DbDemoService(db);
+        int matchScoreCount = db.matchScores().findAll().size();
+        int workloadCount = db.workloadRecords().findAll().size();
+        int notificationCount = db.notifications().findAll().size();
+        int auditLogCount = db.auditLogs().findAll().size();
 
         assertTrue(db.users().findByEmail("test@example.com").isPresent());
         assertTrue(db.users().findByEmail("mo@example.com").isPresent());
@@ -102,10 +106,10 @@ class DbDemoServiceTest {
         var jobId = job.getId();
         assertEquals(1, db.resumeSkills().findAll().stream().filter(item -> item.getResumeId().equals(resumeId)).count());
         assertEquals(1, db.jobRequirements().findAll().stream().filter(item -> item.getJobId().equals(jobId)).count());
-        assertEquals(1, db.matchScores().findAll().size());
-        assertEquals(1, db.workloadRecords().findAll().size());
-        assertTrue(db.notifications().findAll().size() >= 4);
-        assertTrue(db.auditLogs().findAll().size() >= 4);
+        assertEquals(matchScoreCount + 1, db.matchScores().findAll().size());
+        assertEquals(workloadCount + 1, db.workloadRecords().findAll().size());
+        assertTrue(db.notifications().findAll().size() >= notificationCount + 4);
+        assertTrue(db.auditLogs().findAll().size() >= auditLogCount + 4);
         assertEquals(ApplicationStatus.ACCEPTED, db.applications().findById(application.getId()).orElseThrow().getStatus());
         assertEquals(1, db.resumes().findById(resume.getId()).orElseThrow().getAvailabilitySlots().size());
         assertTrue(service.listTableCounts().stream()
