@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  * The conversationId is a deterministic string derived from the two user IDs.
  */
 public class MessageService {
+    private static final String SYSTEM_CONVERSATION_ID = "system";
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("MMM dd, HH:mm").withZone(ZoneId.systemDefault());
 
@@ -98,6 +99,27 @@ public class MessageService {
             String convId = buildConversationId(currentUserId, entry.getKey());
             lastTimestamps.put(convId, last.getCreatedAt() != null ? last.getCreatedAt() : Instant.EPOCH);
         }
+
+        // Add system conversation for non-MESSAGE notifications
+        List<Notification> systemNotifications = getSystemNotifications(currentUserId);
+        if (!systemNotifications.isEmpty()) {
+            ConversationDTO systemConv = new ConversationDTO();
+            systemConv.setConversationId(SYSTEM_CONVERSATION_ID);
+            systemConv.setContactName(zh ? "系统通知" : "System");
+            systemConv.setContactRole(zh ? "应用通知" : "App Notifications");
+            systemConv.setContactAvatar(null);
+
+            Notification lastSys = systemNotifications.get(systemNotifications.size() - 1);
+            systemConv.setLastMessage(truncate(lastSys.getMessage(), 50));
+            systemConv.setLastMessageTime(lastSys.getCreatedAt() != null ? formatTimeAgo(lastSys.getCreatedAt(), zh) : "");
+
+            long sysUnread = systemNotifications.stream().filter(n -> !n.isRead()).count();
+            systemConv.setUnreadCount((int) sysUnread);
+
+            conversations.add(systemConv);
+            lastTimestamps.put(SYSTEM_CONVERSATION_ID, lastSys.getCreatedAt() != null ? lastSys.getCreatedAt() : Instant.EPOCH);
+        }
+
         conversations.sort(Comparator.comparing(
                 (ConversationDTO c) -> lastTimestamps.getOrDefault(c.getConversationId(), Instant.EPOCH)
         ).reversed());
@@ -110,6 +132,10 @@ public class MessageService {
      * identified by conversationId.
      */
     public ConversationDTO getConversation(UUID currentUserId, String conversationId, boolean zh) {
+        if (SYSTEM_CONVERSATION_ID.equals(conversationId)) {
+            return getSystemConversation(currentUserId, zh);
+        }
+
         UUID otherUserId = extractOtherUserId(currentUserId, conversationId);
         if (otherUserId == null) {
             return null;
@@ -199,6 +225,66 @@ public class MessageService {
      */
     public String getOrCreateConversationId(UUID currentUserId, UUID otherUserId) {
         return buildConversationId(currentUserId, otherUserId);
+    }
+
+    // ── System conversation ──────────────────────────────────────────────────
+
+    /**
+     * Return all non-MESSAGE notifications addressed to the given user, sorted oldest-first.
+     */
+    private List<Notification> getSystemNotifications(UUID userId) {
+        return db.notifications().findAll().stream()
+                .filter(n -> userId.equals(n.getUserId()))
+                .filter(n -> n.getNotifType() != NotificationType.MESSAGE)
+                .sorted(Comparator.comparing(Notification::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    /**
+     * Build the synthetic "System" conversation containing all non-MESSAGE notifications.
+     */
+    private ConversationDTO getSystemConversation(UUID currentUserId, boolean zh) {
+        List<Notification> systemNotifications = getSystemNotifications(currentUserId);
+
+        ConversationDTO conv = new ConversationDTO();
+        conv.setConversationId(SYSTEM_CONVERSATION_ID);
+        conv.setContactName(zh ? "系统通知" : "System");
+        conv.setContactRole(zh ? "应用通知" : "App Notifications");
+        conv.setContactAvatar(null);
+
+        List<MessageDTO> messageDTOs = new ArrayList<>();
+        for (Notification n : systemNotifications) {
+            MessageDTO msg = new MessageDTO();
+            msg.setMessageId(n.getId() != null ? n.getId().toString() : UUID.randomUUID().toString());
+            msg.setContent(n.getMessage());
+            msg.setTimestamp(n.getCreatedAt() != null ? TIME_FORMATTER.format(n.getCreatedAt()) : "");
+            msg.setIsMine(false);
+            msg.setIsSystemMessage(true);
+            messageDTOs.add(msg);
+        }
+        conv.setMessages(messageDTOs);
+
+        if (!systemNotifications.isEmpty()) {
+            Notification lastMsg = systemNotifications.get(systemNotifications.size() - 1);
+            conv.setLastMessage(truncate(lastMsg.getMessage(), 50));
+            conv.setLastMessageTime(lastMsg.getCreatedAt() != null ? formatTimeAgo(lastMsg.getCreatedAt(), zh) : "");
+        }
+
+        long unread = systemNotifications.stream().filter(n -> !n.isRead()).count();
+        conv.setUnreadCount((int) unread);
+
+        markSystemNotificationsRead(currentUserId, systemNotifications);
+
+        return conv;
+    }
+
+    private void markSystemNotificationsRead(UUID userId, List<Notification> systemNotifications) {
+        for (Notification n : systemNotifications) {
+            if (!n.isRead()) {
+                n.setRead(true);
+                db.notifications().save(n);
+            }
+        }
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────────
