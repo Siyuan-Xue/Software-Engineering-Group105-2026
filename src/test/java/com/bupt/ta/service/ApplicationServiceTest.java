@@ -31,6 +31,9 @@ class ApplicationServiceTest {
     void duplicateSubmitShouldBeRejectedAndAcceptOfferShouldCreateLinkedRecords() {
         TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
         ApplicationService service = new ApplicationService(db);
+        int workloadCount = db.workloadRecords().findAll().size();
+        int notificationCount = db.notifications().findAll().size();
+        int auditLogCount = db.auditLogs().findAll().size();
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
         User mo = db.users().save(user("application-mo@example.com", UserRole.MO, "MO User"));
@@ -45,9 +48,9 @@ class ApplicationServiceTest {
         db.applications().save(application);
         service.acceptOffer(ta.getId(), application.getId());
 
-        assertEquals(1, db.workloadRecords().findAll().size());
-        assertEquals(2, db.notifications().findAll().size());
-        assertEquals(2, db.auditLogs().findAll().size());
+        assertEquals(workloadCount + 1, db.workloadRecords().findAll().size());
+        assertEquals(notificationCount + 2, db.notifications().findAll().size());
+        assertEquals(auditLogCount + 2, db.auditLogs().findAll().size());
         assertEquals(ApplicationStatus.ACCEPTED, db.applications().findById(application.getId()).orElseThrow().getStatus());
     }
 
