@@ -36,6 +36,7 @@
 <c:set var="messagesActive" value="${fn:contains(currentPath, 'messages')}" />
 <c:set var="settingsActive" value="${fn:contains(currentPath, 'settings')}" />
 <c:set var="workloadsActive" value="${fn:contains(currentPath, 'workloads')}" />
+<c:set var="skillsActive" value="${fn:contains(currentPath, 'admin/skills')}" />
 <c:set var="showTaLinks" value="${userRole == 'TA'}" />
 <c:set var="showMoLinks" value="${userRole == 'MO'}" />
 <c:set var="showAdminLinks" value="${userRole == 'ADMIN'}" />
@@ -111,6 +112,7 @@
             </c:if>
             <c:if test="${showAdminLinks}">
                 <a href="${contextPath}/workloads" style="${workloadsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.workloads']}</a>
+                <a href="${contextPath}/admin/skills" style="${skillsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.skills']}</a>
             </c:if>
             <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.messages']}</a>
             <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.settings']}</a>
