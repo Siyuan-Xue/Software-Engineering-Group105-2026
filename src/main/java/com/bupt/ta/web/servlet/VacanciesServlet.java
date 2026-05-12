@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class VacanciesServlet extends HttpServlet {
                     .filter(job -> matchesDepartment(job, department))
                     .filter(job -> matchesTerm(job, term))
                     .map(job -> toCard(job, userById, savedIds, currentUser))
+                    .sorted(Comparator.comparing(VacancyCardView::isSaved).reversed())
                     .toList();
 
             int totalCount = allCards.size();
