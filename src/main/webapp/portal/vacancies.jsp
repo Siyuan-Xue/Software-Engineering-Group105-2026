@@ -530,9 +530,13 @@
         if (!vacancyId) return;
         btn.disabled = true;
         try {
-            const fd = new FormData();
-            fd.append('vacancyId', vacancyId);
-            const res = await fetch(CTX + '/favorites', { method: 'POST', body: fd });
+            const params = new URLSearchParams();
+            params.append('vacancyId', vacancyId);
+            const res = await fetch(CTX + '/favorites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            });
             if (res.status === 401) { alert('${language == 'zh' ? '请先登录后再收藏岗位。' : 'Please log in to save vacancies.'}'); return; }
             if (!res.ok) throw new Error('${language == 'zh' ? '服务器错误' : 'Server error'}');
             const data = await res.json();
