@@ -197,6 +197,10 @@ class MessageServiceTest {
 
     @Test
     void testMessageNotificationsAreFilteredFromRegularNotifications() {
+        long existingMessageCount = db.notifications().findAll().stream()
+                .filter(n -> n.getNotifType() == NotificationType.MESSAGE)
+                .count();
+
         // Ensure MESSAGE type notifications don't interfere with regular notification flow
         String convId = messageService.getOrCreateConversationId(userA.getId(), userB.getId());
         messageService.sendMessage(userA.getId(), convId, "Test message");
@@ -205,7 +209,7 @@ class MessageServiceTest {
         long messageCount = db.notifications().findAll().stream()
                 .filter(n -> n.getNotifType() == NotificationType.MESSAGE)
                 .count();
-        assertEquals(1, messageCount);
+        assertEquals(existingMessageCount + 1, messageCount);
     }
 
     @Test

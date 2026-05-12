@@ -35,6 +35,9 @@ class MatchingServiceTest {
     void runAnalysisShouldPersistMatchScoreUsingFallbackCapablePipeline() {
         TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
         MatchingService service = new MatchingService(db);
+        int matchScoreCount = db.matchScores().findAll().size();
+        int notificationCount = db.notifications().findAll().size();
+        int auditLogCount = db.auditLogs().findAll().size();
 
         User ta = db.users().save(user("ta@example.com", UserRole.TA, "TA User"));
         User mo = db.users().save(user("matching-mo@example.com", UserRole.MO, "MO User"));
@@ -82,9 +85,9 @@ class MatchingServiceTest {
 
         assertNotNull(score.getRuleScore());
         assertNotNull(score.getFinalScore());
-        assertEquals(1, db.matchScores().findAll().size());
-        assertEquals(1, db.notifications().findAll().size());
-        assertEquals(1, db.auditLogs().findAll().size());
+        assertEquals(matchScoreCount + 1, db.matchScores().findAll().size());
+        assertEquals(notificationCount + 1, db.notifications().findAll().size());
+        assertEquals(auditLogCount + 1, db.auditLogs().findAll().size());
     }
 
     private User user(String email, UserRole role, String name) {
