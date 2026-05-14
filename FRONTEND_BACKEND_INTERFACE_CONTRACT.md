@@ -34,7 +34,7 @@ This document outlines the standardized interface contract between the frontend 
 - JSP 页面中已内置对应的 UI 组件，当这些 attribute 不为空时会自动显示。
 
 ### C. Global Authentication & Authorization Rules
-- **Authentication**: 除 Login 页面外的所有页面（Dashboard, Vacancies, Applications, Resumes, Messages, Settings）均需要用户登录。未登录时建议后端 Servlet 拦截未认证的请求，并重定向（Redirect）到 `/login` 页面，可附带 `errorMessage` 提示“Please log in to access this page”。
+- **Authentication**: 除 **登录与账户自助入口**（`/login`、`/register`、`/forgot-password`）及文档另有说明的页面外，其余业务页面均需要用户登录。未登录时由 `AuthFilter` 重定向到 `/login`，可附带 `errorMessage`。
 - **Authorization (RBAC)**: 系统包含三种角色：`TA` (Teaching Assistant), `MO` (Module Organiser), `ADMIN` (Administrator)。
   - **TA**: 可以浏览职位、提交申请、管理简历。
   - **MO**: 可以发布职位 (Vacancy)、修改职位详情。
@@ -100,6 +100,32 @@ This document outlines the standardized interface contract between the frontend 
 12. **Failure Behavior:** N/A
 13. **Supported Page States:** N/A
 14. **Main Functionalities:** 清除 Session 数据并登出用户。
+
+### 1.4. TA self-service registration (TA role only)
+1. **Page Name:** Register Page
+2. **Route URL:** `/register`
+3. **JSP View File:** `/register.jsp`
+4. **Servlet:** `RegisterServlet`
+5. **Authentication Required:** No
+6. **Method:** `GET` (form) / `POST` (submit)
+7. **Description:** 助教申请者自助注册；服务端强制 `UserRole.TA`，不接受表单传入角色。
+8. **Request Parameters (POST):** `email`, `password`, `confirmPassword`, `fullName` (required); `phone`, `department`, `studentId` (optional).
+9. **Request Attributes (error forward):** `errorMessage`; optional repopulation: `email`, `fullName`, `phone`, `department`, `studentId`.
+10. **Success Behavior:** Redirect to `/login?successMessage=...`
+11. **Failure Behavior:** Forward to `/register.jsp` with `errorMessage`.
+
+### 1.5. TA self-service forgot password (scheme B: email + new password, TA only)
+1. **Page Name:** Forgot Password Page
+2. **Route URL:** `/forgot-password`
+3. **JSP View File:** `/forgot-password.jsp`
+4. **Servlet:** `ForgotPasswordServlet`
+5. **Authentication Required:** No
+6. **Method:** `GET` (form) / `POST` (submit)
+7. **Description:** 若邮箱对应已存在且角色为 TA 的账号，则更新密码；否则不修改任何数据并提示失败（演示向流程，非邮件验证）。
+8. **Request Parameters (POST):** `email`, `newPassword`, `confirmPassword`.
+9. **Request Attributes (error forward):** `errorMessage`, `email` (optional repopulation).
+10. **Success Behavior:** Redirect to `/login?successMessage=...`
+11. **Failure Behavior:** Forward to `/forgot-password.jsp` with `errorMessage`.
 
 ---
 

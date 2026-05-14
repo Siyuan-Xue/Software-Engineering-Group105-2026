@@ -152,7 +152,7 @@
             <!-- Right side background blend -->
             <div class="absolute inset-y-0 right-0 w-1/2 overflow-hidden pointer-events-none">
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent z-10 w-32 left-0"></div>
-                <img src="${pageContext.request.contextPath}/bg.jpg" 
+                <img src="${pageContext.request.contextPath}/images/bg.jpg" 
                      alt="Classroom Setup" 
                      class="w-full h-full object-cover object-left opacity-30 mix-blend-multiply flex transition-transform duration-[2s]" 
                 />

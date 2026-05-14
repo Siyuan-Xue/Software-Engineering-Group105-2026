@@ -91,7 +91,25 @@ public final class I18n {
             Map.entry("login.forgot", "Forgot?"),
             Map.entry("login.signIn", "SIGN IN"),
             Map.entry("login.noAccount", "Don't have an account?"),
-            Map.entry("login.requestAccess", "Request access"),
+            Map.entry("login.createAccount", "Create an account"),
+
+            Map.entry("register.pageTitle", "Create account - QM HIRE"),
+            Map.entry("register.title", "Create your TA account"),
+            Map.entry("register.copy", "Register as a teaching assistant applicant. TA role only."),
+            Map.entry("register.submit", "Create account"),
+            Map.entry("register.backToLogin", "Back to sign in"),
+
+            Map.entry("forgot.pageTitle", "Forgot password - QM HIRE"),
+            Map.entry("forgot.title", "Reset password"),
+            Map.entry("forgot.copy", "TA applicant accounts only. Enter your university email and a new password."),
+            Map.entry("forgot.submit", "Update password"),
+            Map.entry("forgot.backToLogin", "Back to sign in"),
+
+            Map.entry("auth.registerSuccess", "Account created. You can sign in now."),
+            Map.entry("auth.registerEmailTaken", "This email is already registered."),
+            Map.entry("auth.registerEmailRequired", "Email is required."),
+            Map.entry("auth.taResetSuccess", "Password updated. You can sign in now."),
+            Map.entry("auth.taResetFailed", "We could not reset the password. Use the email for your TA applicant account."),
 
             Map.entry("index.pageTitle", "QM HIRE - University TA Portal"),
             Map.entry("index.badge", "Phase 01 / Introduction"),
@@ -223,7 +241,25 @@ public final class I18n {
             Map.entry("login.forgot", "忘记密码？"),
             Map.entry("login.signIn", "登 录"),
             Map.entry("login.noAccount", "还没有账号？"),
-            Map.entry("login.requestAccess", "申请访问"),
+            Map.entry("login.createAccount", "创建账号"),
+
+            Map.entry("register.pageTitle", "创建账号 - QM HIRE"),
+            Map.entry("register.title", "创建 TA 申请账号"),
+            Map.entry("register.copy", "仅限助教（TA）申请者注册。"),
+            Map.entry("register.submit", "创建账号"),
+            Map.entry("register.backToLogin", "返回登录"),
+
+            Map.entry("forgot.pageTitle", "忘记密码 - QM HIRE"),
+            Map.entry("forgot.title", "重置密码"),
+            Map.entry("forgot.copy", "仅限 TA 申请账号。请输入学校邮箱和新密码。"),
+            Map.entry("forgot.submit", "更新密码"),
+            Map.entry("forgot.backToLogin", "返回登录"),
+
+            Map.entry("auth.registerSuccess", "账号已创建，请登录。"),
+            Map.entry("auth.registerEmailTaken", "该邮箱已被注册。"),
+            Map.entry("auth.registerEmailRequired", "请填写邮箱。"),
+            Map.entry("auth.taResetSuccess", "密码已更新，请登录。"),
+            Map.entry("auth.taResetFailed", "无法重置密码。请确认使用 TA 申请账号的邮箱。"),
 
             Map.entry("index.pageTitle", "QM HIRE - 大学助教门户"),
             Map.entry("index.badge", "阶段 01 / 介绍"),

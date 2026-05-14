@@ -54,7 +54,9 @@ public class AuthFilter implements Filter {
 
         // 1. 定义白名单（放行登录页、注销动作、以及所有静态资源）
         if (route.equals("/") ||
-            route.equals("/login") || 
+            route.equals("/login") ||
+            route.equals("/register") ||
+            route.equals("/forgot-password") ||
             route.equals("/logout") ||
             dbDemoRoute ||
             route.startsWith("/css/") || 
