@@ -34,6 +34,119 @@ Wang Ruijia [wang_ruijia@bupt.edu.cn](mailto:wang_ruijia@bupt.edu.cn)
 - 数据存储：`data/*.json`，Sprint 3 终态 11 表，不使用外部数据库
 - 注解注册：`@WebFilter`，`web.xml` 仅保留最小描述符
 
+## 岗位编辑与标签（MO）
+
+- **独立编辑页**：`GET/POST` [`/vacancy/edit`](./src/main/java/com/bupt/ta/web/servlet/VacancyEditServlet.java) → JSP [`portal/vacancy_edit.jsp`](./src/main/webapp/portal/vacancy_edit.jsp)（整页布局，含顶栏与侧栏）。
+- **入口与 `returnTo`**：岗位列表（本人岗位）「编辑」带 `returnTo=list`；岗位详情「编辑岗位」带 `returnTo=detail`。编辑页内「保存后跳转到」下拉与之一致。
+- **提交成功**：按 `returnTo` 重定向到 **`/vacancies?successMessage=...`** 或 **`/vacancy?vacancyId=...&successMessage=...`**（列表/详情 Servlet 已从 query 读取 flash）。
+- **提交失败**：重定向回 **`/vacancy/edit?vacancyId=...&errorMessage=...&returnTo=...`**，避免丢失来源页，保证「返回」链正确。
+- **标签（labels）**：[`Labels.parseList`](./src/main/java/com/bupt/ta/util/Labels.java) 使用逗号、中文逗号、分号、**竖线 `|` / 全角 `｜`**、换行分隔；`strip()` 去空白；与后端一致为 **最多 24 个标签、单标签最长 48 字符**（创建/编辑表单的提示文案已对齐）。
+
+## AI 能力与文档
+
+部署上下文路径为 **`/ta105`** 时，下表中的 Servlet 路径均指 **`/ta105/...`**（例如 `/ta105/ai-match`）。
+
+### 还可以引入 AI 的方向（建议）
+
+以下为**未实现**、但与当前业务契合度较高的扩展点，便于组内分工或后续迭代：
+
+| 方向 | 说明 |
+|------|------|
+| **MO 发布/编辑岗位** | **发布**：列表页弹窗 → `POST /vacancy/create`。**编辑**：独立页 `GET/POST /vacancy/edit`（见上文「岗位编辑与标签」）。可选后续：AI 辅助生成描述/与 labels 一致性检查。 |
+| **MO 审阅申请** | **已实现（初版）**：申请记录页「AI 决策建议」— 对单份申请给出 offer/拒绝/待定的**参考**要点（免责声明后调用；**不**代替录用决定）。 |
+| **TA 撰写辅助** | **已实现（初版）**：申请记录页「AI 动机草稿」— 基于所选简历与目标岗位生成**可编辑**短述/动机段（免责声明后调用）。 |
+| **Dashboard** | 根据当前角色与数据（开放岗位数、申请状态）生成**下一步行动建议**（纯建议文案）。 |
+| **站内消息** | 可选：语气润色或翻译（需注意隐私与是否出站调用模型）。 |
+
+实现时建议继续沿用现有模式：**浏览器只请求本站 Servlet → 服务端持有 Key 调用 DashScope**；凡调用大模型的功能，**必须**在页面上提供免责声明，且用户**必须点击明确的确认按钮**（如「同意并分析」「同意并匹配」等）之后才能发起请求。**不得以**要求模型在输出中生成法律/隐私免责段落的方式，代替界面上的知情同意。
+
+### 用户同意与免责（界面强制）
+
+| 原则 | 说明 |
+|------|------|
+| **同意方式** | 仅通过各功能弹窗内的说明文字 + **「同意并…」类按钮**完成；未点击确认前，前端不得调用对应 Servlet。 |
+| **与提示词的关系** | `QwenAiService` 中的 system prompt 仅约束**任务行为**（如不得代为录用、不得输出 JSON 外文字等），**不**承担向用户展示法律条款的职责；亦**不**指示模型在正文中撰写可替代上述弹窗的「同意书」或免责段落。 |
+| **岗位详情申请弹窗** | TA 在已配置 `QWEN_API_KEY` 且名下有简历时，点击「立即申请」会先弹出 **AI 简历匹配排序** 免责层；点击「同意并排序」后才会打开选简历弹窗并请求 `/ai-resume-rank`。未配置 Key 或无简历时直接进入选简历弹窗且不发起 AI 请求。 |
+
+### AI 功能用途说明
+
+以下为当前版本中 **会调用 Qwen（DashScope）大模型** 的能力及其业务用途（不含仅规则落库的 `MatchingService`）。
+
+| 功能 | 角色 / 页面 | 用途（用户价值） | 典型输入数据（出站摘要） | 输出形态 |
+|------|-------------|------------------|---------------------------|----------|
+| **AI 简历分析** | TA · 简历页 | 结合简历字段与可选上传文件，给出可执行的简历改进建议（结构、措辞、TA 岗位相关性等）。 | 简历标题/院系/学位/GPA/个人陈述；可选图片或文本附件；可选若干岗位标题作语境。 | Markdown 分段建议 |
+| **AI 岗位匹配** | TA · 岗位列表 | 对当前页每条开放岗位，根据学生简历摘要生成 **0–100** 匹配分，便于浏览筛选。 | 学生档案摘要 + 各岗位标题/院系/描述片段。 | JSON：`jobId → score` |
+| **AI 简历匹配排序** | TA · 岗位详情 → 申请 | 将本人多份简历相对**当前岗位**打分并标出推荐项，辅助选择提交哪一份。 | 单岗位标题/院系/描述 + 各简历 id 与摘要字段。 | JSON：分数与推荐标记 |
+| **AI 决策建议** | MO · 申请记录 | 结合岗位与申请材料，给出 **Offer / Reject / Unclear** 倾向与理由要点（**非**录用决定）。 | 岗位描述/标签、申请状态、申请人显示名、简历快照、求职信片段。 | Markdown（不含独立「免责声明」节） |
+| **AI 申请者排序** | MO · 申请记录 | 对**同一岗位**下至少 2 名（非撤回）申请者，生成建议浏览顺序、0–100 匹配分与一句理由，辅助筛选。 | 岗位描述/标签 + 各申请 id、状态、简历与求职信摘要。 | JSON 数组（经 Servlet 校验后返回 `rankings`） |
+| **AI 动机草稿** | TA · 申请记录 | 基于目标岗位与所选简历生成 **第一人称** 可编辑短述/动机段草稿。 | 岗位描述/标签 + 所选简历字段与个人陈述。 | Markdown（Draft / Tips 等；不含法律免责段） |
+
+**说明**：`MatchingService` 写入 `match_scores` 的持久化分析以**规则分**为主；`aiExplanation` 仅随是否配置 Key 切换说明文案，**不**调用大模型，故未列入上表。
+
+### AI 功能一览表
+
+| 用户入口（页面 / 操作） | 调用的 Servlet / 入口 | 底层服务 | 需要配置 `QWEN_API_KEY`？ | 失败时的典型表现 |
+|-------------------------|------------------------|----------|---------------------------|-------------------|
+| **简历页** → 同意免责后「AI 简历分析」 | `POST /resumes`（`action=aiReview`），`ResumesServlet` | `QwenAiService.analyzeResumeForOptimization`（多模态/文本） | **是** | 返回 JSON `ok: false`，文案含 *Qwen API key is not configured*（`msg.aiKeyMissing`）；前端弹错误提示。 |
+| **岗位列表（TA）** → 同意免责后「AI 匹配」 | `POST /ai-match`，`AiMatchServlet` | `QwenAiService` 批量文本打分 | **是** | JSON `ok: false`，`error` 为 *QWEN_API_KEY is not configured* 或网络/模型错误；列表顶部横幅提示失败。 |
+| **岗位详情（TA）** → 申请：先弹窗阅读免责并点击「同意并排序」 | `POST /ai-resume-rank`，`AiResumeRankServlet` | `QwenAiService.rankResumesForJob` | **是** | 未配置 Key 或无简历时不弹 AI 层、不请求；同意后失败则弹窗内无分数条。 |
+| **申请记录（MO）** → 同意免责后「AI 推荐排序」（同一岗位 ≥2 人） | `POST /ai-mo-applicants-rank`，`AiMoApplicantsRankServlet` | `QwenAiService.rankMoApplicantsForJobJson` | **是** | 未配置 Key 时按钮禁用；不足 2 人时接口返回说明；失败时 JSON `error` 或 HTTP 错误。 |
+| **申请记录（MO）** → 同意免责后「AI 决策建议」 | `POST /ai-mo-application-advice`，`AiMoApplicationAdviceServlet` | `QwenAiService.suggestMoOfferRejectAdvice` | **是** | 除 **Withdrawn（已撤回）** 外各状态均显示入口；已录用/已拒绝等状态下模型按「回顾性说明」提示词输出。失败时 JSON `ok: false` 等。 |
+| **申请记录（TA）** → 同意免责后「AI 动机草稿」 | `POST /ai-ta-cover-letter`，`AiTaCoverLetterServlet` | `QwenAiService.draftTaCoverLetterMotivation` | **是** | 同上；需行内同时具备 `vacancyId` 与 `resumeId` 且状态非 Withdrawn 才显示入口。 |
+| **（后端）申请匹配分落库** | `MatchingService`（随申请等业务写入 `match_scores`） | 以**规则分**为主；`aiExplanation` 仅根据是否配置 Key 切换说明文案 | **否**（不配置 Key 也会落库） | 无单独「AI 按钮」；与申请流程联动，可在相关通知或管理/演示入口查看匹配记录。 |
+
+**开发与运维提示**：若页面上 AI 按钮灰色或弹窗报错含 *QWEN_API_KEY* / *HTTP 5xx*，请检查 Tomcat 进程环境变量、重启服务，并查看 `catalina` 日志；课程演示环境可阅读 README「Qwen API Key 配置指南」。
+
+未登录用户调用上述需登录的接口时，一般返回 **401** 与 JSON `ok: false`（以各 Servlet 实现为准）。
+
+### Qwen（DashScope）API Key 配置指南
+
+所有密钥**仅通过环境变量或 Tomcat 启动参数**注入，**不要**写入仓库、不要写进 `data/*.json`。
+
+**1. 必填**
+
+| 变量名 | 含义 |
+|--------|------|
+| `QWEN_API_KEY` | 阿里云 DashScope 兼容 OpenAI 格式的 API Key（`sk-...`）。Java 代码通过 `System.getenv("QWEN_API_KEY")` 读取（见 `QwenAiService.resolveApiKey()`）。 |
+
+**2. 可选（模型名）**
+
+| 变量 / JVM 属性 | 含义 | 默认值（代码内） |
+|-----------------|------|------------------|
+| `QWEN_MODEL` 或 JVM `-DQWEN_MODEL=...` | 多模态（简历文件/图）分析用 VL 模型 | `qwen2.5-vl-72b-instruct` |
+| `QWEN_TEXT_MODEL` 或 JVM `-DQWEN_TEXT_MODEL=...` | 纯文本批量打分、简历排序用文本模型 | `qwen3.5-plus` |
+
+**3. Windows + 独立 Tomcat（推荐 `setenv.bat`）**
+
+在 Tomcat 安装目录的 **`bin`** 下新建或编辑 **`setenv.bat`**（若不存在则新建），例如：
+
+```bat
+set "QWEN_API_KEY=sk-你的密钥"
+rem 可选：
+rem set "QWEN_MODEL=qwen2.5-vl-72b-instruct"
+rem set "QWEN_TEXT_MODEL=qwen3.5-plus"
+```
+
+保存后**重启** Tomcat（`shutdown.bat` 再 `startup.bat`，或重启托管服务）。`setenv.bat` 会在 `catalina.bat` 启动时被自动加载。
+
+也可在「系统环境变量」中为当前用户或整机设置 **`QWEN_API_KEY`**，再启动 Tomcat，效果等价（需保证 Tomcat 进程能继承到该变量）。
+
+**4. macOS / Linux**
+
+在启动 Tomcat 的 shell 中 `export QWEN_API_KEY=sk-...`，或使用 `bin/setenv.sh`（若你使用 Tomcat 官方 `setenv.sh` 机制），同样**重启** Tomcat。
+
+使用 Homebrew 服务时，需通过 `brew services` 对应的环境配置或包装脚本注入变量，确保 **`catalina` 子进程**可见 `QWEN_API_KEY`。
+
+**5. 验证是否生效**
+
+- 登录 TA 账号打开 **简历页**：未配置时侧栏常见「KEY REQUIRED」类提示；配置后「AI 简历分析」应能返回分析内容（仍受网络与额度影响）。  
+- 或临时查看 Tomcat 日志中是否仍有 *QWEN_API_KEY is not configured* 类输出。
+
+**6. 安全提醒**
+
+- 不要把 Key 提交到 Git；演示截图前打码。  
+- 生产环境建议使用密钥托管（如云厂商密钥管理），而非明文写在服务器磁盘上的脚本（课程项目 `setenv.bat` 本地使用可接受）。
+
 ## Database Docs
 
 - 数据层设计总入口：[docs/ta-recruitment-system/README.md](./docs/ta-recruitment-system/README.md)

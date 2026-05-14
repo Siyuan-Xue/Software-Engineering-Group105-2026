@@ -11,6 +11,7 @@ import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
+import com.bupt.ta.util.Labels;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.ServletException;
@@ -173,6 +174,7 @@ public class ResumesServlet extends HttpServlet {
             resume.setBio("");
             resume.setUploadedFilePath(uploadPath.toString());
             resume.setOriginalFileName(originalName);
+            resume.setLabels(Labels.parseList(req.getParameter("labels"), 24));
 
             Resume saved = resumeService.save(resume);
 
@@ -202,6 +204,7 @@ public class ResumesServlet extends HttpServlet {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(I18n.message(req, "msg.resumeNotFound")));
         resume.setTitle(title.trim());
+        resume.setLabels(Labels.parseList(req.getParameter("labels"), 24));
         resumeService.save(resume);
     }
 
@@ -312,6 +315,7 @@ public class ResumesServlet extends HttpServlet {
             resume.setMaxWeeklyHours(Integer.parseInt(hoursStr));
         }
         resume.setBio(req.getParameter("bio"));
+        resume.setLabels(Labels.parseList(req.getParameter("resumeLabels"), 24));
         resumeService.save(resume);
     }
 

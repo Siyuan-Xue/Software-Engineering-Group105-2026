@@ -4,6 +4,7 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="${langTag}">
 <head>
@@ -30,6 +31,26 @@
         }
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
+    <style>
+        .fav-btn { transition: transform .15s, color .15s; }
+        .fav-btn:hover { transform: scale(1.08); }
+        .fav-btn.saved .material-symbols-outlined { font-variation-settings: 'FILL' 1; color: #ef4444; }
+        .fav-btn:not(.saved) .material-symbols-outlined { color: #94a3b8; }
+        .qm-modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center;
+            z-index: 10001; padding: 1rem;
+        }
+        .qm-modal-overlay.open { display: flex; }
+        .qm-modal-box {
+            background: #fff; border-radius: 1.5rem;
+            box-shadow: 0 32px 64px -24px rgba(15,23,42,0.4);
+            width: 100%; max-height: 90vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+    </style>
 </head>
 <body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -81,16 +102,24 @@
                                             </span>
                                             <h2 class="text-3xl font-black text-slate-900 tracking-tight"><c:out value="${vacancy.title}"/></h2>
                                             <p class="text-lg text-slate-500 mt-1"><c:out value="${vacancy.department}"/></p>
+                                            <c:if test="${not empty vacancy.labels}">
+                                                <div class="flex flex-wrap gap-2 mt-3">
+                                                    <c:forEach items="${vacancy.labels}" var="lb">
+                                                        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200"><c:out value="${lb}"/></span>
+                                                    </c:forEach>
+                                                </div>
+                                            </c:if>
                                         </div>
                                         <%-- MO 仅当 isOwner 显示编辑；TA 等在 else 显示申请（与角色权限展示约定一致）。 --%>
                                         <c:choose>
                                             <c:when test="${userRole == 'MO'}">
                                                 <c:choose>
                                                     <c:when test="${vacancy.owner}">
-                                                        <button class="portal-btn portal-btn-secondary">
+                                                        <a href="${pageContext.request.contextPath}/vacancy/edit?vacancyId=${vacancy.vacancyId}&amp;returnTo=detail"
+                                                           class="portal-btn portal-btn-secondary inline-flex items-center gap-2">
                                                             <span class="material-symbols-outlined text-sm">edit</span>
                                                             ${language == 'zh' ? '编辑岗位' : 'Edit Vacancy'}
-                                                        </button>
+                                                        </a>
                                                     </c:when>
                                                     <c:otherwise>
                                                         <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600">
@@ -101,9 +130,18 @@
                                                 </c:choose>
                                             </c:when>
                                             <c:when test="${userRole == 'TA'}">
-                                                <button onclick="openApplyModal()" class="portal-btn portal-btn-primary">
-                                                    ${language == 'zh' ? '立即申请' : 'Apply Now'}
-                                                </button>
+                                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                                    <button type="button"
+                                                            class="fav-btn ${vacancy.saved ? 'saved' : ''} inline-flex items-center justify-center w-12 h-12 rounded-2xl border border-slate-200 bg-white shadow-sm"
+                                                            data-vacancy-id="${vacancy.vacancyId}"
+                                                            title="${vacancy.saved ? (language == 'zh' ? '取消收藏' : 'Remove from saved') : (language == 'zh' ? '收藏岗位' : 'Save vacancy')}"
+                                                            onclick="toggleVacancyFavorite(this)">
+                                                        <span class="material-symbols-outlined text-2xl">favorite</span>
+                                                    </button>
+                                                    <button onclick="openApplyModal()" class="portal-btn portal-btn-primary flex-1 sm:flex-none">
+                                                        ${language == 'zh' ? '立即申请' : 'Apply Now'}
+                                                    </button>
+                                                </div>
                                             </c:when>
                                             <c:otherwise>
                                                 <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600">
@@ -182,7 +220,7 @@
                                             <span class="material-symbols-outlined text-2xl">close</span>
                                         </button>
                                     </div>
-                                    <p class="text-slate-500 text-sm mb-1">${language == 'zh' ? '选择你想用于本次申请的简历。' : 'Choose which resume you want to submit for this application.'}</p>
+                                    <p class="text-slate-500 text-sm mb-1">${language == 'zh' ? '选择你想用于本次申请的简历。使用「AI 匹配排序」前须在弹出层中阅读说明并点击同意按钮后才会请求模型。' : 'Choose which resume you want to submit. AI ranking runs only after you read the notice in the dialog and click the agree button.'}</p>
 
                                     <!-- AI recommendation notice -->
                                     <div id="aiRankStatus" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
@@ -193,6 +231,7 @@
                                         <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
                                         <span>${language == 'zh' ? 'AI 推荐已生成，请查看下方分数' : 'AI recommendation ready — see scores below'}</span>
                                     </div>
+                                    <div id="aiRankErrorMsg" class="text-xs text-red-700 mb-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2" style="display:none"></div>
 
                                     <form action="${pageContext.request.contextPath}/application" method="POST">
                                         <input type="hidden" name="vacancyId" value="${vacancy.vacancyId}">
@@ -238,14 +277,99 @@
                                 </div>
                             </div>
 
+                            <c:if test="${userRole == 'TA'}">
+                            <div id="aiResumeRankDisclaimerModal" class="qm-modal-overlay"
+                                 onclick="if(event.target===this) closeAiResumeRankDisclaimer()">
+                                <div class="qm-modal-box max-w-lg" style="max-height:90vh">
+                                    <div class="px-7 pt-7 pb-5 overflow-y-auto">
+                                        <div class="flex items-start gap-4 mb-4">
+                                            <div class="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
+                                                <span class="material-symbols-outlined text-2xl text-violet-600" style="font-variation-settings:'FILL' 1">policy</span>
+                                            </div>
+                                            <div>
+                                                <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 简历匹配排序' : 'AI resume ranking'}</h2>
+                                                <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '继续前请先阅读' : 'Please read before continuing'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-sm text-amber-900 leading-relaxed">
+                                            <ul class="list-disc pl-4 space-y-1.5">
+                                                <li>${language == 'zh' ? '将把本岗位描述与你名下各份简历的摘要发送至第三方模型（Qwen）以生成 0–100 的匹配分与推荐标签。' : 'Vacancy text and short resume summaries are sent to a third-party model (Qwen) for 0–100 match scores and a pick tag.'}</li>
+                                                <li>${language == 'zh' ? '分数仅供参考，不构成录用或拒绝依据。' : 'Scores are indicative only and are not an admission decision.'}</li>
+                                                <li>${language == 'zh' ? '法律与隐私说明以本弹窗及你点击的确认按钮为准；模型回复中不会替代该等同意。' : 'Legal/privacy terms are those shown here and confirmed by your button click; the model reply does not replace that consent.'}</li>
+                                            </ul>
+                                        </div>
+                                        <p class="text-sm text-slate-500">${language == 'zh' ? '点击「同意并排序」即表示你已阅读并接受上述说明，此后才会发起 AI 请求。' : 'Click “I agree & rank” to accept the above and send the AI request.'}</p>
+                                    </div>
+                                    <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                                        <button type="button" onclick="closeAiResumeRankDisclaimer()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
+                                        <button type="button" onclick="agreeAiResumeRankDisclaimer()" class="portal-btn portal-btn-primary">
+                                            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                                            ${language == 'zh' ? '同意并排序' : 'I agree & rank'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            </c:if>
+
                             <script>
                                 <%-- 与列表页传入的 vacancyId 一致，供 AI 排序等请求定位岗位 --%>
                                 var JOB_ID = '${vacancy.vacancyId}';
                                 var CTX    = '${pageContext.request.contextPath}';
+                                var QWEN_OK = ${qwenConfigured ? 'true' : 'false'};
+                                var RESUME_COUNT = ${fn:length(resumeList)};
+                                var IS_TA = ${userRole == 'TA' ? 'true' : 'false'};
+
+                                async function toggleVacancyFavorite(btn) {
+                                    var vacancyId = btn.dataset.vacancyId;
+                                    if (!vacancyId) return;
+                                    btn.disabled = true;
+                                    try {
+                                        var params = new URLSearchParams();
+                                        params.append('vacancyId', vacancyId);
+                                        var res = await fetch(CTX + '/favorites', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                            body: params.toString()
+                                        });
+                                        if (res.status === 401) {
+                                            alert('${language == 'zh' ? '请先登录后再收藏岗位。' : 'Please log in to save vacancies.'}');
+                                            return;
+                                        }
+                                        if (!res.ok) throw new Error('server');
+                                        var data = await res.json();
+                                        if (data.saved) {
+                                            btn.classList.add('saved');
+                                            btn.title = '${language == 'zh' ? '取消收藏' : 'Remove from saved'}';
+                                        } else {
+                                            btn.classList.remove('saved');
+                                            btn.title = '${language == 'zh' ? '收藏岗位' : 'Save vacancy'}';
+                                        }
+                                    } catch (e) { console.error(e); }
+                                    finally { btn.disabled = false; }
+                                }
 
                                 function openApplyModal() {
+                                    if (IS_TA && QWEN_OK && RESUME_COUNT > 0) {
+                                        var disc = document.getElementById('aiResumeRankDisclaimerModal');
+                                        if (disc) disc.classList.add('open');
+                                        else openApplyModalAfterConsent();
+                                    } else {
+                                        openApplyModalAfterConsent();
+                                    }
+                                }
+                                function closeAiResumeRankDisclaimer() {
+                                    var disc = document.getElementById('aiResumeRankDisclaimerModal');
+                                    if (disc) disc.classList.remove('open');
+                                }
+                                function agreeAiResumeRankDisclaimer() {
+                                    closeAiResumeRankDisclaimer();
+                                    openApplyModalAfterConsent();
+                                }
+                                function openApplyModalAfterConsent() {
                                     document.getElementById('applyModal').style.display = 'flex';
-                                    fetchAIRankings();
+                                    if (IS_TA && QWEN_OK && RESUME_COUNT > 0) {
+                                        fetchAIRankings();
+                                    }
                                 }
                                 function closeApplyModal() {
                                     document.getElementById('applyModal').style.display = 'none';
@@ -256,6 +380,8 @@
 
                                     var status = document.getElementById('aiRankStatus');
                                     var done   = document.getElementById('aiRankDone');
+                                    var errBox = document.getElementById('aiRankErrorMsg');
+                                    if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
                                     if (status) status.style.setProperty('display', 'flex', 'important');
                                     if (done)   done.style.setProperty('display', 'none', 'important');
 
@@ -267,12 +393,19 @@
                                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                         body: params.toString()
                                     })
-                                        .then(function(r) { return r.json(); })
-                                        .then(function(data) {
+                                        .then(function(r) { return r.json().then(function(data) { return { okHttp: r.ok, data: data }; }); })
+                                        .then(function(res) {
                                             if (status) status.style.setProperty('display', 'none', 'important');
-                                            if (!data.ok || !data.hasResumes) return;
+                                            var data = res.data || {};
+                                            if (!res.okHttp || !data.ok || !data.hasResumes) {
+                                                var msg = data.error || '${language == 'zh' ? 'AI 排序失败（请确认已配置 QWEN_API_KEY 或稍后重试）' : 'AI ranking failed (check QWEN_API_KEY or try again)'}';
+                                                if (errBox) {
+                                                    errBox.textContent = msg;
+                                                    errBox.style.display = 'block';
+                                                }
+                                                return;
+                                            }
 
-                                            var hasRecommended = data.rankings.some(function(r) { return r.recommended; });
                                             data.rankings.forEach(function(r) {
                                                 var badge = document.getElementById('scoreBadge_' + r.resumeId);
                                                 var label = document.getElementById('resumeLabel_' + r.resumeId);
@@ -307,8 +440,13 @@
 
                                             if (done) done.style.setProperty('display', 'flex', 'important');
                                         })
-                                        .catch(function() {
+                                        .catch(function(e) {
                                             if (status) status.style.setProperty('display', 'none', 'important');
+                                            var errBox2 = document.getElementById('aiRankErrorMsg');
+                                            if (errBox2) {
+                                                errBox2.textContent = '${language == 'zh' ? '网络错误：' : 'Network error: '}' + e.message;
+                                                errBox2.style.display = 'block';
+                                            }
                                         });
                                 }
                             </script>

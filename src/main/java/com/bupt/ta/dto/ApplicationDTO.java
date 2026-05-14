@@ -13,6 +13,8 @@ public class ApplicationDTO {
     private String status;
     private String appliedDate;
     private String resumeName;
+    /** Resume UUID for this application (TA AI cover-letter draft). */
+    private UUID resumeId;
 
     // Getters and Setters
     public UUID getApplicationId() { return applicationId; }
@@ -38,4 +40,7 @@ public class ApplicationDTO {
 
     public String getResumeName() { return resumeName; }
     public void setResumeName(String resumeName) { this.resumeName = resumeName; }
+
+    public UUID getResumeId() { return resumeId; }
+    public void setResumeId(UUID resumeId) { this.resumeId = resumeId; }
 }

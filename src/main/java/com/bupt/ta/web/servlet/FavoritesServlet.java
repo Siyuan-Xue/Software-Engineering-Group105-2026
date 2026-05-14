@@ -71,13 +71,9 @@ public class FavoritesServlet extends HttpServlet {
             freshUser.setSavedJobIds(saved);
             User updated = userRepository.save(freshUser);
 
-            // Keep the session in sync
             HttpSession session = req.getSession(false);
             if (session != null) {
-                Object sessionUser = session.getAttribute("currentUser");
-                if (sessionUser instanceof User su) {
-                    su.setSavedJobIds(updated.getSavedJobIds());
-                }
+                session.setAttribute("currentUser", updated);
             }
 
             int count = updated.getSavedJobIds().size();

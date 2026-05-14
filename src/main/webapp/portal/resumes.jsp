@@ -120,6 +120,12 @@
                 <input type="file" id="resumeFileInput" name="resumeFile" form="uploadForm"
                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
                        class="sr-only"/>
+                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3">
+                    <label for="uploadLabelsInput" class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">${language == 'zh' ? '简历标签（可选）' : 'Resume labels (optional)'}</label>
+                    <input type="text" id="uploadLabelsInput"
+                           class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
+                           placeholder="${language == 'zh' ? '如：Java, 助教, 本科 — 用逗号分隔' : 'e.g. Java, TA, undergraduate — comma separated'}"/>
+                </div>
 
                 <c:choose>
                     <c:when test="${pageState == 'loadError'}">
@@ -211,6 +217,9 @@
                                                                             GPA <strong class="text-slate-600"><c:out value="${r.gpa}"/></strong>
                                                                         </span>
                                                                     </c:if>
+                                                                    <c:forEach items="${r.labels}" var="rlb">
+                                                                        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800"><c:out value="${rlb}"/></span>
+                                                                    </c:forEach>
                                                                 </div>
                                                             </div>
                                                             <%-- action buttons – always visible --%>
@@ -225,6 +234,7 @@
                                                                         data-gpa="${r.gpa}"
                                                                         data-hours="${r.maxWeeklyHours}"
                                                                         data-bio="${fn:escapeXml(r.bio)}"
+                                                                        data-resume-labels='<c:forEach items="${r.labels}" var="lb" varStatus="vs"><c:if test="${!vs.first}">|</c:if><c:out value="${lb}"/></c:forEach>'
                                                                         onclick="openEditModalFromBtn(this)">
                                                                     <span class="material-symbols-outlined text-[18px]">edit</span>
                                                                 </button>
@@ -418,6 +428,14 @@
                           focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
                           text-slate-800 placeholder-slate-400" />
             <p class="text-xs text-slate-400 mt-1.5">${language == 'zh' ? '留空则保持为“未命名”。' : 'Leave blank to keep "Untitled".'}</p>
+
+            <label class="block text-xs text-slate-400 mb-1 mt-4 font-medium uppercase tracking-wide"
+                   for="renameLabelsInput">${language == 'zh' ? '标签（可选）' : 'Labels (optional)'}</label>
+            <input id="renameLabelsInput" type="text"
+                   class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
+                          text-slate-800 placeholder-slate-400"
+                   placeholder="${language == 'zh' ? '逗号分隔，如：Java, 算法' : 'Comma-separated, e.g. Java, algorithms'}"/>
         </div>
 
         <div class="px-7 py-5 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
@@ -461,7 +479,7 @@
                 </ul>
             </div>
             <p class="text-sm text-slate-500">
-                ${language == 'zh' ? '点击“同意并分析”即表示你已阅读并理解以上内容。' : 'By clicking "I Agree & Analyse" you confirm you have read and understood the above.'}
+                ${language == 'zh' ? '法律与隐私上的接受以本弹窗及下方确认按钮为准；AI 分析结果不构成对该接受的补充或替代。点击“同意并分析”即表示你已阅读并理解以上内容。' : 'Legal/privacy acceptance is this dialog plus the button below; AI analysis does not supplement or replace it. By clicking "I Agree & Analyse" you confirm you have read and understood the above.'}
             </p>
         </div>
         <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
@@ -584,6 +602,12 @@
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '个人陈述 / 简介' : 'Personal Statement / Bio'}</label>
                 <textarea name="bio" id="editBio" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 resize-y"></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '标签' : 'Labels'}</label>
+                <input type="text" name="resumeLabels" id="editResumeLabels"
+                       class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                       placeholder="${language == 'zh' ? '逗号或分号分隔' : 'Comma or semicolon separated'}"/>
+            </div>
             <div class="pt-1 flex justify-end gap-3">
                 <button type="button" onclick="closeEditModal()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
                 <button type="submit" class="portal-btn portal-btn-primary">
@@ -627,6 +651,10 @@
             var fd = new FormData();
             fd.append('action', 'upload');
             fd.append('resumeFile', file);
+            var ulab = document.getElementById('uploadLabelsInput');
+            if (ulab && ulab.value && ulab.value.trim()) {
+                fd.append('labels', ulab.value.trim());
+            }
 
             fetch('${pageContext.request.contextPath}/resumes', { method: 'POST', body: fd })
                 .then(function (r) { return r.json(); })
@@ -674,8 +702,10 @@
         _renameResumeId = resumeId;
         var nameInput   = document.getElementById('renameInput');
         var fileInfo    = document.getElementById('renameFileInfo');
+        var labIn       = document.getElementById('renameLabelsInput');
         if (nameInput)  { nameInput.value = '${language == 'zh' ? '未命名' : 'Untitled'}'; }
         if (fileInfo)   { fileInfo.textContent = originalFileName || ''; }
+        if (labIn)      { labIn.value = ''; }
         document.getElementById('renameModal').classList.add('open');
         if (nameInput) { nameInput.focus(); nameInput.select(); }
     }
@@ -700,6 +730,10 @@
         addHidden('action',   'rename');
         addHidden('resumeId', _renameResumeId);
         addHidden('title',    title);
+        var rl = document.getElementById('renameLabelsInput');
+        if (rl && rl.value && rl.value.trim()) {
+            addHidden('labels', rl.value.trim());
+        }
         document.body.appendChild(form);
         form.submit();
     }
@@ -738,7 +772,7 @@
     function closeAIModal() {
         document.getElementById('aiResultModal').classList.remove('open');
     }
-    function openEditModal(id, title, dept, degree, gpa, hours, bio) {
+    function openEditModal(id, title, dept, degree, gpa, hours, bio, labelsJoined) {
         document.getElementById('editResumeId').value = id;
         document.getElementById('editTitle').value    = title  || '';
         document.getElementById('editDept').value     = dept   || '';
@@ -746,6 +780,10 @@
         document.getElementById('editGpa').value      = gpa    || '';
         document.getElementById('editHours').value    = hours  || '15';
         document.getElementById('editBio').value      = bio    || '';
+        var lr = document.getElementById('editResumeLabels');
+        if (lr) {
+            lr.value = (labelsJoined || '').split('|').join(', ');
+        }
         document.getElementById('editModal').classList.add('open');
     }
     function closeEditModal() {
@@ -755,7 +793,7 @@
     // ── Edit from data-* attributes (safe with special chars) ─────────────────
     function openEditModalFromBtn(btn) {
         var d = btn.dataset;
-        openEditModal(d.resumeId, d.title, d.dept, d.degree, d.gpa, d.hours, d.bio);
+        openEditModal(d.resumeId, d.title, d.dept, d.degree, d.gpa, d.hours, d.bio, d.resumeLabels || '');
     }
 
     // ── AI Review ─────────────────────────────────────────────────────────────

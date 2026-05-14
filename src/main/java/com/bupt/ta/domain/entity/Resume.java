@@ -24,6 +24,7 @@ public class Resume extends AbstractEntity {
     private List<AvailabilitySlot> availabilitySlots = new ArrayList<>();
     private String uploadedFilePath;
     private String originalFileName;
+    private List<String> labels = new ArrayList<>();
 
     public UUID getUserId() {
         return userId;
@@ -103,6 +104,14 @@ public class Resume extends AbstractEntity {
 
     public void setOriginalFileName(String originalFileName) {
         this.originalFileName = originalFileName;
+    }
+
+    public List<String> getLabels() {
+        return labels == null ? new ArrayList<>() : new ArrayList<>(labels);
+    }
+
+    public void setLabels(List<String> labels) {
+        this.labels = labels == null ? new ArrayList<>() : new ArrayList<>(labels);
     }
 
     @JsonIgnore

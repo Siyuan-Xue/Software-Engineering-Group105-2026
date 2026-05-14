@@ -9,6 +9,7 @@ import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -45,10 +46,12 @@ public class VacancyDetailServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        copyFlashFromQuery(req);
         try {
             UUID vacancyId = parseVacancyId(req.getParameter("vacancyId"));
             if (vacancyId == null) {
                 req.setAttribute("pageState", "normal");
+                attachQwenConfigured(req);
                 req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
                 return;
             }
@@ -81,7 +84,12 @@ public class VacancyDetailServlet extends HttpServlet {
             req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyDetailLoadFailed"));
         }
 
+        attachQwenConfigured(req);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private static void attachQwenConfigured(HttpServletRequest req) {
+        req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
     }
 
     private VacancyDetailView toView(Job job, Map<UUID, User> userById, User currentUser) {
@@ -99,6 +107,8 @@ public class VacancyDetailServlet extends HttpServlet {
             moduleOwner = safe(userById.get(job.getPostedBy()).getFullName(), moduleOwner);
         }
         boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
+        boolean saved = currentUser != null && currentUser.getSavedJobIds().contains(job.getId());
+        List<String> labels = job.getLabels();
 
         List<String> requirements = buildRequirements(job);
         return new VacancyDetailView(
@@ -112,8 +122,21 @@ public class VacancyDetailServlet extends HttpServlet {
                 deadline,
                 moduleOwner,
                 requirements,
-                isOwner
+                isOwner,
+                labels,
+                saved
         );
+    }
+
+    private void copyFlashFromQuery(HttpServletRequest req) {
+        String s = req.getParameter("successMessage");
+        if (s != null && !s.isBlank()) {
+            req.setAttribute("successMessage", s);
+        }
+        String e = req.getParameter("errorMessage");
+        if (e != null && !e.isBlank()) {
+            req.setAttribute("errorMessage", e);
+        }
     }
 
     private List<String> buildRequirements(Job job) {
@@ -199,6 +222,8 @@ public class VacancyDetailServlet extends HttpServlet {
         private final String moduleOwner;
         private final List<String> requirements;
         private final boolean isOwner;
+        private final List<String> labels;
+        private final boolean saved;
 
         public VacancyDetailView(String vacancyId,
                                  String courseCode,
@@ -210,7 +235,9 @@ public class VacancyDetailServlet extends HttpServlet {
                                  String deadline,
                                  String moduleOwner,
                                  List<String> requirements,
-                                 boolean isOwner) {
+                                 boolean isOwner,
+                                 List<String> labels,
+                                 boolean saved) {
             this.vacancyId = vacancyId;
             this.courseCode = courseCode;
             this.title = title;
@@ -222,6 +249,8 @@ public class VacancyDetailServlet extends HttpServlet {
             this.moduleOwner = moduleOwner;
             this.requirements = requirements;
             this.isOwner = isOwner;
+            this.labels = labels;
+            this.saved = saved;
         }
 
         public String getVacancyId() {
@@ -266,6 +295,14 @@ public class VacancyDetailServlet extends HttpServlet {
 
         public boolean isOwner() {
             return isOwner;
+        }
+
+        public List<String> getLabels() {
+            return labels;
+        }
+
+        public boolean isSaved() {
+            return saved;
         }
     }
 

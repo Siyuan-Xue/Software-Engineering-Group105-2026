@@ -8,6 +8,7 @@ import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.JobService;
+import com.bupt.ta.service.QwenAiService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -95,12 +96,25 @@ public class VacanciesServlet extends HttpServlet {
             req.setAttribute("hasMore", page < totalPages);
             req.setAttribute("termOptions", buildTermOptions());
             req.setAttribute("pageState", "normal");
+            applyFlashFromQuery(req);
         } catch (RuntimeException ex) {
             req.setAttribute("pageState", "loadError");
             req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyLoadFailed"));
         }
 
+        req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyFlashFromQuery(HttpServletRequest req) {
+        String s = req.getParameter("successMessage");
+        if (s != null && !s.isBlank()) {
+            req.setAttribute("successMessage", s);
+        }
+        String e = req.getParameter("errorMessage");
+        if (e != null && !e.isBlank()) {
+            req.setAttribute("errorMessage", e);
+        }
     }
 
     // ── View mapping ─────────────────────────────────────────────────────────
@@ -118,6 +132,7 @@ public class VacanciesServlet extends HttpServlet {
         }
         boolean saved = savedIds.contains(job.getId());
         boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
+        List<String> labels = job.getLabels();
 
         return new VacancyCardView(
                 job.getId().toString(),
@@ -130,7 +145,8 @@ public class VacanciesServlet extends HttpServlet {
                 deadline,
                 moduleOwner,
                 saved,
-                isOwner
+                isOwner,
+                labels
         );
     }
 
@@ -144,6 +160,9 @@ public class VacanciesServlet extends HttpServlet {
         searchable.add(job.getModuleCode());
         searchable.add(job.getDescription());
         searchable.add(resolveDepartment(job));
+        for (String lb : job.getLabels()) {
+            searchable.add(lb);
+        }
         return searchable.stream()
                 .filter(v -> v != null && !v.isBlank())
                 .map(v -> v.toLowerCase(Locale.ROOT))
@@ -291,11 +310,12 @@ public class VacanciesServlet extends HttpServlet {
         private final String moduleOwner;
         private final boolean saved;
         private final boolean isOwner;
+        private final List<String> labels;
 
         public VacancyCardView(String vacancyId, String courseCode, String title,
                                String description, String department, int hoursPerWeek,
                                String hourlyRate, String deadline, String moduleOwner,
-                               boolean saved, boolean isOwner) {
+                               boolean saved, boolean isOwner, List<String> labels) {
             this.vacancyId   = vacancyId;
             this.courseCode  = courseCode;
             this.title       = title;
@@ -307,6 +327,7 @@ public class VacanciesServlet extends HttpServlet {
             this.moduleOwner = moduleOwner;
             this.saved       = saved;
             this.isOwner     = isOwner;
+            this.labels      = labels == null ? List.of() : List.copyOf(labels);
         }
 
         public String getVacancyId()    { return vacancyId; }
@@ -320,5 +341,6 @@ public class VacanciesServlet extends HttpServlet {
         public String getModuleOwner()  { return moduleOwner; }
         public boolean isSaved()        { return saved; }
         public boolean isOwner()        { return isOwner; }
+        public List<String> getLabels() { return labels; }
     }
 }

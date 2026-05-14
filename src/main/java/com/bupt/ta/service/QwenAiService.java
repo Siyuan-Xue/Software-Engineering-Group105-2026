@@ -47,6 +47,16 @@ public class QwenAiService {
     // ── Descriptors used for batch scoring ────────────────────────────────────
     public record JobInfo(String id, String title, String description, String department) {}
     public record ResumeInfo(String id, String title, String department, String degree, String gpa, String bio) {}
+    /** One applicant row for MO multi-applicant ranking (same vacancy). */
+    public record MoApplicantSnippet(
+            String applicationId,
+            String statusDisplay,
+            String resumeTitle,
+            String department,
+            String degree,
+            String gpa,
+            String bioExcerpt,
+            String coverLetterExcerpt) {}
 
     private final String apiKey;
     private final String vlModel;
@@ -216,6 +226,7 @@ public class QwenAiService {
         sb.append("4. **Rewrite Suggestions** – concrete before/after examples for weak sections\n");
         sb.append("5. **Keyword & Phrasing Tips** – specific language and keywords to add\n");
         sb.append("6. **Next Steps** – a numbered action plan (3-5 steps) the student should take today\n");
+        sb.append("Do not add a standalone legal/privacy disclaimer block; the application collects consent in the UI before this call.\n");
         return sb.toString();
     }
 
@@ -263,7 +274,7 @@ public class QwenAiService {
         sb.append("- Title: ").append(nvl(jobTitle)).append("\n");
         sb.append("- Department: ").append(nvl(jobDepartment)).append("\n");
         if (jobDescription != null && !jobDescription.isBlank()) {
-            sb.append("- Description: ").append(jobDescription, 0, Math.min(jobDescription.length(), 200)).append("\n");
+            sb.append("- Description: ").append(jobDescription, 0, Math.min(jobDescription.length(), 800)).append("\n");
         }
 
         sb.append("\nResumes to score (use exact IDs as keys):\n");
@@ -304,6 +315,7 @@ public class QwenAiService {
         StringBuilder sb = new StringBuilder();
         sb.append("Rate how well this student matches each TA job (integer 0-100).\n\n");
         sb.append("Student profile:\n");
+        sb.append("- Resume title: ").append(nvl(title)).append("\n");
         sb.append("- Department: ").append(nvl(dept)).append("\n");
         sb.append("- Degree: ").append(nvl(degree)).append("\n");
         sb.append("- GPA: ").append(nvl(gpa)).append("\n");
@@ -354,6 +366,189 @@ public class QwenAiService {
             result.putIfAbsent(id, -1);
         }
         return result;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 4. MO application decision assistant  (Applications page)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Suggests whether a module owner might lean toward offer vs reject, with reasoning.
+     * Not a hiring decision; not legal advice.
+     */
+    public String suggestMoOfferRejectAdvice(
+            String jobTitle,
+            String moduleCode,
+            String jobDescription,
+            String jobLabelsJoined,
+            String applicationStatusDisplay,
+            String applicantCoverLetter,
+            String resumeTitle,
+            String resumeDepartment,
+            String resumeDegree,
+            String resumeGpa,
+            String resumeBio,
+            String applicantDisplayName) throws Exception {
+
+        if (!isConfigured()) {
+            throw new IllegalStateException("Qwen API key is not configured.");
+        }
+
+        String sys = """
+                You are an assistant helping a university module organiser review Teaching Assistant applications.
+                You MUST NOT make the hiring decision. You MUST NOT claim legal compliance or give legal advice.
+                The user message includes the current workflow status (e.g. Submitted, Under Review, Offer Pending, Accepted, Rejected, Declined).
+                If the status is Accepted, Rejected, or Declined, treat this as retrospective documentation or consistency review only:
+                do not instruct the organiser to reverse an official outcome; frame "Suggested lean" as what the materials would have suggested
+                or how the case reads in hindsight, and note any training/audit talking points if relevant.
+                If the status is still open (Submitted, Under Review, Offer Pending), you may phrase "Suggested lean" as preliminary guidance only.
+                Do not output a separate legal/privacy disclaimer section; the product shows legal terms in the UI, not in your reply.
+                Output in Markdown with these sections exactly:
+                ## Summary
+                ## Suggested lean (Offer / Reject / Unclear)
+                ## Reasoning (bullet list, max 6 bullets)
+                ## Risks or follow-up checks
+                """;
+
+        StringBuilder user = new StringBuilder();
+        user.append("Vacancy: ").append(nvl(jobTitle)).append(" (").append(nvl(moduleCode)).append(")\n");
+        user.append("Vacancy labels: ").append(nvl(jobLabelsJoined)).append("\n");
+        user.append("Vacancy description:\n").append(trunc(nvl(jobDescription), 2500)).append("\n\n");
+        user.append("Application status: ").append(nvl(applicationStatusDisplay)).append("\n");
+        user.append("Applicant (resume owner display): ").append(nvl(applicantDisplayName)).append("\n\n");
+        user.append("Resume snapshot — title: ").append(nvl(resumeTitle));
+        user.append(", dept: ").append(nvl(resumeDepartment));
+        user.append(", degree: ").append(nvl(resumeDegree));
+        user.append(", GPA: ").append(nvl(resumeGpa)).append("\n");
+        if (resumeBio != null && !resumeBio.isBlank()) {
+            user.append("Bio excerpt:\n").append(trunc(resumeBio, 1200)).append("\n\n");
+        }
+        if (applicantCoverLetter != null && !applicantCoverLetter.isBlank()) {
+            user.append("Cover letter / message from applicant:\n")
+                    .append(trunc(applicantCoverLetter, 2000)).append("\n\n");
+        }
+        user.append("Based only on the above, give concise guidance for the organiser.\n");
+
+        ArrayNode parts = mapper.createArrayNode();
+        addText(parts, user.toString());
+        return chat(textModel, sys, parts, 2200, 0.35, false);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 5. TA cover letter / motivation draft  (Applications page)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draft a short motivation paragraph or cover letter snippet for one vacancy.
+     */
+    public String draftTaCoverLetterMotivation(
+            String jobTitle,
+            String moduleCode,
+            String jobDescription,
+            String jobLabelsJoined,
+            String resumeTitle,
+            String resumeDepartment,
+            String resumeDegree,
+            String resumeGpa,
+            String resumeBio) throws Exception {
+
+        if (!isConfigured()) {
+            throw new IllegalStateException("Qwen API key is not configured.");
+        }
+
+        String sys = """
+                You help students draft text for Teaching Assistant applications.
+                Produce a concise draft the student can edit. Use Markdown.
+                Sections: ## Draft (2 short paragraphs max), ## Optional closing line, ## Tips (3 bullets max).
+                Do not invent grades, publications, or experience not hinted in the profile.
+                Do not add legal or privacy disclaimer lines; the application shows those in the UI before calling you.
+                """;
+
+        StringBuilder user = new StringBuilder();
+        user.append("Target vacancy: ").append(nvl(jobTitle)).append(" (").append(nvl(moduleCode)).append(")\n");
+        user.append("Vacancy labels: ").append(nvl(jobLabelsJoined)).append("\n");
+        user.append("Vacancy description:\n").append(trunc(nvl(jobDescription), 2500)).append("\n\n");
+        user.append("Student profile — resume title: ").append(nvl(resumeTitle));
+        user.append(", dept: ").append(nvl(resumeDepartment));
+        user.append(", degree: ").append(nvl(resumeDegree));
+        user.append(", GPA: ").append(nvl(resumeGpa)).append("\n");
+        if (resumeBio != null && !resumeBio.isBlank()) {
+            user.append("Bio / statement:\n").append(trunc(resumeBio, 2000)).append("\n");
+        }
+        user.append("\nWrite the draft in the student's voice (first person), suitable for pasting into a cover letter field.\n");
+
+        ArrayNode parts = mapper.createArrayNode();
+        addText(parts, user.toString());
+        return chat(textModel, sys, parts, 1800, 0.45, false);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 6. MO multi-applicant ranking for one vacancy  (Applications page)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Ranks multiple applicants for the same TA vacancy (JSON array). Triaging aid only — not a hiring decision.
+     *
+     * @return raw model text expected to contain a single JSON array
+     */
+    public String rankMoApplicantsForJobJson(
+            String jobTitle,
+            String moduleCode,
+            String jobDescription,
+            String jobLabelsJoined,
+            List<MoApplicantSnippet> applicants) throws Exception {
+
+        if (!isConfigured()) {
+            throw new IllegalStateException("Qwen API key is not configured.");
+        }
+        if (applicants == null || applicants.size() < 2) {
+            throw new IllegalArgumentException("At least two applicants are required.");
+        }
+
+        String sys = """
+                You help a university module organiser compare Teaching Assistant applicants for ONE vacancy.
+                You MUST NOT decide who is hired. You MUST NOT output markdown or prose outside JSON.
+                Respond ONLY with a JSON array. Each element must be exactly:
+                {"applicationId":"<uuid as given>","rank":<integer starting at 1 for best match>,"fitScore":<0-100>,"note":"<plain text, max 100 chars>"}
+                Rules: include every applicationId exactly once; ranks must be 1..N with no gaps or duplicates; do not add legal/privacy text.
+                """;
+
+        StringBuilder user = new StringBuilder();
+        user.append("Vacancy: ").append(nvl(jobTitle)).append(" (").append(nvl(moduleCode)).append(")\n");
+        user.append("Labels: ").append(nvl(jobLabelsJoined)).append("\n");
+        user.append("Description:\n").append(trunc(nvl(jobDescription), 2200)).append("\n\n");
+        user.append("Applicants (rank using only these materials):\n");
+        int limit = Math.min(applicants.size(), 18);
+        for (int i = 0; i < limit; i++) {
+            MoApplicantSnippet a = applicants.get(i);
+            user.append("---\n");
+            user.append("applicationId: ").append(nvl(a.applicationId())).append("\n");
+            user.append("status: ").append(nvl(a.statusDisplay())).append("\n");
+            user.append("resumeTitle: ").append(nvl(a.resumeTitle())).append("\n");
+            user.append("dept: ").append(nvl(a.department())).append(", degree: ").append(nvl(a.degree()));
+            user.append(", GPA: ").append(nvl(a.gpa())).append("\n");
+            if (a.bioExcerpt() != null && !a.bioExcerpt().isBlank()) {
+                user.append("bio: ").append(trunc(a.bioExcerpt(), 400)).append("\n");
+            }
+            if (a.coverLetterExcerpt() != null && !a.coverLetterExcerpt().isBlank()) {
+                user.append("coverLetter: ").append(trunc(a.coverLetterExcerpt(), 500)).append("\n");
+            }
+        }
+        if (applicants.size() > limit) {
+            user.append("\n(Additional applicants omitted for length — rank only those listed above.)\n");
+        }
+        user.append("\nReturn ONLY the JSON array.\n");
+
+        ArrayNode parts = mapper.createArrayNode();
+        addText(parts, user.toString());
+        return chat(textModel, sys, parts, 3200, 0.2, true);
+    }
+
+    private static String trunc(String s, int max) {
+        if (s == null || s.length() <= max) {
+            return s == null ? "" : s;
+        }
+        return s.substring(0, max) + "\n...[truncated]";
     }
 
     // ── private: shared HTTP helper ───────────────────────────────────────────

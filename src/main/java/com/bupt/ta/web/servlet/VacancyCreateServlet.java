@@ -8,6 +8,7 @@ import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.service.JobService;
+import com.bupt.ta.util.Labels;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -111,6 +112,8 @@ public class VacancyCreateServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {}
             }
         }
+
+        job.setLabels(Labels.parseList(req.getParameter("labels"), 24));
 
         jobService.save(job);
 

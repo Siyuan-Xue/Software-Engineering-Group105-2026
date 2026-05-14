@@ -1,6 +1,7 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.dto.ApplicationDTO;
+import com.bupt.ta.dto.MoJobRankOption;
 import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
@@ -9,6 +10,7 @@ import com.bupt.ta.domain.entity.Job;
 import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.ApplicationStatus;
+import com.bupt.ta.service.QwenAiService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -21,9 +23,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -89,6 +93,26 @@ public class ApplicationsServlet extends HttpServlet {
             req.setAttribute("pageState", "normal");
         }
         req.setAttribute("applications", applications);
+        if ("MO".equalsIgnoreCase(userRole)) {
+            Map<UUID, List<ApplicationDTO>> byJob = applications.stream()
+                    .filter(d -> d.getVacancyId() != null)
+                    .collect(java.util.stream.Collectors.groupingBy(ApplicationDTO::getVacancyId));
+            List<MoJobRankOption> rankOpts = new ArrayList<>();
+            for (Map.Entry<UUID, List<ApplicationDTO>> e : byJob.entrySet()) {
+                long activeCount = e.getValue().stream()
+                        .filter(a -> !"Withdrawn".equals(a.getStatus()))
+                        .count();
+                if (activeCount >= 2) {
+                    String title = e.getValue().get(0).getVacancyTitle();
+                    rankOpts.add(new MoJobRankOption(e.getKey().toString(), title, (int) activeCount));
+                }
+            }
+            rankOpts.sort(Comparator.comparing(MoJobRankOption::getTitle, String.CASE_INSENSITIVE_ORDER));
+            req.setAttribute("moRankJobOptions", rankOpts);
+        } else {
+            req.setAttribute("moRankJobOptions", List.of());
+        }
+        req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.getRequestDispatcher("/portal/applications.jsp").forward(req, resp);
     }
 
@@ -105,6 +129,7 @@ public class ApplicationsServlet extends HttpServlet {
         dto.setStatus(toDisplayStatus(application.getStatus()));
         dto.setAppliedDate(application.getCreatedAt() == null ? "" : DATE_FORMATTER.format(application.getCreatedAt()));
         dto.setResumeName(resume == null ? "Unknown Resume" : safe(resume.getTitle(), "Unknown Resume"));
+        dto.setResumeId(application.getResumeId());
         return dto;
     }
 

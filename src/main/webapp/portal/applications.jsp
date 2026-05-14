@@ -27,6 +27,26 @@
         }
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
+    <style>
+        .qm-modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            align-items: center; justify-content: center;
+            z-index: 9999; padding: 1rem;
+        }
+        .qm-modal-overlay.open { display: flex; }
+        .qm-modal-box {
+            background: #fff; border-radius: 1.5rem;
+            box-shadow: 0 32px 64px -24px rgba(15,23,42,0.4);
+            width: 100%; max-height: 90vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .ai-prose h2 { font-size:1rem; font-weight:700; color:#1e293b; margin:1rem 0 .35rem; }
+        .ai-prose ul { list-style:disc; padding-left:1.2rem; margin:.4rem 0; }
+        .ai-prose li { margin:.25rem 0; color:#475569; line-height:1.55; }
+        .ai-prose p { color:#475569; line-height:1.6; margin:.35rem 0; }
+    </style>
 </head>
 <body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
     <div class="relative flex min-h-screen w-full flex-col">
@@ -48,14 +68,29 @@
                     <!-- Page Header -->
                     <div class="portal-page-header mb-2">
                         <div>
-                            <h2 class="portal-page-title">${language == 'zh' ? '我的申请' : 'My Applications'}</h2>
-                            <p class="portal-page-copy">${language == 'zh' ? '跟踪你已提交的课程与项目申请进度。' : 'Track the progress of your submitted module and program applications.'}</p>
+                            <c:choose>
+                                <c:when test="${userRole == 'MO'}">
+                                    <h2 class="portal-page-title">${language == 'zh' ? '收到的申请' : 'Received Applications'}</h2>
+                                    <p class="portal-page-copy">${language == 'zh' ? '查看投向你所发布岗位的申请。可使用「AI 推荐排序」对同一岗位的多名申请者生成浏览顺序建议；「AI 决策建议」针对单笔申请。使用前须阅读免责说明并点击同意；未配置 QWEN_API_KEY 时相关按钮不可用。' : 'Applications to your vacancies. Use “AI rank applicants” for suggested browse order when multiple people applied to the same role; “AI decision hints” per application. Read the notice and click agree before each call; without QWEN_API_KEY the buttons stay disabled.'}</p>
+                                </c:when>
+                                <c:otherwise>
+                                    <h2 class="portal-page-title">${language == 'zh' ? '我的申请' : 'My Applications'}</h2>
+                                    <p class="portal-page-copy">${language == 'zh' ? '跟踪你已提交的课程与项目申请进度。使用「AI 动机草稿」前须先阅读并同意隐私与免责说明。' : 'Track your submitted applications. Before using “AI motivation draft”, read and accept the privacy & disclaimer.'}</p>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                         <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-primary">
                             <span class="material-symbols-outlined text-sm">search</span>
                             ${language == 'zh' ? '浏览岗位' : 'Browse Vacancies'}
                         </a>
                     </div>
+
+                    <c:if test="${not qwenConfigured}">
+                        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <span class="font-bold">${language == 'zh' ? 'AI 功能未启用' : 'AI features disabled'}</span> —
+                            ${language == 'zh' ? '服务器未配置 QWEN_API_KEY，以下「AI」按钮将不可用。详见 README「Qwen API Key 配置指南」。' : 'QWEN_API_KEY is not set on the server; AI buttons below stay disabled. See README “Qwen API Key 配置指南”.'}
+                        </div>
+                    </c:if>
 
                     <!-- Search and Filters -->
                     <form action="${pageContext.request.contextPath}/applications" method="GET" class="portal-filter-bar">
@@ -96,6 +131,27 @@
                             </div>
                         </div>
                     </form>
+
+                    <c:if test="${userRole == 'MO' && not empty moRankJobOptions}">
+                        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row sm:items-end gap-4 shadow-sm">
+                            <div class="flex-1 min-w-0">
+                                <label for="moRankJobSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">${language == 'zh' ? '同一岗位多名申请者 · AI 辅助排序' : 'Multiple applicants per vacancy · AI ranking aid'}</label>
+                                <select id="moRankJobSelect" class="w-full max-w-xl rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800">
+                                    <c:forEach items="${moRankJobOptions}" var="rj">
+                                        <option value="${rj.jobId}"><c:out value="${rj.title}"/> · ${rj.applicantCount}</option>
+                                    </c:forEach>
+                                </select>
+                                <p class="text-xs text-slate-500 mt-2">${language == 'zh' ? '排序仅供参考，不代替院系录用流程；须先阅读免责说明并点击同意。' : 'Ranking is indicative only; read the notice and click agree before the request runs.'}</p>
+                            </div>
+                            <button type="button" id="moRankAiBtn"
+                                    class="portal-btn portal-btn-secondary shrink-0 ${qwenConfigured ? '' : 'opacity-50 cursor-not-allowed'}"
+                                    ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                    onclick="openMoRankDisclaimer()">
+                                <span class="material-symbols-outlined text-sm">sort</span>
+                                ${language == 'zh' ? 'AI 推荐排序' : 'AI rank applicants'}
+                            </button>
+                        </div>
+                    </c:if>
 
                     <!-- Applications Table -->
                     <c:choose>
@@ -219,6 +275,7 @@
                                                                 </c:choose>
                                                             </td>
                                                             <td class="px-6 py-5 text-right">
+                                                                <div class="flex flex-col items-end gap-2">
                                                                 <c:choose>
                                                                     <c:when test="${not empty app.vacancyId}">
                                                                         <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${app.vacancyId}" class="text-sm font-bold text-primary hover:underline">${language == 'zh' ? '查看岗位' : 'View vacancy'}</a>
@@ -227,6 +284,28 @@
                                                                         <a href="${pageContext.request.contextPath}/vacancies" class="text-sm font-bold text-slate-600 hover:text-primary hover:underline">${language == 'zh' ? '浏览岗位' : 'Browse vacancies'}</a>
                                                                     </c:otherwise>
                                                                 </c:choose>
+                                                                <c:if test="${userRole == 'MO' && app.status != 'Withdrawn'}">
+                                                                    <button type="button"
+                                                                            class="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900 disabled:opacity-40 disabled:pointer-events-none"
+                                                                            data-app-id="${app.applicationId}"
+                                                                            ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                                                            onclick="openMoAdviceDisclaimer(this.dataset.appId)">
+                                                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                                                        ${language == 'zh' ? 'AI 决策建议' : 'AI decision hints'}
+                                                                    </button>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && not empty app.vacancyId && not empty app.resumeId && app.status != 'Withdrawn'}">
+                                                                    <button type="button"
+                                                                            class="inline-flex items-center gap-1 text-xs font-bold text-sky-700 hover:text-sky-900 disabled:opacity-40 disabled:pointer-events-none"
+                                                                            data-vacancy-id="${app.vacancyId}"
+                                                                            data-resume-id="${app.resumeId}"
+                                                                            ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                                                            onclick="openTaMotivationDisclaimer(this.dataset.vacancyId, this.dataset.resumeId)">
+                                                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">edit_note</span>
+                                                                        ${language == 'zh' ? 'AI 动机草稿' : 'AI motivation draft'}
+                                                                    </button>
+                                                                </c:if>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     </c:forEach>
@@ -266,5 +345,310 @@
             </main>
         </div>
     </div>
+
+    <%-- MO: AI decision hints disclaimer --%>
+    <div id="moAdviceDisc" class="qm-modal-overlay" onclick="if(event.target===this)closeMoAdviceDisc()">
+        <div class="qm-modal-box max-w-lg" style="max-height:90vh">
+            <div class="px-7 pt-7 pb-5 overflow-y-auto">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl text-violet-600" style="font-variation-settings:'FILL' 1">policy</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 决策建议 — 使用须知' : 'AI decision hints — please read'}</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '继续前请确认你理解以下条款' : 'Confirm you understand the following before continuing'}</p>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-sm text-amber-900 leading-relaxed">
+                    <ul class="list-disc pl-4 space-y-1.5">
+                        <li>${language == 'zh' ? '系统将把你的岗位说明、标签及该申请的简历摘要、求职信片段发送给第三方大模型（Qwen）进行分析。' : 'The service will send vacancy text, labels, and applicant resume/cover-letter excerpts to a third-party model (Qwen) for analysis.'}</li>
+                        <li>${language == 'zh' ? '输出仅为参考，不构成录用、法律或合规意见；最终录用决定须由你方按院系政策作出。' : 'Output is guidance only — not hiring, legal, or compliance advice. Hiring decisions remain yours under institutional policy.'}</li>
+                        <li>${language == 'zh' ? '模型可能产生错误或偏见，请勿单独依赖 AI 结果。' : 'Models may err or show bias; do not rely on AI output alone.'}</li>
+                    </ul>
+                </div>
+                <p class="text-sm text-slate-500">${language == 'zh' ? '法律与隐私上的接受以本弹窗及下方确认按钮为准；AI 返回正文不构成对该接受的补充或替代。点击「同意并使用」即表示你已阅读并接受上述说明。' : 'Legal/privacy acceptance is this dialog plus the confirm button below; AI text does not supplement or replace it. By clicking “I agree & run” you confirm you accept the above.'}</p>
+            </div>
+            <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button type="button" onclick="closeMoAdviceDisc()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
+                <button type="button" onclick="agreeMoAdvice()" class="portal-btn portal-btn-primary">
+                    <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    ${language == 'zh' ? '同意并使用' : 'I agree & run'}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <c:if test="${userRole == 'MO'}">
+    <div id="moRankDisc" class="qm-modal-overlay" onclick="if(event.target===this)closeMoRankDisc()">
+        <div class="qm-modal-box max-w-lg" style="max-height:90vh">
+            <div class="px-7 pt-7 pb-5 overflow-y-auto">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl text-indigo-600" style="font-variation-settings:'FILL' 1">sort</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 申请者排序 — 使用须知' : 'AI applicant ranking — please read'}</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '对同一岗位的多名申请者生成浏览顺序建议' : 'Suggested browse order for multiple applicants to one vacancy'}</p>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-sm text-amber-900 leading-relaxed">
+                    <ul class="list-disc pl-4 space-y-1.5">
+                        <li>${language == 'zh' ? '将把该岗位说明及每位申请者的简历/求职信摘要发往 Qwen，用于生成排序与简短理由。' : 'Vacancy text and each applicant’s resume/cover-letter excerpts are sent to Qwen for ordering and short notes.'}</li>
+                        <li>${language == 'zh' ? '排序不构成录用或拒绝决定，院系政策与面试材料仍为准。' : 'Order is not an offer or rejection; policy and interviews prevail.'}</li>
+                        <li>${language == 'zh' ? '法律与隐私接受以本弹窗及确认按钮为准。' : 'Legal/privacy acceptance is this dialog and the confirm button.'}</li>
+                    </ul>
+                </div>
+                <p class="text-sm text-slate-500">${language == 'zh' ? '点击「同意并排序」后才会发起请求。' : 'The request runs only after you click “I agree & rank”.'}</p>
+            </div>
+            <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button type="button" onclick="closeMoRankDisc()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
+                <button type="button" onclick="agreeMoRankFetch()" class="portal-btn portal-btn-primary">
+                    <span class="material-symbols-outlined text-sm">sort</span>
+                    ${language == 'zh' ? '同意并排序' : 'I agree & rank'}
+                </button>
+            </div>
+        </div>
+    </div>
+    </c:if>
+
+    <%-- TA: motivation draft disclaimer --%>
+    <div id="taMotivationDisc" class="qm-modal-overlay" onclick="if(event.target===this)closeTaMotivationDisc()">
+        <div class="qm-modal-box max-w-lg" style="max-height:90vh">
+            <div class="px-7 pt-7 pb-5 overflow-y-auto">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl text-sky-600" style="font-variation-settings:'FILL' 1">policy</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 动机草稿 — 使用须知' : 'AI motivation draft — please read'}</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">${language == 'zh' ? '继续前请确认你理解以下条款' : 'Confirm you understand the following before continuing'}</p>
+                    </div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-sm text-amber-900 leading-relaxed">
+                    <ul class="list-disc pl-4 space-y-1.5">
+                        <li>${language == 'zh' ? '系统将把你所选简历的字段及目标岗位描述发送给第三方大模型（Qwen）以生成可编辑草稿。' : 'The service sends your selected resume fields and the target vacancy text to a third-party model (Qwen) to generate an editable draft.'}</li>
+                        <li>${language == 'zh' ? '草稿仅供参考，你须自行核对事实、语气与院系要求后再提交申请。' : 'The draft is for reference; you must verify facts, tone, and requirements before submitting.'}</li>
+                        <li>${language == 'zh' ? '模型可能产生不准确内容（幻觉），请勿未经审阅直接粘贴。' : 'Models may hallucinate; do not paste without reviewing.'}</li>
+                    </ul>
+                </div>
+                <p class="text-sm text-slate-500">${language == 'zh' ? '法律与隐私上的接受以本弹窗及下方确认按钮为准；AI 返回正文不构成对该接受的补充或替代。点击「同意并生成」即表示你已阅读并接受上述说明。' : 'Legal/privacy acceptance is this dialog plus the confirm button below; AI text does not supplement or replace it. By clicking “I agree & generate” you confirm you accept the above.'}</p>
+            </div>
+            <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button type="button" onclick="closeTaMotivationDisc()" class="portal-btn portal-btn-secondary">${language == 'zh' ? '取消' : 'Cancel'}</button>
+                <button type="button" onclick="agreeTaMotivation()" class="portal-btn portal-btn-primary">
+                    <span class="material-symbols-outlined text-sm">edit_note</span>
+                    ${language == 'zh' ? '同意并生成' : 'I agree & generate'}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <%-- Shared AI result --%>
+    <div id="appsAiResult" class="qm-modal-overlay" onclick="if(event.target===this)closeAppsAiResult()">
+        <div class="qm-modal-box max-w-2xl" style="max-height:90vh">
+            <div class="px-7 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <h2 id="appsAiResultTitle" class="text-xl font-bold text-slate-900">${language == 'zh' ? 'AI 结果' : 'AI result'}</h2>
+                <button type="button" onclick="closeAppsAiResult()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+            <div id="appsAiLoading" class="p-8 text-center text-sm text-slate-500" style="display:none">
+                <div class="inline-block w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p>${language == 'zh' ? '正在请求 AI，请稍候…' : 'Contacting AI, please wait…'}</p>
+            </div>
+            <div id="appsAiError" class="p-8 text-center text-sm text-red-700" style="display:none"></div>
+            <div id="appsAiBody" class="ai-prose px-7 py-6 overflow-y-auto" style="display:none; max-height:60vh"></div>
+            <div id="appsAiRankBody" class="px-7 py-6 overflow-y-auto text-sm" style="display:none; max-height:60vh"></div>
+            <div class="px-7 py-4 bg-slate-50 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="closeAppsAiResult()" class="portal-btn portal-btn-secondary text-sm">${language == 'zh' ? '关闭' : 'Close'}</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var CTX = '${pageContext.request.contextPath}';
+        var QWEN_OK = ${qwenConfigured ? 'true' : 'false'};
+        var _pendingMoApplicationId = null;
+        var _pendingTaVacancyId = null;
+        var _pendingTaResumeId = null;
+
+        function openMoAdviceDisclaimer(applicationId) {
+            if (!QWEN_OK) {
+                alert('${language == 'zh' ? '未配置 QWEN_API_KEY，无法使用 AI。请在 Tomcat 的 setenv.bat / setenv.sh 或系统环境中配置后重启服务。详见 README。' : 'QWEN_API_KEY is not configured. Set it in Tomcat setenv or the environment and restart. See README.'}');
+                return;
+            }
+            _pendingMoApplicationId = applicationId;
+            document.getElementById('moAdviceDisc').classList.add('open');
+        }
+        function closeMoAdviceDisc() {
+            document.getElementById('moAdviceDisc').classList.remove('open');
+        }
+        function openTaMotivationDisclaimer(vacancyId, resumeId) {
+            if (!QWEN_OK) {
+                alert('${language == 'zh' ? '未配置 QWEN_API_KEY，无法使用 AI。请在 Tomcat 的 setenv.bat / setenv.sh 或系统环境中配置后重启服务。详见 README。' : 'QWEN_API_KEY is not configured. Set it in Tomcat setenv or the environment and restart. See README.'}');
+                return;
+            }
+            _pendingTaVacancyId = vacancyId;
+            _pendingTaResumeId = resumeId;
+            document.getElementById('taMotivationDisc').classList.add('open');
+        }
+        function closeTaMotivationDisc() {
+            document.getElementById('taMotivationDisc').classList.remove('open');
+        }
+
+        function openAppsAiResult(title) {
+            document.getElementById('appsAiResultTitle').textContent = title || '${language == 'zh' ? 'AI 结果' : 'AI result'}';
+            document.getElementById('appsAiLoading').style.display = 'block';
+            document.getElementById('appsAiError').textContent = '';
+            document.getElementById('appsAiError').style.display = 'none';
+            document.getElementById('appsAiBody').style.display = 'none';
+            document.getElementById('appsAiBody').innerHTML = '';
+            var rk = document.getElementById('appsAiRankBody');
+            if (rk) { rk.style.display = 'none'; rk.innerHTML = ''; }
+            document.getElementById('appsAiResult').classList.add('open');
+        }
+        function closeAppsAiResult() {
+            document.getElementById('appsAiResult').classList.remove('open');
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+        }
+
+        function openMoRankDisclaimer() {
+            if (!QWEN_OK) {
+                alert('${language == 'zh' ? '未配置 QWEN_API_KEY，无法使用 AI。请在 Tomcat 的 setenv.bat / setenv.sh 或系统环境中配置后重启服务。详见 README。' : 'QWEN_API_KEY is not configured. Set it in Tomcat setenv or the environment and restart. See README.'}');
+                return;
+            }
+            var disc = document.getElementById('moRankDisc');
+            if (!disc) return;
+            var sel = document.getElementById('moRankJobSelect');
+            if (!sel || !sel.value) return;
+            disc.classList.add('open');
+        }
+        function closeMoRankDisc() {
+            var m = document.getElementById('moRankDisc');
+            if (m) m.classList.remove('open');
+        }
+        function agreeMoRankFetch() {
+            closeMoRankDisc();
+            var sel = document.getElementById('moRankJobSelect');
+            if (!sel || !sel.value) return;
+            openAppsAiResult('${language == 'zh' ? 'AI 申请者排序' : 'AI applicant ranking'}');
+            var params = new URLSearchParams();
+            params.append('jobId', sel.value);
+            fetch(CTX + '/ai-mo-applicants-rank', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { okHttp: r.ok, status: r.status, data: data }; });
+            }).then(function(res) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                var data = res.data || {};
+                if (!res.okHttp || !data.ok) {
+                    var msg = data.error || ('HTTP ' + res.status + ' ${language == 'zh' ? '（请检查是否已配置 QWEN_API_KEY 或查看 Tomcat 日志）' : '(check QWEN_API_KEY or Tomcat logs)'}');
+                    document.getElementById('appsAiError').textContent = msg;
+                    document.getElementById('appsAiError').style.display = 'block';
+                    return;
+                }
+                showMoRankResults(data);
+            }).catch(function(e) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                document.getElementById('appsAiError').textContent = '${language == 'zh' ? '网络或解析错误：' : 'Network error: '}' + e.message;
+                document.getElementById('appsAiError').style.display = 'block';
+            });
+        }
+        function showMoRankResults(data) {
+            var rankEl = document.getElementById('appsAiRankBody');
+            var body = document.getElementById('appsAiBody');
+            body.style.display = 'none';
+            var vt = data.vacancyTitle || '';
+            document.getElementById('appsAiResultTitle').textContent = '${language == 'zh' ? 'AI 申请者排序' : 'AI applicant ranking'}' + (vt ? (' — ' + vt) : '');
+            var intro = '${language == 'zh' ? '以下为模型建议的浏览顺序与匹配分，请结合材料与面试自行决定。' : 'Suggested order and fit scores from the model — decide using materials and interviews.'}';
+            var html = '<p class="text-sm text-slate-500 mb-4">' + escapeHtml(intro) + '</p><ol class="list-decimal pl-5 space-y-4 text-slate-700">';
+            (data.rankings || []).forEach(function(r) {
+                var sc = (typeof r.fitScore === 'number' && r.fitScore >= 0) ? (r.fitScore + '/100') : '—';
+                html += '<li><div class="font-bold text-slate-900">#' + r.rank + ' <span class="text-violet-700">' + escapeHtml(String(sc)) + '</span></div>';
+                html += '<div class="text-sm text-slate-600 mt-1">' + escapeHtml(r.note || '') + '</div>';
+                html += '<div class="text-xs text-slate-400 mt-0.5 font-mono break-all">' + escapeHtml(r.applicationId || '') + '</div></li>';
+            });
+            html += '</ol>';
+            rankEl.innerHTML = html;
+            rankEl.style.display = 'block';
+        }
+
+        function agreeMoAdvice() {
+            closeMoAdviceDisc();
+            if (!_pendingMoApplicationId) return;
+            openAppsAiResult('${language == 'zh' ? 'AI 决策建议' : 'AI decision hints'}');
+            var params = new URLSearchParams();
+            params.append('applicationId', _pendingMoApplicationId);
+            fetch(CTX + '/ai-mo-application-advice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { okHttp: r.ok, status: r.status, data: data }; });
+            }).then(function(res) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                var data = res.data || {};
+                if (!res.okHttp || !data.ok) {
+                    document.getElementById('appsAiError').textContent = data.error || ('HTTP ' + res.status);
+                    document.getElementById('appsAiError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('appsAiBody').innerHTML = mdToHtml(data.markdown || '');
+                document.getElementById('appsAiBody').style.display = 'block';
+            }).catch(function(e) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                document.getElementById('appsAiError').textContent = '${language == 'zh' ? '网络错误：' : 'Network error: '}' + e.message;
+                document.getElementById('appsAiError').style.display = 'block';
+            });
+        }
+
+        function agreeTaMotivation() {
+            closeTaMotivationDisc();
+            if (!_pendingTaVacancyId || !_pendingTaResumeId) return;
+            openAppsAiResult('${language == 'zh' ? 'AI 动机草稿' : 'AI motivation draft'}');
+            var params = new URLSearchParams();
+            params.append('vacancyId', _pendingTaVacancyId);
+            params.append('resumeId', _pendingTaResumeId);
+            fetch(CTX + '/ai-ta-cover-letter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function(r) {
+                return r.json().then(function(data) { return { okHttp: r.ok, status: r.status, data: data }; });
+            }).then(function(res) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                var data = res.data || {};
+                if (!res.okHttp || !data.ok) {
+                    document.getElementById('appsAiError').textContent = data.error || ('HTTP ' + res.status);
+                    document.getElementById('appsAiError').style.display = 'block';
+                    return;
+                }
+                document.getElementById('appsAiBody').innerHTML = mdToHtml(data.markdown || '');
+                document.getElementById('appsAiBody').style.display = 'block';
+            }).catch(function(e) {
+                document.getElementById('appsAiLoading').style.display = 'none';
+                document.getElementById('appsAiError').textContent = '${language == 'zh' ? '网络错误：' : 'Network error: '}' + e.message;
+                document.getElementById('appsAiError').style.display = 'block';
+            });
+        }
+
+        function mdToHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/^[#]{1,3}\s+(.+)$/gm,'<h2>$1</h2>')
+                .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+                .replace(/^[-•*]\s+(.+)$/gm,'<li>$1</li>')
+                .replace(/^\d+\.\s+(.+)$/gm,'<li>$1</li>')
+                .replace(/(<li>[^]*?<\/li>\n?)+/g, function(m){ return '<ul>'+m+'</ul>'; })
+                .replace(/\n{2,}/g,'</p><p>')
+                .replace(/^(?!<[hup])(.+)$/gm,'<p>$1</p>');
+        }
+    </script>
 </body>
 </html>

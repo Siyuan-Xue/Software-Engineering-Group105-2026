@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -23,6 +25,7 @@ public class Job extends AbstractEntity {
     private LocalDate endDate;
     private Instant deadline;
     private BigDecimal hourlyRate;
+    private List<String> labels = new ArrayList<>();
 
     public UUID getPostedBy() {
         return postedBy;
@@ -118,5 +121,13 @@ public class Job extends AbstractEntity {
 
     public void setHourlyRate(BigDecimal hourlyRate) {
         this.hourlyRate = hourlyRate;
+    }
+
+    public List<String> getLabels() {
+        return labels == null ? new ArrayList<>() : new ArrayList<>(labels);
+    }
+
+    public void setLabels(List<String> labels) {
+        this.labels = labels == null ? new ArrayList<>() : new ArrayList<>(labels);
     }
 }

@@ -120,8 +120,9 @@
                         <c:if test="${userRole == 'TA'}">
                             <button id="aiMatchBtn"
                                     onclick="openAIMatchDisclaimer()"
-                                    class="portal-btn portal-btn-secondary"
-                                    title="${language == 'zh' ? '使用 AI 评估你的简历与各岗位的匹配度' : 'Use AI to score how well your resume matches each vacancy'}">
+                                    class="portal-btn portal-btn-secondary ${qwenConfigured ? '' : 'opacity-50 cursor-not-allowed'}"
+                                    ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                    title="${qwenConfigured ? (language == 'zh' ? '使用 AI 评估你的简历与各岗位的匹配度' : 'Use AI to score how well your resume matches each vacancy') : (language == 'zh' ? '未配置 QWEN_API_KEY，无法使用 AI 匹配' : 'QWEN_API_KEY not set — AI match unavailable')}">
                                 <span class="material-symbols-outlined text-sm">auto_awesome</span>
                                 ${language == 'zh' ? 'AI 匹配' : 'AI Match'}
                             </button>
@@ -195,6 +196,13 @@
                     <jsp:param name="containerClass" value="mb-6" />
                 </jsp:include>
 
+                <c:if test="${userRole == 'TA' && not qwenConfigured}">
+                    <div class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <span class="font-bold">${language == 'zh' ? 'AI 匹配未启用' : 'AI match disabled'}</span> —
+                        ${language == 'zh' ? '服务器未配置 QWEN_API_KEY，「AI 匹配」将无法返回分数。请在 Tomcat setenv 或环境中配置后重启；详见 README。' : 'QWEN_API_KEY is not set; “AI Match” cannot return scores. Configure it in Tomcat setenv or the environment and restart; see README.'}
+                    </div>
+                </c:if>
+
                 <%-- loadError：后端异常；否则根据 vacancies 是否为空展示列表或空状态（空列表可能表示无数据或无匹配筛选，具体文案由产品与后端约定）。 --%>
                 <c:choose>
                     <c:when test="${pageState == 'loadError'}">
@@ -254,6 +262,13 @@
                                                     <p class="text-sm text-slate-500 mb-4 line-clamp-2 leading-relaxed">
                                                         <c:out value="${vacancy.description}"/>
                                                     </p>
+                                                    <c:if test="${not empty vacancy.labels}">
+                                                        <div class="flex flex-wrap gap-1.5 mb-3">
+                                                            <c:forEach items="${vacancy.labels}" var="vl">
+                                                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"><c:out value="${vl}"/></span>
+                                                            </c:forEach>
+                                                        </div>
+                                                    </c:if>
                                                     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
                                                         <div class="flex items-center gap-1.5">
                                                             <span class="material-symbols-outlined text-[17px]">domain</span>
@@ -285,10 +300,12 @@
                                                         <c:when test="${userRole == 'MO'}">
                                                             <div class="flex flex-col items-center gap-1.5">
                                                                 <c:if test="${vacancy.owner}">
-                                                                    <button type="button" class="portal-btn portal-btn-secondary whitespace-nowrap" title="${language == 'zh' ? '编辑该岗位' : 'Edit this vacancy'}">
+                                                                    <a href="${pageContext.request.contextPath}/vacancy/edit?vacancyId=${vacancy.vacancyId}&amp;returnTo=list"
+                                                                       class="portal-btn portal-btn-secondary whitespace-nowrap inline-flex items-center justify-center gap-1"
+                                                                       title="${language == 'zh' ? '编辑该岗位' : 'Edit this vacancy'}">
                                                                         <span class="material-symbols-outlined text-sm">edit</span>
                                                                         ${language == 'zh' ? '编辑' : 'Edit'}
-                                                                    </button>
+                                                                    </a>
                                                                 </c:if>
                                                             </div>
                                                             <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
@@ -413,7 +430,7 @@
                 </ul>
             </div>
             <p class="text-sm text-slate-500">
-                ${language == 'zh' ? '点击“同意并匹配”即表示你已阅读并理解以上内容。' : 'By clicking "I Agree & Match" you confirm you have read the above.'}
+                ${language == 'zh' ? '法律与隐私上的接受以本弹窗及下方确认按钮为准；AI 分数不构成对该接受的补充或替代。点击“同意并匹配”即表示你已阅读并理解以上内容。' : 'Legal/privacy acceptance is this dialog plus the button below; AI scores do not supplement or replace it. By clicking "I Agree & Match" you confirm you have read the above.'}
             </p>
         </div>
         <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
@@ -470,6 +487,11 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
                         <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '简要描述岗位内容...' : 'Brief description of the role...'}"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标签' : 'Labels'}</label>
+                        <input type="text" name="labels" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java, 实验课, 答疑' : 'e.g. Java, lab, coursework'}"/>
+                        <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '逗号、分号、竖线或换行；最多 24 个，每个最长 48 字符。' : 'Commas, semicolons, pipes, or newlines; up to 24 tags, 48 chars each.'}</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
