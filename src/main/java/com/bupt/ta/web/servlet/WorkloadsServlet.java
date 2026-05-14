@@ -27,6 +27,7 @@ public class WorkloadsServlet extends HttpServlet {
             return;
         }
 
+<<<<<<< Updated upstream
         // Mock Data for TA Workloads
         List<Map<String, Object>> workloads = new ArrayList<>();
         
@@ -47,8 +48,24 @@ public class WorkloadsServlet extends HttpServlet {
         ta2.put("totalHoursPerWeek", 10);
         ta2.put("status", "Active");
         workloads.add(ta2);
+=======
+        List<Map<String, Object>> workloads = adminService.calculateTAWorkloads();
+        
+        int totalAcceptedTAs = workloads.size();
+        int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
+        java.math.BigDecimal totalEstimatedIncome = java.math.BigDecimal.ZERO;
+        for (Map<String, Object> v : workloads) {
+            totalEstimatedIncome = totalEstimatedIncome.add((java.math.BigDecimal) v.get("totalEstimatedIncome"));
+        }
+        int overloadedTAs = (int) workloads.stream().filter(w -> "Overloaded".equals(w.get("workloadStatus"))).count();
+>>>>>>> Stashed changes
 
         req.setAttribute("workloads", workloads);
+        req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
+        req.setAttribute("totalWeeklyHours", totalWeeklyHours);
+        req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
+        req.setAttribute("overloadedTAs", overloadedTAs);
+        
         req.getRequestDispatcher("/portal/workloads.jsp").forward(req, resp);
     }
 }

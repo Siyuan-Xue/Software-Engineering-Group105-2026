@@ -46,7 +46,15 @@ public class AuthFilter implements Filter {
             route.startsWith("/css/") || 
             route.startsWith("/js/") || 
             route.startsWith("/images/") ||
+<<<<<<< Updated upstream
             route.startsWith("/assets/")) {
+=======
+            route.startsWith("/assets/") ||
+            isPublicRootStaticResource(route)) {
+            if (dbDemoRoute && currentUser == null) {
+                applyGuestProfile(req, language, appearance);
+            }
+>>>>>>> Stashed changes
             chain.doFilter(request, response);
             return;
         }
@@ -97,9 +105,11 @@ public class AuthFilter implements Filter {
         chain.doFilter(request, response);
     }
 
-    @Override
-    public void destroy() {
-        // 销毁逻辑（留空即可）
+    /**
+     * 根目录下的常见静态图片（如 {@code /bg.jpg}），未登录时也可被首页引用。
+     */
+    private static boolean isPublicRootStaticResource(String route) {
+        return route.matches("^/[^/]+\\.(?:jpg|jpeg|png|gif|webp|svg|ico)$");
     }
 
     /**
@@ -114,4 +124,60 @@ public class AuthFilter implements Filter {
         if (user.getBio()        != null && !user.getBio().isBlank())        score += 15;
         return Math.min(score, 100);
     }
+<<<<<<< Updated upstream
 }
+=======
+
+    private String resolveLanguage(HttpSession session, User currentUser) {
+        if (currentUser != null && currentUser.getPreferredLanguage() != null) {
+            return I18n.normalizeLanguage(currentUser.getPreferredLanguage());
+        }
+        if (session != null) {
+            Object language = session.getAttribute(I18n.SESSION_LANGUAGE_ATTR);
+            if (language instanceof String value) {
+                return I18n.normalizeLanguage(value);
+            }
+        }
+        return I18n.DEFAULT_LANGUAGE;
+    }
+
+    private String resolveAppearance(HttpSession session, User currentUser) {
+        if (currentUser != null && currentUser.getPreferredAppearance() != null) {
+            return I18n.normalizeAppearance(currentUser.getPreferredAppearance());
+        }
+        if (session != null) {
+            Object appearance = session.getAttribute(I18n.SESSION_APPEARANCE_ATTR);
+            if (appearance instanceof String value) {
+                return I18n.normalizeAppearance(value);
+            }
+        }
+        return I18n.DEFAULT_APPEARANCE;
+    }
+
+    private void applyGuestProfile(HttpServletRequest req, String language, String appearance) {
+        Map<String, Object> userProfile = new HashMap<>();
+        userProfile.put("firstName", "DB");
+        userProfile.put("lastName", "Demo");
+        userProfile.put("fullName", "DB Demo");
+        userProfile.put("email", "demo@local");
+        userProfile.put("phone", "");
+        userProfile.put("department", "System Demo");
+        userProfile.put("studentId", "");
+        userProfile.put("bio", "Public demo mode");
+        userProfile.put("notificationsEnabled", false);
+        userProfile.put("preferredLanguage", language);
+        userProfile.put("preferredAppearance", appearance);
+
+        req.setAttribute("userName", "DB Demo");
+        req.setAttribute("userProfile", userProfile);
+        req.setAttribute("userRole", "DEMO");
+        req.setAttribute("profileCompletionPercentage", 100);
+        req.setAttribute("userRoleLabel", "Public Demo");
+    }
+
+    @Override
+    public void destroy() {
+        // 销毁逻辑（留空即可）
+    }
+}
+>>>>>>> Stashed changes
