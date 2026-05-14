@@ -44,7 +44,7 @@
                 <div class="portal-page-header mb-6">
                     <div>
                         <h2 class="portal-page-title">${language == 'zh' ? '助教工作量' : 'TA Workloads'}</h2>
-                        <p class="portal-page-copy">${language == 'zh' ? '查看各院系助教岗位分配和工时情况。' : 'Monitor Teaching Assistant assignments and hours across all departments.'}</p>
+                        <p class="portal-page-copy">${language == 'zh' ? '查看各院系助教岗位分配和工时情况。' : 'Monitor TA assignments, hours, and estimated income across all departments.'}</p>
                     </div>
                 </div>
 
@@ -62,39 +62,109 @@
                     <c:when test="${empty workloads}">
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                             <jsp:param name="icon" value="group" />
-                            <jsp:param name="title" value="${language == 'zh' ? '暂无工作量记录' : 'No workload records yet'}" />
-                            <jsp:param name="message" value="${language == 'zh' ? '当前学期还没有形成可汇总的工作量记录。等岗位录用和分配产生后，这里会显示真实聚合结果。' : 'No workload records are available for the current term yet. Real aggregates will appear here once hiring and assignment records are created.'}" />
+                            <jsp:param name="title" value="${language == 'zh' ? '暂无可统计的数据' : 'No aggregate data available'}" />
+                            <jsp:param name="message" value="${language == 'zh' ? '当前没有任何被录用的申请记录，无法生成工作量报表。' : 'There are currently no accepted applications to generate workload statistics.'}" />
                             <jsp:param name="actionHref" value="${pageContext.request.contextPath}/dashboard" />
                             <jsp:param name="actionLabel" value="${language == 'zh' ? '返回仪表盘' : 'Back to Dashboard'}" />
                             <jsp:param name="actionStyle" value="secondary" />
                         </jsp:include>
                     </c:when>
                     <c:otherwise>
-                        <div class="portal-panel overflow-hidden">
+
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                                <p class="text-sm font-medium text-slate-500">${language == 'zh' ? '已录用助教总数' : 'Total Accepted TAs'}</p>
+                                <p class="text-3xl font-bold text-slate-900 mt-2">${totalAcceptedTAs}</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                                <p class="text-sm font-medium text-slate-500">${language == 'zh' ? '所有助教每周总工时' : 'Total Weekly Hours'}</p>
+                                <p class="text-3xl font-bold text-accent mt-2">${totalWeeklyHours} <span class="text-lg font-normal text-slate-400">hrs</span></p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                                <p class="text-sm font-medium text-slate-500">${language == 'zh' ? '总预估支出' : 'Total Estimated Income'}</p>
+                                <p class="text-3xl font-bold text-emerald-600 mt-2">£ ${totalEstimatedIncome}</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                                <p class="text-sm font-medium text-slate-500">${language == 'zh' ? '超负荷人数' : 'Overloaded TAs'}</p>
+                                <p class="text-3xl font-bold text-red-600 mt-2">${overloadedTAs}</p>
+                            </div>
+                        </div>
+
+                        <!-- Main Workload Table -->
+                        <div class="portal-panel overflow-hidden whitespace-nowrap">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-slate-50 border-b border-slate-100 text-slate-500">
                                     <tr>
-                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '助教姓名' : 'TA Name'}</th>
-                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '院系' : 'Department'}</th>
-                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '在岗岗位数' : 'Active Jobs'}</th>
-                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '每周总工时' : 'Total Hours/Week'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '助教信息' : 'TA Info'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '在岗岗位数' : 'Accepted Vacancies'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '每周总工时' : 'Weekly Hours'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '总工时(8周)' : 'Total Workload (8 wk)'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '总预估收入(8周)' : 'Est. Income (8 wk)'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '状态' : 'Status'}</th>
+                                        <th class="px-6 py-4 font-semibold text-right">${language == 'zh' ? '操作' : 'Action'}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <c:forEach items="${workloads}" var="wl">
+                                    <c:forEach items="${workloads}" var="wl" varStatus="loop">
                                         <tr class="hover:bg-slate-50 transition-colors">
-                                            <td class="px-6 py-4 font-medium text-slate-900"><c:out value="${wl.taName}"/></td>
-                                            <td class="px-6 py-4 text-slate-600"><c:out value="${wl.department}"/></td>
-                                            <td class="px-6 py-4 text-slate-600"><c:out value="${wl.activeJobsCount}"/></td>
-                                            <td class="px-6 py-4 text-slate-600"><c:out value="${wl.totalHoursPerWeek}"/> ${language == 'zh' ? '小时' : 'hrs'}</td>
                                             <td class="px-6 py-4">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${wl.status == 'Overloaded' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">
-                                                    <c:choose>
-                                                        <c:when test="${wl.status == 'Overloaded'}">${language == 'zh' ? '超负荷' : 'Overloaded'}</c:when>
-                                                        <c:otherwise>${language == 'zh' ? '正常' : 'Active'}</c:otherwise>
-                                                    </c:choose>
-                                                </span>
+                                                <div class="font-medium text-slate-900"><c:out value="${empty wl.taName ? 'Unknown TA' : wl.taName}"/></div>
+                                                <div class="text-xs text-slate-500 mt-0.5"><c:out value="${empty wl.studentId ? wl.taEmail : wl.studentId}"/></div>
+                                            </td>
+                                            <td class="px-6 py-4 font-medium text-slate-700">${wl.acceptedVacancyCount}</td>
+                                            <td class="px-6 py-4 text-slate-600">${wl.totalWeeklyHours} hrs</td>
+                                            <td class="px-6 py-4 text-slate-600">${wl.totalWorkloadHours} hrs</td>
+                                            <td class="px-6 py-4 font-medium text-emerald-600">£ ${wl.totalEstimatedIncome}</td>
+                                            <td class="px-6 py-4">
+                                                <c:choose>
+                                                    <c:when test="${wl.workloadStatus == 'Normal'}">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Normal</span>
+                                                    </c:when>
+                                                    <c:when test="${wl.workloadStatus == 'Busy'}">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Busy</span>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Overloaded</span>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <button onclick="toggleDetails('details-${loop.index}')" class="text-accent hover:text-accent/80 font-medium text-sm flex items-center justify-end w-full gap-1">
+                                                    Details <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <!-- Expandable Details Row -->
+                                        <tr id="details-${loop.index}" class="hidden bg-slate-50/50">
+                                            <td colspan="7" class="px-6 py-4">
+                                                <div class="pl-4 border-l-2 border-accent/20 my-2">
+                                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Assigned Vacancies Details</h4>
+                                                    <div class="grid gap-3">
+                                                        <c:forEach items="${wl.assignedVacancies}" var="vac">
+                                                            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                                <div>
+                                                                    <div class="font-medium text-sm text-slate-900"><c:out value="${vac.title}"/> (<c:out value="${vac.courseCode}"/>)</div>
+                                                                    <div class="text-xs text-slate-500 mt-1">Department: <c:out value="${vac.department}"/> • MO: <c:out value="${vac.moduleOwner}"/></div>
+                                                                </div>
+                                                                <div class="flex items-center gap-6 text-sm text-slate-600">
+                                                                    <div class="text-center">
+                                                                        <div class="text-xs text-slate-400">Weekly</div>
+                                                                        <div class="font-medium">${vac.weeklyHours} hrs</div>
+                                                                    </div>
+                                                                    <div class="text-center">
+                                                                        <div class="text-xs text-slate-400">Rate</div>
+                                                                        <div class="font-medium">£${vac.hourlyRate}/hr</div>
+                                                                    </div>
+                                                                    <div class="text-center bg-slate-50 px-3 py-1.5 rounded border border-slate-100">
+                                                                        <div class="text-[10px] uppercase text-slate-400 font-bold mb-0.5">Est. Total (8w)</div>
+                                                                        <div class="font-bold text-emerald-600">£${vac.estimatedIncome}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </c:forEach>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     </c:forEach>
@@ -107,5 +177,15 @@
         </main>
     </div>
 </div>
+<script>
+    function toggleDetails(id) {
+        const row = document.getElementById(id);
+        if (row.classList.contains('hidden')) {
+            row.classList.remove('hidden');
+        } else {
+            row.classList.add('hidden');
+        }
+    }
+</script>
 </body>
 </html>
