@@ -37,6 +37,10 @@
 |---|---|---|---|
 | Login page | `GET` | `/login` | 已实现 |
 | Login action | `POST` | `/login` | 已实现 |
+| TA register page | `GET` | `/register` | 已实现 |
+| TA register action | `POST` | `/register` | 已实现 |
+| TA forgot password page | `GET` | `/forgot-password` | 已实现 |
+| TA forgot password action | `POST` | `/forgot-password` | 已实现 |
 | Logout action | `POST` | `/logout` | 已实现，前端固定为 `POST` |
 | Dashboard | `GET` | `/dashboard` | 已实现 |
 | Vacancies | `GET` | `/vacancies` | 已实现 |
@@ -55,7 +59,7 @@
 
 以下页面已经统一通过共享组件消费反馈信息：
 
-- `login`
+- `login`、`register`、`forgot-password`（与登录页相同的 flash 组件）
 - `dashboard`
 - `vacancies`
 - `vacancy_detail`
@@ -73,7 +77,7 @@
 
 前端假设：
 
-- 除 `/login` 外，portal 页都必须登录后访问
+- 除 `/login`、`/register`、`/forgot-password` 及落地页、`/logout`、`/db-demo`、静态资源外，portal 等业务路由必须登录后访问
 - 未登录用户访问 portal 路由时，后端应重定向到 `/login`
 - 可附带 `errorMessage=Please log in to access this page`
 

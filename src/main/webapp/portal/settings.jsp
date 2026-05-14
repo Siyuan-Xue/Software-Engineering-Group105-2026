@@ -312,12 +312,12 @@
                                 <div>
                                     <label class="settings-label">${i18n['common.newPassword']}</label>
                                     <input type="password" name="newPassword" id="newPwd" autocomplete="new-password"
-                                           class="settings-input" placeholder="••••••••" required minlength="8" />
+                                           class="settings-input ta-pw-min8" placeholder="••••••••" required minlength="8" />
                                 </div>
                                 <div>
                                     <label class="settings-label">${i18n['common.confirmNewPassword']}</label>
                                     <input type="password" name="confirmPassword" id="confirmPwd" autocomplete="new-password"
-                                           class="settings-input" placeholder="••••••••" required minlength="8" />
+                                           class="settings-input ta-pw-min8" placeholder="••••••••" required minlength="8" />
                                 </div>
                                 <p id="pwdMismatch" class="hidden text-xs font-semibold text-red-500">
                                     ${i18n['settings.passwordMismatch']}
@@ -362,6 +362,7 @@
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/js/password-minlength-en.js"></script>
 <script>
     const newPwd = document.getElementById('newPwd');
     const confirmPwd = document.getElementById('confirmPwd');
