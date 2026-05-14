@@ -302,34 +302,34 @@
         </section>
 
         <!-- Phase 4: Final Step -->
-        <section id="phase-4" class="phase-section h-screen w-full snap-start relative flex items-center bg-[#071324] py-12 lg:py-0"> <!-- Deep Navy overflow protection -->
+        <section id="phase-4" class="phase-section min-h-screen w-full snap-start relative flex items-center bg-[#071324] py-24 lg:py-0"> <!-- Deep Navy overflow protection -->
             <div class="container mx-auto px-6 lg:px-24">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
                     
                     <!-- Left Copy -->
                     <div class="max-w-xl">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-6 text-[#f43f5e] text-[10px] font-black uppercase tracking-widest">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-4 lg:mb-6 text-[#f43f5e] text-[10px] font-black uppercase tracking-widest">
                             PHASE 04 / FINAL STEP
                         </div>
                         
-                        <h2 class="text-4xl md:text-5xl lg:text-7xl font-black text-white leading-tight mb-4 lg:mb-6">
+                        <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-3 lg:mb-4">
                             Ready to Begin<br/>Your Journey?
                         </h2>
                         
-                        <p class="text-base lg:text-lg text-slate-300 font-light leading-relaxed mb-8">
+                        <p class="text-sm lg:text-base text-slate-300 font-light leading-relaxed mb-6">
                             You have reviewed the requirements, checked the dates, and understood the impact. The portal is now ready for your application.
                         </p>
                         
-                        <div class="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-8">
-                            <a href="${pageContext.request.contextPath}/login" class="px-6 lg:px-8 py-3 lg:py-4 bg-[#e11d48] text-white font-bold rounded-xl hover:bg-[#be185d] transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] min-w-[200px]">
+                        <div class="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6">
+                            <a href="${pageContext.request.contextPath}/login" class="px-5 lg:px-8 py-3 bg-[#e11d48] text-white font-bold rounded-xl hover:bg-[#be185d] transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] min-w-[200px]">
                                 LOGIN TO PORTAL <span class="material-symbols-outlined">arrow_forward</span>
                             </a>
-                            <button class="px-6 lg:px-8 py-3 lg:py-4 bg-white/5 text-white font-medium rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
+                            <button class="px-5 lg:px-8 py-3 bg-white/5 text-white font-medium rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
                                 View Vacancies
                             </button>
                         </div>
                         
-                        <div class="flex items-center gap-4 border-t border-white/10 pt-6">
+                        <div class="flex items-center gap-4 border-t border-white/10 pt-4">
                             <div class="w-10 h-10 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#e11d48]">
                                 <span class="material-symbols-outlined text-sm">support_agent</span>
                             </div>

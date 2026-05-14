@@ -37,32 +37,22 @@ public class WorkloadsServlet extends HttpServlet {
             return;
         }
 
-        String semester = currentSemester();
-        List<Map<String, Object>> workloads = adminService.workloadDashboard(semester).stream()
-                .map(this::toView)
-                .toList();
+        List<Map<String, Object>> workloads = adminService.calculateTAWorkloads();
+        
+        int totalAcceptedTAs = workloads.size();
+        int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
+        java.math.BigDecimal totalEstimatedIncome = java.math.BigDecimal.ZERO;
+        for (Map<String, Object> v : workloads) {
+            totalEstimatedIncome = totalEstimatedIncome.add((java.math.BigDecimal) v.get("totalEstimatedIncome"));
+        }
+        int overloadedTAs = (int) workloads.stream().filter(w -> "Overloaded".equals(w.get("workloadStatus"))).count();
+
         req.setAttribute("workloads", workloads);
+        req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
+        req.setAttribute("totalWeeklyHours", totalWeeklyHours);
+        req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
+        req.setAttribute("overloadedTAs", overloadedTAs);
+        
         req.getRequestDispatcher("/portal/workloads.jsp").forward(req, resp);
-    }
-
-    private Map<String, Object> toView(WorkloadAggregate aggregate) {
-        User user = database.users().findById(aggregate.getTaId()).orElse(null);
-        int activeJobs = database.workloadRecords().listByTaAndSemester(aggregate.getTaId(), aggregate.getSemester()).size();
-        return Map.of(
-                "taName", user == null ? "Unknown TA" : safe(user.getFullName(), "Unknown TA"),
-                "department", user == null ? "CS" : safe(user.getDepartment(), "CS"),
-                "activeJobsCount", activeJobs,
-                "totalHoursPerWeek", aggregate.getAssignedHours(),
-                "status", aggregate.getRemainingHours() < 0 ? "Overloaded" : "Active"
-        );
-    }
-
-    private String currentSemester() {
-        LocalDate today = LocalDate.now();
-        return (today.getMonthValue() >= 8 ? "Fall " : "Spring ") + today.getYear();
-    }
-
-    private String safe(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
     }
 }
