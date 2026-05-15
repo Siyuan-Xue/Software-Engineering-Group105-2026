@@ -3,7 +3,7 @@ package com.bupt.ta.web.servlet;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.User;
-import com.bupt.ta.domain.value.WorkloadAggregate;
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.service.AdminService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -37,21 +37,32 @@ public class WorkloadsServlet extends HttpServlet {
             return;
         }
 
-        List<Map<String, Object>> workloads = adminService.calculateTAWorkloads();
-        
-        int totalAcceptedTAs = workloads.size();
-        int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
-        java.math.BigDecimal totalEstimatedIncome = java.math.BigDecimal.ZERO;
-        for (Map<String, Object> v : workloads) {
-            totalEstimatedIncome = totalEstimatedIncome.add((java.math.BigDecimal) v.get("totalEstimatedIncome"));
-        }
-        int overloadedTAs = (int) workloads.stream().filter(w -> "Overloaded".equals(w.get("workloadStatus"))).count();
+        try {
+            List<Map<String, Object>> workloads = adminService.calculateTAWorkloads();
 
-        req.setAttribute("workloads", workloads);
-        req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
-        req.setAttribute("totalWeeklyHours", totalWeeklyHours);
-        req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
-        req.setAttribute("overloadedTAs", overloadedTAs);
+            int totalAcceptedTAs = workloads.size();
+            int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
+            BigDecimal totalEstimatedIncome = BigDecimal.ZERO;
+            for (Map<String, Object> v : workloads) {
+                totalEstimatedIncome = totalEstimatedIncome.add((BigDecimal) v.get("totalEstimatedIncome"));
+            }
+            int overloadedTAs = (int) workloads.stream().filter(w -> "Overloaded".equals(w.get("workloadStatus"))).count();
+
+            req.setAttribute("pageState", workloads.isEmpty() ? "empty" : "normal");
+            req.setAttribute("workloads", workloads);
+            req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
+            req.setAttribute("totalWeeklyHours", totalWeeklyHours);
+            req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
+            req.setAttribute("overloadedTAs", overloadedTAs);
+        } catch (RuntimeException ex) {
+            req.setAttribute("pageState", "loadError");
+            req.setAttribute("workloads", List.of());
+            req.setAttribute("totalAcceptedTAs", 0);
+            req.setAttribute("totalWeeklyHours", 0);
+            req.setAttribute("totalEstimatedIncome", BigDecimal.ZERO);
+            req.setAttribute("overloadedTAs", 0);
+            req.setAttribute("errorMessage", I18n.message(req, "msg.workloadsLoadFailed"));
+        }
         
         req.getRequestDispatcher("/portal/workloads.jsp").forward(req, resp);
     }

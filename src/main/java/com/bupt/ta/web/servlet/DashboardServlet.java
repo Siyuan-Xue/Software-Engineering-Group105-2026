@@ -50,48 +50,69 @@ public class DashboardServlet extends HttpServlet {
         boolean zh = I18n.isChinese(language);
         String userRole = (String) req.getAttribute("userRole");
 
-        if ("TA".equals(userRole)) {
-            List<Resume> resumes = database.resumes().listByUserId(currentUser.getId());
-            Set<UUID> resumeIds = resumes.stream().map(Resume::getId).collect(java.util.stream.Collectors.toSet());
-            List<Application> applications = database.applications().findAll().stream()
-                    .filter(application -> resumeIds.contains(application.getResumeId()))
-                    .toList();
-            long underReviewCount = applications.stream()
-                    .filter(application -> application.getStatus() == ApplicationStatus.PENDING
-                            || application.getStatus() == ApplicationStatus.REVIEWING
-                            || application.getStatus() == ApplicationStatus.OFFER_PENDING)
-                    .count();
-            req.setAttribute("savedResumesCount", resumes.size());
-            req.setAttribute("submittedApplicationsCount", applications.size());
-            req.setAttribute("underReviewApplicationsCount", underReviewCount);
-            req.setAttribute("recentActivities", taActivities(zh, applications, resumes));
-            req.setAttribute("upcomingDeadlines", taDeadlines(zh));
-        } else if ("MO".equals(userRole)) {
-            List<Job> jobs = database.jobs().listByPoster(currentUser.getId());
-            Set<UUID> jobIds = jobs.stream().map(Job::getId).collect(java.util.stream.Collectors.toSet());
-            List<Application> applications = database.applications().findAll().stream()
-                    .filter(application -> jobIds.contains(application.getJobId()))
-                    .toList();
-            long underReviewCount = applications.stream()
-                    .filter(application -> application.getStatus() == ApplicationStatus.PENDING
-                            || application.getStatus() == ApplicationStatus.REVIEWING)
-                    .count();
-            req.setAttribute("postedVacanciesCount", jobs.size());
-            req.setAttribute("receivedApplicationsCount", applications.size());
-            req.setAttribute("underReviewCount", underReviewCount);
-            req.setAttribute("recentActivities", moActivities(zh, jobs, applications));
-            req.setAttribute("upcomingDeadlines", moDeadlines(zh, jobs));
-        } else if ("ADMIN".equals(userRole)) {
-            long totalTas = database.users().findAll().stream().filter(user -> user.getRole() == UserRole.TA).count();
-            long activeVacancies = database.jobs().findAll().stream().filter(job -> job.getStatus() == JobStatus.OPEN).count();
-            req.setAttribute("totalTAsCount", totalTas);
-            req.setAttribute("activeVacanciesCount", activeVacancies);
-            req.setAttribute("recentActivities", adminActivities(zh));
-            req.setAttribute("upcomingDeadlines", adminDeadlines(zh));
+        try {
+            if ("TA".equals(userRole)) {
+                List<Resume> resumes = database.resumes().listByUserId(currentUser.getId());
+                Set<UUID> resumeIds = resumes.stream().map(Resume::getId).collect(java.util.stream.Collectors.toSet());
+                List<Application> applications = database.applications().findAll().stream()
+                        .filter(application -> resumeIds.contains(application.getResumeId()))
+                        .toList();
+                long underReviewCount = applications.stream()
+                        .filter(application -> application.getStatus() == ApplicationStatus.PENDING
+                                || application.getStatus() == ApplicationStatus.REVIEWING
+                                || application.getStatus() == ApplicationStatus.OFFER_PENDING)
+                        .count();
+                req.setAttribute("savedResumesCount", resumes.size());
+                req.setAttribute("submittedApplicationsCount", applications.size());
+                req.setAttribute("underReviewApplicationsCount", underReviewCount);
+                req.setAttribute("recentActivities", taActivities(zh, applications, resumes));
+                req.setAttribute("upcomingDeadlines", taDeadlines(zh));
+            } else if ("MO".equals(userRole)) {
+                List<Job> jobs = database.jobs().listByPoster(currentUser.getId());
+                Set<UUID> jobIds = jobs.stream().map(Job::getId).collect(java.util.stream.Collectors.toSet());
+                List<Application> applications = database.applications().findAll().stream()
+                        .filter(application -> jobIds.contains(application.getJobId()))
+                        .toList();
+                long underReviewCount = applications.stream()
+                        .filter(application -> application.getStatus() == ApplicationStatus.PENDING
+                                || application.getStatus() == ApplicationStatus.REVIEWING)
+                        .count();
+                req.setAttribute("postedVacanciesCount", jobs.size());
+                req.setAttribute("receivedApplicationsCount", applications.size());
+                req.setAttribute("underReviewCount", underReviewCount);
+                req.setAttribute("recentActivities", moActivities(zh, jobs, applications));
+                req.setAttribute("upcomingDeadlines", moDeadlines(zh, jobs));
+            } else if ("ADMIN".equals(userRole)) {
+                long totalTas = database.users().findAll().stream().filter(user -> user.getRole() == UserRole.TA).count();
+                long activeVacancies = database.jobs().findAll().stream().filter(job -> job.getStatus() == JobStatus.OPEN).count();
+                req.setAttribute("totalTAsCount", totalTas);
+                req.setAttribute("activeVacanciesCount", activeVacancies);
+                req.setAttribute("recentActivities", adminActivities(zh));
+                req.setAttribute("upcomingDeadlines", adminDeadlines(zh));
+            }
+            req.setAttribute("pageState", "normal");
+        } catch (RuntimeException ex) {
+            attachLoadErrorFallback(req);
         }
 
         req.getRequestDispatcher("/portal/dashboard.jsp").forward(req, resp);
     }
+
+    private void attachLoadErrorFallback(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("errorMessage", I18n.message(req, "msg.dashboardLoadFailed"));
+        req.setAttribute("recentActivities", List.of());
+        req.setAttribute("upcomingDeadlines", List.of());
+        req.setAttribute("savedResumesCount", 0);
+        req.setAttribute("submittedApplicationsCount", 0);
+        req.setAttribute("underReviewApplicationsCount", 0);
+        req.setAttribute("postedVacanciesCount", 0);
+        req.setAttribute("receivedApplicationsCount", 0);
+        req.setAttribute("underReviewCount", 0);
+        req.setAttribute("totalTAsCount", 0);
+        req.setAttribute("activeVacanciesCount", 0);
+    }
+
     private List<Activity> taActivities(boolean zh, List<Application> applications, List<Resume> resumes) {
         List<Activity> activities = new ArrayList<>();
         applications.stream()

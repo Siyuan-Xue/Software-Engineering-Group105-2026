@@ -56,63 +56,72 @@ public class ApplicationsServlet extends HttpServlet {
         req.setAttribute("successMessage", param(req, "successMessage"));
         req.setAttribute("errorMessage", param(req, "errorMessage"));
 
-        String userRole = (String) req.getAttribute("userRole");
-        
-        java.util.function.Predicate<Application> roleFilter;
-        if ("MO".equalsIgnoreCase(userRole)) {
-            // MO 逻辑：获取该用户发布的所有 Job ID
-            Set<UUID> postedJobIds = database.jobs().listByPoster(currentUser.getId()).stream()
-                    .map(Job::getId)
-                    .collect(java.util.stream.Collectors.toSet());
-            
-            roleFilter = app -> postedJobIds.contains(app.getJobId());
-        } else {
-            // TA 逻辑（默认）：获取该用户所有的 Resume ID
-            Set<UUID> myResumeIds = database.resumes().listByUserId(currentUser.getId()).stream()
-                    .map(Resume::getId)
-                    .collect(java.util.stream.Collectors.toSet());
-            
-            roleFilter = app -> myResumeIds.contains(app.getResumeId());
-        }
-
-        String keyword = param(req, "keyword");
-        String statusFilter = param(req, "status");
-        String dateOrder = param(req, "date");
-
-        List<ApplicationDTO> applications = database.applications().findAll().stream()
-                .filter(roleFilter)
-                .map(this::toDto)
-                .filter(dto -> matchesKeyword(dto, keyword))
-                .filter(dto -> matchesStatus(dto, statusFilter))
-                .sorted(resolveComparator(dateOrder))
-                .toList();
-
-        if (applications.isEmpty()) {
-            req.setAttribute("pageState", keyword != null || statusFilter != null ? "noFilterResults" : "empty");
-        } else {
-            req.setAttribute("pageState", "normal");
-        }
-        req.setAttribute("applications", applications);
-        if ("MO".equalsIgnoreCase(userRole)) {
-            Map<UUID, List<ApplicationDTO>> byJob = applications.stream()
-                    .filter(d -> d.getVacancyId() != null)
-                    .collect(java.util.stream.Collectors.groupingBy(ApplicationDTO::getVacancyId));
-            List<MoJobRankOption> rankOpts = new ArrayList<>();
-            for (Map.Entry<UUID, List<ApplicationDTO>> e : byJob.entrySet()) {
-                long activeCount = e.getValue().stream()
-                        .filter(a -> !"Withdrawn".equals(a.getStatus()))
-                        .count();
-                if (activeCount >= 2) {
-                    String title = e.getValue().get(0).getVacancyTitle();
-                    rankOpts.add(new MoJobRankOption(e.getKey().toString(), title, (int) activeCount));
-                }
-            }
-            rankOpts.sort(Comparator.comparing(MoJobRankOption::getTitle, String.CASE_INSENSITIVE_ORDER));
-            req.setAttribute("moRankJobOptions", rankOpts);
-        } else {
-            req.setAttribute("moRankJobOptions", List.of());
-        }
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
+
+        try {
+            String userRole = (String) req.getAttribute("userRole");
+
+            java.util.function.Predicate<Application> roleFilter;
+            if ("MO".equalsIgnoreCase(userRole)) {
+                // MO 逻辑：获取该用户发布的所有 Job ID
+                Set<UUID> postedJobIds = database.jobs().listByPoster(currentUser.getId()).stream()
+                        .map(Job::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+
+                roleFilter = app -> postedJobIds.contains(app.getJobId());
+            } else {
+                // TA 逻辑（默认）：获取该用户所有的 Resume ID
+                Set<UUID> myResumeIds = database.resumes().listByUserId(currentUser.getId()).stream()
+                        .map(Resume::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+
+                roleFilter = app -> myResumeIds.contains(app.getResumeId());
+            }
+
+            String keyword = param(req, "keyword");
+            String statusFilter = param(req, "status");
+            String dateOrder = param(req, "date");
+
+            List<ApplicationDTO> applications = database.applications().findAll().stream()
+                    .filter(roleFilter)
+                    .map(this::toDto)
+                    .filter(dto -> matchesKeyword(dto, keyword))
+                    .filter(dto -> matchesStatus(dto, statusFilter))
+                    .sorted(resolveComparator(dateOrder))
+                    .toList();
+
+            if (applications.isEmpty()) {
+                req.setAttribute("pageState", keyword != null || statusFilter != null ? "noFilterResults" : "empty");
+            } else {
+                req.setAttribute("pageState", "normal");
+            }
+            req.setAttribute("applications", applications);
+            if ("MO".equalsIgnoreCase(userRole)) {
+                Map<UUID, List<ApplicationDTO>> byJob = applications.stream()
+                        .filter(d -> d.getVacancyId() != null)
+                        .collect(java.util.stream.Collectors.groupingBy(ApplicationDTO::getVacancyId));
+                List<MoJobRankOption> rankOpts = new ArrayList<>();
+                for (Map.Entry<UUID, List<ApplicationDTO>> e : byJob.entrySet()) {
+                    long activeCount = e.getValue().stream()
+                            .filter(a -> !"Withdrawn".equals(a.getStatus()))
+                            .count();
+                    if (activeCount >= 2) {
+                        String title = e.getValue().get(0).getVacancyTitle();
+                        rankOpts.add(new MoJobRankOption(e.getKey().toString(), title, (int) activeCount));
+                    }
+                }
+                rankOpts.sort(Comparator.comparing(MoJobRankOption::getTitle, String.CASE_INSENSITIVE_ORDER));
+                req.setAttribute("moRankJobOptions", rankOpts);
+            } else {
+                req.setAttribute("moRankJobOptions", List.of());
+            }
+        } catch (RuntimeException ex) {
+            req.setAttribute("pageState", "loadError");
+            req.setAttribute("applications", List.of());
+            req.setAttribute("moRankJobOptions", List.of());
+            req.setAttribute("errorMessage", I18n.message(req, "msg.applicationsLoadFailed"));
+        }
+
         req.getRequestDispatcher("/portal/applications.jsp").forward(req, resp);
     }
 
