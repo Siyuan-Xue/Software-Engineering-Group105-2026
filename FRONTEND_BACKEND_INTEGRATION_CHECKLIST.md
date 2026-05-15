@@ -1,6 +1,6 @@
 # Frontend-Backend Integration Checklist
 
-更新时间：2026-05-02
+更新时间：2026-05-15
 
 关联文件：
 - `FRONTEND_BACKEND_INTERFACE_CONTRACT.md`
@@ -15,14 +15,15 @@
 - 前端 JSP 页面、公共提示组件、空状态组件、header/sidebar、portal 样式已经整理完。
 - 当前 Java Web 层已经有大部分 portal 路由和 `AuthFilter` 共享注入逻辑；不再是只有基础 filter 的阶段。
 - `settings` 已经接到真实 servlet，当前支持资料更新、改密码、语言/外观偏好。
-- 当前最大的联调缺口仍然是 `messages`，因为项目里还没有对应的 `MessagesServlet`。
+- `messages` 现在已经接到 `MessagesServlet`，支持 `GET /messages` 与 `POST /messages`。
+- 当前收尾重点不再是补路由，而是按角色跑最终 smoke test，并确认异常态与空状态在真实数据下符合预期。
 
 ### 1.1 升级文档与代码现实差异
 
 以下几项当前需要按“代码现实”理解，而不是只按升级说明文档理解：
 
 - `/db-demo` 当前仍然存在，`DbDemoServlet` 和 `DbDemoService` 也仍在仓库中；它更像数据库能力演示入口，不应被当作正式业务联调基线。
-- `messages` 仍然没有后端 servlet；因此虽然数据库模块已经升级，消息链路依然未闭环。
+- `messages` 已经有后端 servlet；联调时应以当前 `MessagesServlet` / `MessageService` 输出的 canonical 字段为准。
 - `settings` 已经进一步扩展到资料更新、改密码、语言/外观偏好，范围比早期 checklist 和部分口头说明更大。
 
 联调时建议优先以当前代码和本 checklist 为准，再回头校正文档。
@@ -49,8 +50,8 @@
 | Applications | `GET` | `/applications` | 已实现 |
 | Resumes page | `GET` | `/resumes` | 已实现 |
 | Resumes upload | `POST` | `/resumes` | 已实现 |
-| Messages page | `GET` | `/messages` | 前端已就绪，后端待实现 |
-| Messages send action | `POST` | `/messages` | 前端已使用，合同已补充，后端待实现 |
+| Messages page | `GET` | `/messages` | 已实现 |
+| Messages send action | `POST` | `/messages` | 已实现 |
 | Settings page | `GET` | `/settings` | 已实现 |
 | Settings action | `POST` | `/settings` | 已实现 |
 | Workloads | `GET` | `/workloads` | 已实现 |
@@ -85,7 +86,7 @@
 
 - `AuthFilter` 已经负责登录校验和共享 request attribute 注入
 - Session 建立与销毁已接入 `LoginServlet` / `LogoutServlet`
-- 真正仍待后端补齐的主链路是 `messages`
+- 主业务路由已经基本具备联调条件，下一步重点是按角色验证完整链路
 
 ## 3. Shared Layout 联调检查
 
@@ -205,8 +206,8 @@ Sidebar 会读取：
 
 ### 5.3 当前动作约定
 
-1. `GET /messages` 仍需后端按 canonical 字段提供 `conversations`、`activeConversation` 和 `pageState`
-2. `POST /messages` 已补进合同：
+1. `GET /messages` 已由后端按 canonical 字段提供 `conversations`、`activeConversation` 和 `pageState`
+2. `POST /messages` 已接入：
    - 路由：`POST /messages`
    - 参数：`conversationId`、`messageContent`
 3. 返回策略建议固定为：
@@ -338,12 +339,12 @@ Sidebar 会读取：
 
 联调前至少确认下面这些点：
 
-- [ ] 后端已实现 `/login`、`/logout`、`/dashboard`、`/vacancies`、`/vacancy`、`/application`、`/applications`（含 `GET` 与筛选）、`POST /resumes`（上传）、`GET /resumes`、`/messages`、`/settings`
-- [ ] 合同已补充 `POST /messages`
+- [x] 后端已实现 `/login`、`/logout`、`/dashboard`、`/vacancies`、`/vacancy`、`/application`、`/applications`（含 `GET` 与筛选）、`POST /resumes`（上传）、`GET /resumes`、`/messages`、`/settings`
+- [x] 合同已补充并接入 `POST /messages`
 - [ ] 所有页面统一使用 `errorMessage` / `successMessage`
 - [ ] 所有已登录页面统一提供 header 所需用户展示字段
 - [ ] 所有已登录页面统一提供 `profileCompletionPercentage`，避免 sidebar 退回 `0%`
-- [ ] Messages 最终字段命名不再使用旧 fallback 字段名
+- [x] Messages 已提供 canonical 字段；JSP 里的旧 fallback 仅作为兼容保留
 - [x] Settings 本轮范围已确认：保留当前可编辑实现
 - [ ] Applications 列表已按合同提供 `department`（可空）、`vacancyId`（可空）及 `pageState`（建议）
 - [ ] 未登录访问 portal 页面时的 redirect 行为已实现
@@ -353,10 +354,10 @@ Sidebar 会读取：
 可以直接同步下面这段：
 
 > 前端 JSP 已经按 `/dashboard`、`/applications`、`/resumes`、`/vacancies`、`/vacancy`、`/messages`、`/settings` 这些标准路由整理完成，不再直接走 `/portal/*.jsp`。  
-> 现在联调前需要后端统一补 servlet 路由、按合同提供 request attributes，并额外确认三件事：  
-> 1. `POST /messages` 发送消息动作要不要写进合同；  
-> 2. 所有已登录页面是否统一提供 header/sidebar 所需共享字段；  
-> 3. `POST /resumes`（字段名 `resumeFile`）与上传成功/失败后的 redirect 策略；`Application` 是否下发 `department`、`vacancyId` 与 `pageState`。
+> 目前 `messages` 已接到后端，下一步进入最终联调：  
+> 1. 按 TA/MO/ADMIN 三种角色跑 dashboard、applications、vacancies、messages、settings、workloads 的 smoke test；  
+> 2. 确认所有已登录页面都提供 header/sidebar 所需共享字段；  
+> 3. 确认 `POST /resumes`（字段名 `resumeFile`）与上传成功/失败后的 redirect 策略；`Application` 是否下发 `department`、`vacancyId` 与 `pageState`。
 
 ## 10. 申请 / 简历模块（前端负责范围）需同步给后端的事项
 
