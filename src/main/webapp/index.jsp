@@ -182,7 +182,7 @@
             
             <!-- Optional subtle bottom text -->
             <div class="absolute bottom-8 left-6 lg:left-12 text-[#94a3b8] text-[10px] text-xs font-semibold tracking-wider">
-                &copy; 2026 UNIVERSITY RECRUITMENT OFFICE
+                &copy; 2026 QM HIRE GROUP 105
             </div>
         </section>
 
@@ -267,14 +267,14 @@
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-10 h-10 rounded-full bg-[#e11d48] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">1</div>
                         </div>
                         <div class="pl-12">
-                            <span class="px-3 py-1 bg-pink-100 text-[#e11d48] font-bold text-sm tracking-widest rounded">AUG 15</span>
+                            <span class="px-3 py-1 bg-pink-100 text-[#e11d48] font-bold text-sm tracking-widest rounded">MARCH 15</span>
                         </div>
                     </div>
 
                     <!-- Node 2 -->
                     <div class="grid grid-cols-2 gap-8 items-center group">
                         <div class="text-right pr-12">
-                            <span class="px-3 py-1 bg-slate-200 text-[#0f172a] font-bold text-sm tracking-widest rounded">SEP 05</span>
+                            <span class="px-3 py-1 bg-slate-200 text-[#0f172a] font-bold text-sm tracking-widest rounded">APR 05</span>
                         </div>
                         <div class="pl-12 relative">
                             <h3 class="text-2xl font-bold text-[#0f172a] mb-1">Submission Cut-off</h3>
@@ -293,7 +293,7 @@
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-lg shadow border border-slate-300 group-hover:scale-110 transition-transform">3</div>
                         </div>
                         <div class="pl-12">
-                            <span class="px-3 py-1 bg-slate-200 text-slate-500 font-bold text-sm tracking-widest rounded">SEP 20</span>
+                            <span class="px-3 py-1 bg-slate-200 text-slate-500 font-bold text-sm tracking-widest rounded">APR 20</span>
                         </div>
                     </div>
 
@@ -324,9 +324,7 @@
                             <a href="${pageContext.request.contextPath}/login" class="px-5 lg:px-8 py-3 bg-[#e11d48] text-white font-bold rounded-xl hover:bg-[#be185d] transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] min-w-[200px]">
                                 LOGIN TO PORTAL <span class="material-symbols-outlined">arrow_forward</span>
                             </a>
-                            <button class="px-5 lg:px-8 py-3 bg-white/5 text-white font-medium rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-                                View Vacancies
-                            </button>
+        
                         </div>
                         
                         <div class="flex items-center gap-4 border-t border-white/10 pt-4">
