@@ -49,8 +49,6 @@ public class VacancyEditServlet extends HttpServlet {
             return;
         }
 
-        copyFlashFromQuery(req);
-
         String vacancyIdValue = req.getParameter("vacancyId");
         if (vacancyIdValue == null || vacancyIdValue.isBlank()) {
             resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage="
@@ -91,9 +89,15 @@ public class VacancyEditServlet extends HttpServlet {
             String returnTo = req.getParameter("returnTo");
             req.setAttribute("editReturnTo", "list".equalsIgnoreCase(returnTo) ? "list" : "detail");
             req.setAttribute("pageState", "normal");
+            copyFlashFromQuery(req);
         } catch (IllegalArgumentException ex) {
             resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage="
                     + URLEncoder.encode(I18n.message(req, "msg.vacancyIdRequired"), StandardCharsets.UTF_8));
+            return;
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load vacancy edit form", ex);
+            resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage="
+                    + URLEncoder.encode(I18n.message(req, "msg.vacancyDetailLoadFailed"), StandardCharsets.UTF_8));
             return;
         }
 

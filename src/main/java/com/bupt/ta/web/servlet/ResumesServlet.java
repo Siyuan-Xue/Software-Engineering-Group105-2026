@@ -78,12 +78,42 @@ public class ResumesServlet extends HttpServlet {
         User user = currentUser(req);
         if (user == null) { resp.sendRedirect(req.getContextPath() + "/login"); return; }
 
-        List<Resume> resumes = resumeService.listByUserId(user.getId());
-        req.setAttribute("resumes", resumes);
-        req.setAttribute("pageState", "normal");
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.setAttribute("qwenVlModel", QwenAiService.resolveVlModel());
+
+        String queryPageState = normalizeParam(req.getParameter("pageState"));
+        try {
+            List<Resume> resumes = resumeService.listByUserId(user.getId());
+            req.setAttribute("resumes", resumes);
+            if ("uploadSuccess".equals(queryPageState)) {
+                req.setAttribute("pageState", "uploadSuccess");
+            } else if ("uploadFailure".equals(queryPageState)) {
+                req.setAttribute("pageState", "uploadFailure");
+                req.setAttribute("errorMessage", normalizeParam(req.getParameter("errorMessage")));
+            } else {
+                req.setAttribute("pageState", "normal");
+            }
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load resumes", ex);
+            applyLoadError(req);
+        }
+
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("resumes", List.of());
+        req.setAttribute("successMessage", null);
+        req.setAttribute("errorMessage", I18n.message(req, "msg.resumesLoadFailed"));
+    }
+
+    private static String normalizeParam(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     // ── POST ───────────────────────────────────────────────────────────────

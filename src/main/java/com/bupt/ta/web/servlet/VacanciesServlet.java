@@ -97,13 +97,24 @@ public class VacanciesServlet extends HttpServlet {
             req.setAttribute("termOptions", buildTermOptions());
             req.setAttribute("pageState", "normal");
             applyFlashFromQuery(req);
-        } catch (RuntimeException ex) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyLoadFailed"));
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load vacancies", ex);
+            applyLoadError(req);
         }
 
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyLoadFailed"));
+        req.setAttribute("vacancies", List.of());
+        req.setAttribute("totalCount", 0);
+        req.setAttribute("currentPage", 1);
+        req.setAttribute("totalPages", 1);
+        req.setAttribute("hasMore", false);
+        req.setAttribute("termOptions", List.of());
     }
 
     private void applyFlashFromQuery(HttpServletRequest req) {

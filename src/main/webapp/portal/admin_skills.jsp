@@ -68,6 +68,20 @@
                     <jsp:param name="containerClass" value="mb-6" />
                 </jsp:include>
 
+                <c:set var="skillsState" value="${empty pageState ? 'normal' : pageState}" />
+                <c:choose>
+                    <c:when test="${skillsState == 'loadError'}">
+                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                            <jsp:param name="variant" value="error" />
+                            <jsp:param name="icon" value="category" />
+                            <jsp:param name="title" value="${language == 'zh' ? '技能列表暂不可用' : 'Skills unavailable'}" />
+                            <jsp:param name="message" value="${language == 'zh' ? '当前无法加载技能目录，请刷新页面后重试。' : 'Unable to load the skill catalogue right now. Please refresh and try again.'}" />
+                            <jsp:param name="actionHref" value="${pageContext.request.contextPath}/admin/skills" />
+                            <jsp:param name="actionLabel" value="${language == 'zh' ? '重试' : 'Try Again'}" />
+                        </jsp:include>
+                    </c:when>
+                    <c:otherwise>
+
                 <div class="portal-page-header mb-6">
                     <div>
                         <h2 class="portal-page-title">${language == 'zh' ? '技能管理' : 'Skill Management'}</h2>
@@ -191,6 +205,8 @@
                         </c:choose>
                     </section>
                 </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </main>
     </div>

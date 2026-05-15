@@ -30,6 +30,8 @@ import java.util.UUID;
 
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
+    private static final String VIEW_PATH = "/portal/dashboard.jsp";
+
     private TaDatabase database;
 
     @Override
@@ -51,7 +53,9 @@ public class DashboardServlet extends HttpServlet {
         String userRole = (String) req.getAttribute("userRole");
 
         try {
+            boolean roleLoaded = false;
             if ("TA".equals(userRole)) {
+                roleLoaded = true;
                 List<Resume> resumes = database.resumes().listByUserId(currentUser.getId());
                 Set<UUID> resumeIds = resumes.stream().map(Resume::getId).collect(java.util.stream.Collectors.toSet());
                 List<Application> applications = database.applications().findAll().stream()
@@ -68,6 +72,7 @@ public class DashboardServlet extends HttpServlet {
                 req.setAttribute("recentActivities", taActivities(zh, applications, resumes));
                 req.setAttribute("upcomingDeadlines", taDeadlines(zh));
             } else if ("MO".equals(userRole)) {
+                roleLoaded = true;
                 List<Job> jobs = database.jobs().listByPoster(currentUser.getId());
                 Set<UUID> jobIds = jobs.stream().map(Job::getId).collect(java.util.stream.Collectors.toSet());
                 List<Application> applications = database.applications().findAll().stream()
@@ -83,6 +88,7 @@ public class DashboardServlet extends HttpServlet {
                 req.setAttribute("recentActivities", moActivities(zh, jobs, applications));
                 req.setAttribute("upcomingDeadlines", moDeadlines(zh, jobs));
             } else if ("ADMIN".equals(userRole)) {
+                roleLoaded = true;
                 long totalTas = database.users().findAll().stream().filter(user -> user.getRole() == UserRole.TA).count();
                 long activeVacancies = database.jobs().findAll().stream().filter(job -> job.getStatus() == JobStatus.OPEN).count();
                 req.setAttribute("totalTAsCount", totalTas);
@@ -90,17 +96,32 @@ public class DashboardServlet extends HttpServlet {
                 req.setAttribute("recentActivities", adminActivities(zh));
                 req.setAttribute("upcomingDeadlines", adminDeadlines(zh));
             }
-            req.setAttribute("pageState", "normal");
-        } catch (RuntimeException ex) {
-            attachLoadErrorFallback(req);
+            if (roleLoaded) {
+                req.setAttribute("pageState", "normal");
+            } else {
+                applyUnsupportedRole(req);
+            }
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load dashboard", ex);
+            applyLoadError(req);
         }
 
-        req.getRequestDispatcher("/portal/dashboard.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
-    private void attachLoadErrorFallback(HttpServletRequest req) {
+    private void applyLoadError(HttpServletRequest req) {
         req.setAttribute("pageState", "loadError");
         req.setAttribute("errorMessage", I18n.message(req, "msg.dashboardLoadFailed"));
+        clearDashboardMetrics(req);
+    }
+
+    /** TA/MO/ADMIN 以外角色（如 DEMO）：显式空状态，避免误显示 normal 且数据未初始化。 */
+    private void applyUnsupportedRole(HttpServletRequest req) {
+        req.setAttribute("pageState", "emptyActivities");
+        clearDashboardMetrics(req);
+    }
+
+    private void clearDashboardMetrics(HttpServletRequest req) {
         req.setAttribute("recentActivities", List.of());
         req.setAttribute("upcomingDeadlines", List.of());
         req.setAttribute("savedResumesCount", 0);

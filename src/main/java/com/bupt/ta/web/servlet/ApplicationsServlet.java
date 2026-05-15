@@ -33,6 +33,8 @@ import java.util.UUID;
 
 @WebServlet("/applications")
 public class ApplicationsServlet extends HttpServlet {
+    private static final String VIEW_PATH = "/portal/applications.jsp";
+
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
@@ -52,9 +54,6 @@ public class ApplicationsServlet extends HttpServlet {
                     + URLEncoder.encode(I18n.message(req, "auth.loginRequired"), StandardCharsets.UTF_8));
             return;
         }
-
-        req.setAttribute("successMessage", param(req, "successMessage"));
-        req.setAttribute("errorMessage", param(req, "errorMessage"));
 
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
 
@@ -115,14 +114,22 @@ public class ApplicationsServlet extends HttpServlet {
             } else {
                 req.setAttribute("moRankJobOptions", List.of());
             }
-        } catch (RuntimeException ex) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("applications", List.of());
-            req.setAttribute("moRankJobOptions", List.of());
-            req.setAttribute("errorMessage", I18n.message(req, "msg.applicationsLoadFailed"));
+            req.setAttribute("successMessage", param(req, "successMessage"));
+            req.setAttribute("errorMessage", param(req, "errorMessage"));
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load applications", ex);
+            applyLoadError(req);
         }
 
-        req.getRequestDispatcher("/portal/applications.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("applications", List.of());
+        req.setAttribute("moRankJobOptions", List.of());
+        req.setAttribute("successMessage", null);
+        req.setAttribute("errorMessage", I18n.message(req, "msg.applicationsLoadFailed"));
     }
 
     private ApplicationDTO toDto(Application application) {

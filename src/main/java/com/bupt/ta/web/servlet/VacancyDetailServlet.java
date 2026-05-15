@@ -46,11 +46,11 @@ public class VacancyDetailServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        copyFlashFromQuery(req);
         try {
             UUID vacancyId = parseVacancyId(req.getParameter("vacancyId"));
             if (vacancyId == null) {
                 req.setAttribute("pageState", "normal");
+                copyFlashFromQuery(req);
                 attachQwenConfigured(req);
                 req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
                 return;
@@ -79,13 +79,22 @@ public class VacancyDetailServlet extends HttpServlet {
 
             req.setAttribute("resumeList", resumeViews);
             req.setAttribute("pageState", "normal");
-        } catch (RuntimeException ex) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyDetailLoadFailed"));
+            copyFlashFromQuery(req);
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load vacancy detail", ex);
+            applyLoadError(req);
         }
 
         attachQwenConfigured(req);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyDetailLoadFailed"));
+        req.removeAttribute("vacancy");
+        req.setAttribute("resumeList", List.of());
+        req.setAttribute("successMessage", null);
     }
 
     private static void attachQwenConfigured(HttpServletRequest req) {

@@ -52,18 +52,19 @@ public class AdminService {
                 Optional<Job> jobOpt = db.jobs().findById(app.getJobId());
                 if (jobOpt.isEmpty()) continue;
                 Job job = jobOpt.get();
+                int requiredHours = Math.max(0, job.getRequiredHours());
 
                 Map<String, Object> vView = new HashMap<>();
                 vView.put("vacancyId", job.getId());
                 vView.put("title", job.getTitle());
                 vView.put("courseCode", job.getModuleCode());
-                vView.put("weeklyHours", job.getRequiredHours());
-                
+                vView.put("weeklyHours", requiredHours);
+
                 BigDecimal hourlyRate = job.getHourlyRate() != null ? job.getHourlyRate() : BigDecimal.ZERO;
                 vView.put("hourlyRate", hourlyRate);
 
                 // Assuming 8 weeks
-                int estimatedWorkload = job.getRequiredHours() * 8;
+                int estimatedWorkload = requiredHours * 8;
                 vView.put("estimatedWorkloadHours", estimatedWorkload);
                 
                 BigDecimal estimatedIncomeForJob = hourlyRate.multiply(BigDecimal.valueOf(estimatedWorkload));
@@ -80,7 +81,7 @@ public class AdminService {
                 }
 
                 vacancyViews.add(vView);
-                totalWeeklyHours += job.getRequiredHours();
+                totalWeeklyHours += requiredHours;
                 totalEstimatedIncome = totalEstimatedIncome.add(estimatedIncomeForJob);
             }
 

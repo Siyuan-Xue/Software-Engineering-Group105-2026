@@ -40,10 +40,29 @@ public class SettingsServlet extends HttpServlet {
         }
 
         String state = normalize(req.getParameter("state"));
-        req.setAttribute("pageState", state == null ? "normal" : state);
-        req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
-        req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
-        req.setAttribute("userProfile", buildUserProfile(currentUser));
+        try {
+            User profileUser = database.users().findById(currentUser.getId()).orElse(currentUser);
+            HttpSession session = req.getSession(false);
+            if (session != null) {
+                session.setAttribute("currentUser", profileUser);
+            }
+            req.setAttribute("userProfile", buildUserProfile(profileUser));
+            if ("loadError".equals(state)) {
+                req.setAttribute("pageState", "loadError");
+                req.setAttribute("errorMessage", I18n.message(req, "msg.settingsLoadFailed"));
+            } else {
+                req.setAttribute("pageState", state == null ? "normal" : state);
+                req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
+                req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
+            }
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load settings", ex);
+            req.setAttribute("pageState", "loadError");
+            req.setAttribute("successMessage", null);
+            req.setAttribute("errorMessage", I18n.message(req, "msg.settingsLoadFailed"));
+            req.setAttribute("userProfile", buildUserProfile(currentUser));
+        }
+
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
@@ -94,7 +113,7 @@ public class SettingsServlet extends HttpServlet {
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(saved.getPreferredAppearance()));
 
             redirect(resp, req, "updateSuccess", "successMessage", I18n.message(language, "msg.profileUpdated"));
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             redirect(resp, req, "updateFailure", "errorMessage",
                     ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.profileSaveFailed"));
         }
@@ -129,7 +148,7 @@ public class SettingsServlet extends HttpServlet {
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(saved.getPreferredAppearance()));
 
             redirect(resp, req, "pwdSuccess", "successMessage", I18n.message(language, "msg.passwordChanged"));
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             redirect(resp, req, "pwdFailure", "errorMessage",
                     ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.passwordChangeFailed"));
         }
@@ -161,7 +180,7 @@ public class SettingsServlet extends HttpServlet {
             session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, language);
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, appearance);
             redirect(resp, req, "prefSuccess", "successMessage", I18n.message(language, "msg.preferencesUpdated"));
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             redirect(resp, req, "prefFailure", "errorMessage",
                     ex.getMessage() != null ? ex.getMessage() : I18n.message(language, "msg.preferencesUpdateFailed"));
         }

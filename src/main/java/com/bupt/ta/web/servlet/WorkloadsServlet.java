@@ -19,6 +19,8 @@ import java.util.Map;
 
 @WebServlet("/workloads")
 public class WorkloadsServlet extends HttpServlet {
+    private static final String VIEW_PATH = "/portal/workloads.jsp";
+
     private TaDatabase database;
     private AdminService adminService;
 
@@ -54,7 +56,8 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
             req.setAttribute("overloadedTAs", overloadedTAs);
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load workloads", ex);
             req.setAttribute("pageState", "loadError");
             req.setAttribute("workloads", List.of());
             req.setAttribute("totalAcceptedTAs", 0);
@@ -63,7 +66,7 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("overloadedTAs", 0);
             req.setAttribute("errorMessage", I18n.message(req, "msg.workloadsLoadFailed"));
         }
-        
-        req.getRequestDispatcher("/portal/workloads.jsp").forward(req, resp);
+
+        req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 }

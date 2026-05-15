@@ -1,5 +1,6 @@
 package com.bupt.ta.web.servlet;
 
+import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.JobRequirement;
@@ -42,10 +43,19 @@ public class AdminSkillsServlet extends HttpServlet {
             return;
         }
 
-        req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
-        req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
         req.setAttribute("skillCategories", SkillCategory.values());
-        req.setAttribute("skills", buildSkillViews());
+        try {
+            req.setAttribute("skills", buildSkillViews());
+            req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
+            req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load admin skills", ex);
+            req.setAttribute("pageState", "loadError");
+            req.setAttribute("skills", List.of());
+            req.setAttribute("successMessage", null);
+            req.setAttribute("errorMessage", I18n.message(req, "msg.adminSkillsLoadFailed"));
+        }
+
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
@@ -66,7 +76,7 @@ public class AdminSkillsServlet extends HttpServlet {
                 createSkill(req);
                 redirect(req, resp, "successMessage", message(req, "Skill created.", "技能已创建。"));
             }
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             String fallback = message(req, "Unable to save skill changes.", "无法保存技能变更。");
             redirect(req, resp, "errorMessage", ex.getMessage() == null ? fallback : ex.getMessage());
         }

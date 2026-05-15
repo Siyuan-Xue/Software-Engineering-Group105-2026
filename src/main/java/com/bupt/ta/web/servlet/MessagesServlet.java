@@ -52,10 +52,6 @@ public class MessagesServlet extends HttpServlet {
         String language = I18n.resolveLanguage(req);
         boolean zh = I18n.isChinese(language);
 
-        // Pick up flash messages from redirect query params
-        req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
-        req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
-
         try {
             List<ConversationDTO> conversations = messageService.listConversations(currentUser.getId(), zh);
             req.setAttribute("conversations", conversations);
@@ -65,7 +61,6 @@ public class MessagesServlet extends HttpServlet {
                 ConversationDTO activeConversation = messageService.getConversation(currentUser.getId(), conversationId, zh);
                 if (activeConversation != null) {
                     req.setAttribute("activeConversation", activeConversation);
-                    // Refresh the conversation list to update unread counts after marking read
                     conversations = messageService.listConversations(currentUser.getId(), zh);
                     req.setAttribute("conversations", conversations);
                     req.setAttribute("pageState", "normal");
@@ -77,12 +72,22 @@ public class MessagesServlet extends HttpServlet {
             } else {
                 req.setAttribute("pageState", "noActiveConversation");
             }
+            req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
+            req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
         } catch (Exception e) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", zh ? "加载消息失败，请重试。" : "Failed to load messages. Please try again.");
+            getServletContext().log("Failed to load messages", e);
+            applyLoadError(req);
         }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("conversations", List.of());
+        req.removeAttribute("activeConversation");
+        req.setAttribute("successMessage", null);
+        req.setAttribute("errorMessage", I18n.message(req, "msg.messagesLoadFailed"));
     }
 
     // ── POST ─────────────────────────────────────────────────────────────────
