@@ -15,6 +15,9 @@ public class ApplicationDTO {
     private String resumeName;
     /** Resume UUID for this application (TA AI cover-letter draft). */
     private UUID resumeId;
+    private String applicantName;
+    private String coverLetter;
+    private boolean resumeFileAvailable;
 
     // Getters and Setters
     public UUID getApplicationId() { return applicationId; }
@@ -43,4 +46,13 @@ public class ApplicationDTO {
 
     public UUID getResumeId() { return resumeId; }
     public void setResumeId(UUID resumeId) { this.resumeId = resumeId; }
+
+    public String getApplicantName() { return applicantName; }
+    public void setApplicantName(String applicantName) { this.applicantName = applicantName; }
+
+    public String getCoverLetter() { return coverLetter; }
+    public void setCoverLetter(String coverLetter) { this.coverLetter = coverLetter; }
+
+    public boolean isResumeFileAvailable() { return resumeFileAvailable; }
+    public void setResumeFileAvailable(boolean resumeFileAvailable) { this.resumeFileAvailable = resumeFileAvailable; }
 }

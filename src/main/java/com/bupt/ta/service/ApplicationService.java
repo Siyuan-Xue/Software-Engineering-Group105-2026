@@ -14,13 +14,21 @@ import com.bupt.ta.domain.enums.AuditAction;
 import com.bupt.ta.domain.enums.EntityType;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.NotificationType;
+import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.enums.WorkloadStatus;
 import com.bupt.ta.db.core.JsonMapperFactory;
+import com.bupt.ta.util.ApplicationSubmissionFiles;
+import com.bupt.ta.util.ResumeFilePaths;
+import com.bupt.ta.util.ResumeFileUpload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ApplicationService {
     private final TaDatabase db;
@@ -44,11 +52,40 @@ public class ApplicationService {
     }
 
     public Application submit(UUID taUserId, UUID resumeId, UUID jobId, String coverLetter) {
-        Resume resume = db.resumes().findById(resumeId)
-                .orElseThrow(() -> new ConstraintViolationException("Application resume does not exist: " + resumeId));
-        if (!taUserId.equals(resume.getUserId())) {
-            throw new ConstraintViolationException("Resume does not belong to the applicant");
+        return submit(taUserId, resumeId, jobId, coverLetter, null);
+    }
+
+    public Application submit(UUID taUserId, UUID resumeId, UUID jobId, String coverLetter,
+                            ResumeFileUpload.SavedResumeFile uploadedFile) {
+        if (resumeId == null && uploadedFile == null) {
+            throw new ConstraintViolationException("Select a resume or upload a resume file to apply");
         }
+
+        User ta = db.users().findById(taUserId)
+                .orElseThrow(() -> new ConstraintViolationException("Applicant user does not exist: " + taUserId));
+
+        Resume resume;
+        if (uploadedFile != null) {
+            if (resumeId == null) {
+                resume = createResumeFromUpload(ta, uploadedFile);
+            } else {
+                resume = db.resumes().findById(resumeId)
+                        .orElseThrow(() -> new ConstraintViolationException("Application resume does not exist: " + resumeId));
+                if (!taUserId.equals(resume.getUserId())) {
+                    throw new ConstraintViolationException("Resume does not belong to the applicant");
+                }
+                resume.setUploadedFilePath(uploadedFile.path().toString());
+                resume.setOriginalFileName(uploadedFile.originalFileName());
+                resume = db.resumes().save(resume);
+            }
+        } else {
+            resume = db.resumes().findById(resumeId)
+                    .orElseThrow(() -> new ConstraintViolationException("Application resume does not exist: " + resumeId));
+            if (!taUserId.equals(resume.getUserId())) {
+                throw new ConstraintViolationException("Resume does not belong to the applicant");
+            }
+        }
+
         Job job = db.jobs().findById(jobId)
                 .orElseThrow(() -> new ConstraintViolationException("Application job does not exist: " + jobId));
         if (job.getStatus() != JobStatus.OPEN || job.getDeadline() == null || !job.getDeadline().isAfter(Instant.now())) {
@@ -59,12 +96,17 @@ public class ApplicationService {
         }
 
         Application application = new Application();
-        application.setResumeId(resumeId);
+        application.setResumeId(resume.getId());
         application.setJobId(jobId);
         application.setStatus(ApplicationStatus.PENDING);
         application.setCoverLetter(coverLetter);
 
         Application saved = db.applications().save(application);
+        attachSubmissionSnapshot(saved, uploadedFile, resume);
+        if (saved.getSubmittedFilePath() != null) {
+            saved = db.applications().save(saved);
+        }
+
         appendAudit(taUserId, AuditAction.CREATE, saved.getId(), null, saved);
         notifyUser(job.getPostedBy(), NotificationType.NEW_APPLICANT,
                 "New applicant",
@@ -73,15 +115,66 @@ public class ApplicationService {
         return saved;
     }
 
+    private Resume createResumeFromUpload(User ta, ResumeFileUpload.SavedResumeFile uploadedFile) {
+        Resume resume = new Resume();
+        resume.setUserId(ta.getId());
+        resume.setTitle(uploadedFile.originalFileName());
+        resume.setDepartment(ta.getDepartment() != null ? ta.getDepartment() : "");
+        resume.setDegreeLevel(DegreeLevel.BACHELOR);
+        resume.setGpa(new BigDecimal("0.00"));
+        resume.setMaxWeeklyHours(15);
+        resume.setBio("");
+        resume.setUploadedFilePath(uploadedFile.path().toString());
+        resume.setOriginalFileName(uploadedFile.originalFileName());
+        return db.resumes().save(resume);
+    }
+
+    private void attachSubmissionSnapshot(Application application, ResumeFileUpload.SavedResumeFile uploadedFile,
+                                          Resume resume) {
+        try {
+            if (uploadedFile != null) {
+                ApplicationSubmissionFiles.attachSnapshot(application, uploadedFile.path(), uploadedFile.originalFileName());
+                return;
+            }
+            Path resumeFile = ResumeFilePaths.resolve(resume);
+            if (resumeFile != null) {
+                String name = resume.getOriginalFileName() != null && !resume.getOriginalFileName().isBlank()
+                        ? resume.getOriginalFileName()
+                        : resumeFile.getFileName().toString();
+                ApplicationSubmissionFiles.attachSnapshot(application, resumeFile, name);
+            }
+        } catch (IOException ex) {
+            throw new ConstraintViolationException("Could not store application resume file: " + ex.getMessage());
+        }
+    }
+
     public Application startReview(UUID moUserId, UUID applicationId) {
+        Application current = requireApplication(applicationId);
+        assertMoOwnsApplication(moUserId, current);
+        if (current.getStatus() != ApplicationStatus.PENDING) {
+            throw new ConstraintViolationException("Only submitted applications can be moved to review");
+        }
         return transition(moUserId, applicationId, ApplicationStatus.REVIEWING, null);
     }
 
     public Application sendOffer(UUID moUserId, UUID applicationId) {
+        Application current = requireApplication(applicationId);
+        assertMoOwnsApplication(moUserId, current);
+        ApplicationStatus status = current.getStatus();
+        if (status != ApplicationStatus.PENDING && status != ApplicationStatus.REVIEWING) {
+            throw new ConstraintViolationException("Only submitted or reviewing applications can receive an offer");
+        }
+        Job job = requireJob(current.getJobId());
+        assertVacancyHasOfferCapacity(job, applicationId);
         return transition(moUserId, applicationId, ApplicationStatus.OFFER_PENDING, null);
     }
 
     public Application reject(UUID moUserId, UUID applicationId, String notes) {
+        Application current = requireApplication(applicationId);
+        assertMoOwnsApplication(moUserId, current);
+        if (isTerminalStatus(current.getStatus())) {
+            throw new ConstraintViolationException("This application can no longer be rejected");
+        }
         return transition(moUserId, applicationId, ApplicationStatus.REJECTED, notes);
     }
 
@@ -95,6 +188,9 @@ public class ApplicationService {
             throw new ConstraintViolationException("Only the resume owner can accept an offer");
         }
         Job job = requireJob(current.getJobId());
+        if (countAcceptedForJob(job.getId()) >= effectiveSlots(job)) {
+            throw new ConstraintViolationException("This vacancy has no remaining slots");
+        }
 
         Application updated = mapper.convertValue(current, Application.class);
         updated.setStatus(ApplicationStatus.ACCEPTED);
@@ -116,7 +212,12 @@ public class ApplicationService {
                     "Offer accepted",
                     "You accepted the offer and your workload was updated.",
                     EntityType.APPLICATION, applicationId);
+            notifyUser(job.getPostedBy(), NotificationType.APPLICATION_STATUS,
+                    "Offer accepted",
+                    "A TA accepted your offer for " + safeJobTitle(job) + ".",
+                    EntityType.APPLICATION, applicationId);
             appendAudit(taUserId, AuditAction.STATUS_CHANGE, applicationId, current, updated);
+            closeCompetingApplications(job, applicationId);
         });
         return db.applications().findById(applicationId).orElseThrow();
     }
@@ -131,6 +232,15 @@ public class ApplicationService {
         if (!taUserId.equals(resume.getUserId())) {
             throw new ConstraintViolationException("Only the resume owner can withdraw the application");
         }
+        ApplicationStatus status = current.getStatus();
+        if (isTerminalStatus(status)) {
+            throw new ConstraintViolationException("This application can no longer be withdrawn");
+        }
+        if (status != ApplicationStatus.PENDING
+                && status != ApplicationStatus.REVIEWING
+                && status != ApplicationStatus.OFFER_PENDING) {
+            throw new ConstraintViolationException("This application cannot be withdrawn in its current state");
+        }
         return transition(taUserId, applicationId, ApplicationStatus.WITHDRAWN, current.getMoNotes());
     }
 
@@ -143,7 +253,79 @@ public class ApplicationService {
         if (current.getStatus() != ApplicationStatus.OFFER_PENDING) {
             throw new ConstraintViolationException("Only offered applications can be updated");
         }
-        return transition(taUserId, applicationId, targetStatus, current.getMoNotes());
+        Job job = requireJob(current.getJobId());
+        Application saved = transition(taUserId, applicationId, targetStatus, current.getMoNotes());
+        if (targetStatus == ApplicationStatus.DECLINED) {
+            notifyUser(job.getPostedBy(), NotificationType.APPLICATION_STATUS,
+                    "Offer declined",
+                    "A TA declined your offer for " + safeJobTitle(job) + ".",
+                    EntityType.APPLICATION, applicationId);
+        }
+        return saved;
+    }
+
+    public void assertMoOwnsApplication(UUID moUserId, Application application) {
+        Job job = requireJob(application.getJobId());
+        if (job.getPostedBy() == null || !job.getPostedBy().equals(moUserId)) {
+            throw new ConstraintViolationException("You can only manage applications to your own vacancies");
+        }
+    }
+
+    private static boolean isTerminalStatus(ApplicationStatus status) {
+        return status == ApplicationStatus.ACCEPTED
+                || status == ApplicationStatus.REJECTED
+                || status == ApplicationStatus.DECLINED
+                || status == ApplicationStatus.WITHDRAWN;
+    }
+
+    private int effectiveSlots(Job job) {
+        return Math.max(1, job.getSlots());
+    }
+
+    private long countAcceptedForJob(UUID jobId) {
+        return db.applications().listByJobId(jobId).stream()
+                .filter(app -> app.getStatus() == ApplicationStatus.ACCEPTED)
+                .count();
+    }
+
+    private void assertVacancyHasOfferCapacity(Job job, UUID excludingApplicationId) {
+        int slots = effectiveSlots(job);
+        long accepted = countAcceptedForJob(job.getId());
+        long pendingOffers = db.applications().listByJobId(job.getId()).stream()
+                .filter(app -> app.getStatus() == ApplicationStatus.OFFER_PENDING)
+                .filter(app -> excludingApplicationId == null || !app.getId().equals(excludingApplicationId))
+                .count();
+        if (accepted + pendingOffers >= slots) {
+            throw new ConstraintViolationException("This vacancy has no remaining slots for new offers");
+        }
+    }
+
+    private void closeCompetingApplications(Job job, UUID acceptedApplicationId) {
+        if (countAcceptedForJob(job.getId()) < effectiveSlots(job)) {
+            return;
+        }
+        List<Application> competitors = db.applications().listByJobId(job.getId()).stream()
+                .filter(app -> !app.getId().equals(acceptedApplicationId))
+                .filter(app -> app.getStatus() == ApplicationStatus.OFFER_PENDING
+                        || app.getStatus() == ApplicationStatus.PENDING
+                        || app.getStatus() == ApplicationStatus.REVIEWING)
+                .collect(Collectors.toList());
+        for (Application competitor : competitors) {
+            Application updated = mapper.convertValue(competitor, Application.class);
+            updated.setStatus(ApplicationStatus.REJECTED);
+            updated.setMoNotes("Vacancy filled");
+            updated.setReviewedAt(Instant.now());
+            db.applications().save(updated);
+            Resume resume = requireResume(updated.getResumeId());
+            notifyUser(resume.getUserId(), NotificationType.APPLICATION_STATUS,
+                    "Application status updated",
+                    "Your application was closed because the vacancy is now full.",
+                    EntityType.APPLICATION, updated.getId());
+        }
+    }
+
+    private static String safeJobTitle(Job job) {
+        return job.getTitle() == null || job.getTitle().isBlank() ? "the vacancy" : job.getTitle();
     }
 
     private Application transition(UUID operatorId, UUID applicationId, ApplicationStatus targetStatus, String notes) {

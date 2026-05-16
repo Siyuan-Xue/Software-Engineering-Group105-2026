@@ -11,6 +11,8 @@ import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.service.QwenAiService;
+import com.bupt.ta.util.ApplicationSubmissionFiles;
+import com.bupt.ta.util.ResumeFilePaths;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -146,6 +148,13 @@ public class ApplicationsServlet extends HttpServlet {
         dto.setAppliedDate(application.getCreatedAt() == null ? "" : DATE_FORMATTER.format(application.getCreatedAt()));
         dto.setResumeName(resume == null ? "Unknown Resume" : safe(resume.getTitle(), "Unknown Resume"));
         dto.setResumeId(application.getResumeId());
+        dto.setCoverLetter(application.getCoverLetter());
+        dto.setResumeFileAvailable(ApplicationSubmissionFiles.isAvailable(application)
+                || (resume != null && ResumeFilePaths.isAvailable(resume)));
+        if (resume != null) {
+            database.users().findById(resume.getUserId())
+                    .ifPresent(user -> dto.setApplicantName(safe(user.getFullName(), "Unknown applicant")));
+        }
         return dto;
     }
 
@@ -156,7 +165,9 @@ public class ApplicationsServlet extends HttpServlet {
         String normalized = keyword.toLowerCase(Locale.ROOT);
         return safe(dto.getVacancyTitle(), "").toLowerCase(Locale.ROOT).contains(normalized)
                 || safe(dto.getCourseCode(), "").toLowerCase(Locale.ROOT).contains(normalized)
-                || safe(dto.getDepartment(), "").toLowerCase(Locale.ROOT).contains(normalized);
+                || safe(dto.getDepartment(), "").toLowerCase(Locale.ROOT).contains(normalized)
+                || safe(dto.getApplicantName(), "").toLowerCase(Locale.ROOT).contains(normalized)
+                || safe(dto.getResumeName(), "").toLowerCase(Locale.ROOT).contains(normalized);
     }
 
     private boolean matchesStatus(ApplicationDTO dto, String statusFilter) {

@@ -16,6 +16,9 @@ public class Application extends AbstractEntity {
     private Instant reviewedAt;
     private String moNotes;
     private Instant taRespondedAt;
+    /** Snapshot of the resume file submitted with this application (for MO screening). */
+    private String submittedFilePath;
+    private String submittedFileName;
 
     public UUID getResumeId() {
         return resumeId;
@@ -79,5 +82,21 @@ public class Application extends AbstractEntity {
 
     public void setTaRespondedAt(Instant taRespondedAt) {
         this.taRespondedAt = taRespondedAt;
+    }
+
+    public String getSubmittedFilePath() {
+        return submittedFilePath;
+    }
+
+    public void setSubmittedFilePath(String submittedFilePath) {
+        this.submittedFilePath = submittedFilePath;
+    }
+
+    public String getSubmittedFileName() {
+        return submittedFileName;
+    }
+
+    public void setSubmittedFileName(String submittedFileName) {
+        this.submittedFileName = submittedFileName;
     }
 }

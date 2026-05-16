@@ -11,6 +11,7 @@ import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
+import com.bupt.ta.util.ResumeFilePaths;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -73,7 +74,9 @@ public class VacancyDetailServlet extends HttpServlet {
                     .stream()
                     .map(resume -> new ResumeSelectionView(
                             resume.getId().toString(),
-                            safe(resume.getTitle(), "Untitled Resume")
+                            safe(resume.getTitle(), "Untitled Resume"),
+                            safe(resume.getOriginalFileName(), ""),
+                            ResumeFilePaths.isAvailable(resume)
                     ))
                     .toList();
 
@@ -318,10 +321,14 @@ public class VacancyDetailServlet extends HttpServlet {
     public static final class ResumeSelectionView {
         private final String resumeId;
         private final String resumeName;
+        private final String originalFileName;
+        private final boolean fileAvailable;
 
-        public ResumeSelectionView(String resumeId, String resumeName) {
+        public ResumeSelectionView(String resumeId, String resumeName, String originalFileName, boolean fileAvailable) {
             this.resumeId = resumeId;
             this.resumeName = resumeName;
+            this.originalFileName = originalFileName;
+            this.fileAvailable = fileAvailable;
         }
 
         public String getResumeId() {
@@ -330,6 +337,14 @@ public class VacancyDetailServlet extends HttpServlet {
 
         public String getResumeName() {
             return resumeName;
+        }
+
+        public String getOriginalFileName() {
+            return originalFileName;
+        }
+
+        public boolean isFileAvailable() {
+            return fileAvailable;
         }
     }
 }

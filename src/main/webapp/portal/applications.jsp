@@ -99,7 +99,7 @@
                                 <label class="flex flex-col w-full">
                                     <div class="flex w-full items-center rounded-lg bg-slate-100 px-4 h-11 border border-transparent focus-within:border-primary/30 transition-all">
                                         <span class="material-symbols-outlined text-slate-400">search</span>
-                                        <input type="text" name="keyword" value="${param.keyword}" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm font-medium pl-3 outline-none" placeholder="${language == 'zh' ? '按课程名或院系搜索...' : 'Search by module name or department...'}" />
+                                        <input type="text" name="keyword" value="${param.keyword}" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm font-medium pl-3 outline-none" placeholder="${userRole == 'MO' ? (language == 'zh' ? '按课程、院系或申请人搜索...' : 'Search by module, department, or applicant...') : (language == 'zh' ? '按课程名或院系搜索...' : 'Search by module name or department...')}" />
                                     </div>
                                 </label>
                             </div>
@@ -172,6 +172,9 @@
                                         <thead>
                                             <tr class="bg-slate-50 border-b border-slate-200">
                                                 <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '课程名称' : 'Module Name'}</th>
+                                                <c:if test="${userRole == 'MO'}">
+                                                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '申请人' : 'Applicant'}</th>
+                                                </c:if>
                                                 <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '院系' : 'Department'}</th>
                                                 <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '提交日期' : 'Submitted Date'}</th>
                                                 <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '使用简历' : 'Resume Used'}</th>
@@ -183,7 +186,7 @@
                                             <c:choose>
                                                 <c:when test="${empty applications}">
                                                     <tr>
-                                                        <td colspan="6" class="px-6 py-8 text-center text-slate-500">
+                                                        <td colspan="${userRole == 'MO' ? 7 : 6}" class="px-6 py-8 text-center text-slate-500">
                                                             <c:choose>
                                                                 <c:when test="${applicationsState == 'empty'}">
                                                                     <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
@@ -223,6 +226,14 @@
                                                                 <div class="font-bold text-slate-900"><c:out value="${app.vacancyTitle}"/></div>
                                                                 <div class="text-xs text-slate-400 font-medium"><c:out value="${app.courseCode}"/> (Ref: #<c:out value="${app.applicationId}"/>)</div>
                                                             </td>
+                                                            <c:if test="${userRole == 'MO'}">
+                                                                <td class="px-6 py-5 text-sm font-semibold text-slate-800">
+                                                                    <c:choose>
+                                                                        <c:when test="${not empty app.applicantName}"><c:out value="${app.applicantName}"/></c:when>
+                                                                        <c:otherwise><span class="text-slate-400">—</span></c:otherwise>
+                                                                    </c:choose>
+                                                                </td>
+                                                            </c:if>
                                                             <td class="px-6 py-5 text-sm text-slate-600 font-medium">
                                                                 <c:choose>
                                                                     <c:when test="${empty app.department}"><span class="text-slate-400">—</span></c:when>
@@ -231,10 +242,21 @@
                                                             </td>
                                                             <td class="px-6 py-5 text-sm text-slate-600"><c:out value="${app.appliedDate}"/></td>
                                                             <td class="px-6 py-5">
-                                                                <div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded w-fit">
-                                                                    <span class="material-symbols-outlined text-sm">description</span>
-                                                                    <c:out value="${app.resumeName}"/>
-                                                                </div>
+                                                                <c:choose>
+                                                                    <c:when test="${userRole == 'MO'}">
+                                                                        <a href="${pageContext.request.contextPath}/application/detail?applicationId=${app.applicationId}"
+                                                                           class="inline-flex items-center gap-2 text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded w-fit hover:bg-primary/10">
+                                                                            <span class="material-symbols-outlined text-sm">description</span>
+                                                                            <c:out value="${app.resumeName}"/>
+                                                                        </a>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <div class="flex items-center gap-2 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded w-fit">
+                                                                            <span class="material-symbols-outlined text-sm">description</span>
+                                                                            <c:out value="${app.resumeName}"/>
+                                                                        </div>
+                                                                    </c:otherwise>
+                                                                </c:choose>
                                                             </td>
                                                             <td class="px-6 py-5">
                                                                 <c:choose>
@@ -284,6 +306,30 @@
                                                                         <a href="${pageContext.request.contextPath}/vacancies" class="text-sm font-bold text-slate-600 hover:text-primary hover:underline">${language == 'zh' ? '浏览岗位' : 'Browse vacancies'}</a>
                                                                     </c:otherwise>
                                                                 </c:choose>
+                                                                <c:if test="${userRole == 'MO' && app.status != 'Withdrawn' && app.status != 'Accepted' && app.status != 'Rejected' && app.status != 'Declined'}">
+                                                                    <c:if test="${app.status == 'Submitted'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="review"/>
+                                                                            <button type="submit" class="text-xs font-bold text-blue-700 hover:underline">${language == 'zh' ? '开始审核' : 'Start review'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                    <c:if test="${app.status == 'Submitted' || app.status == 'Under Review'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定向该申请人发送录用通知？' : 'Send an offer to this applicant?'}');">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="offer"/>
+                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '发送录用' : 'Send offer'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                    <c:if test="${app.status != 'Offer Pending'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirmReject(this, '${language == 'zh' ? 'zh' : 'en'}');">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="reject"/>
+                                                                            <input type="hidden" name="rejectionNote" value=""/>
+                                                                            <button type="submit" class="text-xs font-bold text-red-700 hover:underline">${language == 'zh' ? '拒绝' : 'Reject'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                </c:if>
                                                                 <c:if test="${userRole == 'MO' && app.status != 'Withdrawn'}">
                                                                     <button type="button"
                                                                             class="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900 disabled:opacity-40 disabled:pointer-events-none"
@@ -293,6 +339,25 @@
                                                                         <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
                                                                         ${language == 'zh' ? 'AI 决策建议' : 'AI decision hints'}
                                                                     </button>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && app.status == 'Offer Pending'}">
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="accept"/>
+                                                                        <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '接受录用' : 'Accept offer'}</button>
+                                                                    </form>
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定拒绝该录用？' : 'Decline this offer?'}');">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="decline"/>
+                                                                        <button type="submit" class="text-xs font-bold text-red-700 hover:underline">${language == 'zh' ? '拒绝录用' : 'Decline offer'}</button>
+                                                                    </form>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && app.status != 'Withdrawn' && app.status != 'Accepted' && app.status != 'Rejected' && app.status != 'Declined'}">
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定撤回该申请？' : 'Withdraw this application?'}');">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="withdraw"/>
+                                                                        <button type="submit" class="text-xs font-bold text-slate-600 hover:underline">${language == 'zh' ? '撤回申请' : 'Withdraw'}</button>
+                                                                    </form>
                                                                 </c:if>
                                                                 <c:if test="${userRole == 'TA' && not empty app.vacancyId && not empty app.resumeId && app.status != 'Withdrawn'}">
                                                                     <button type="button"
@@ -513,6 +578,17 @@
 
         function escapeHtml(s) {
             return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+        }
+
+        function confirmReject(form, lang) {
+            var msg = lang === 'zh' ? '确定拒绝该申请？' : 'Reject this application?';
+            if (!confirm(msg)) return false;
+            var noteMsg = lang === 'zh' ? '可选：填写拒绝说明（留空则跳过）' : 'Optional rejection note (leave blank to skip)';
+            var note = prompt(noteMsg, '');
+            if (note === null) return false;
+            var input = form.querySelector('input[name="rejectionNote"]');
+            if (input) input.value = note;
+            return true;
         }
 
         function openMoRankDisclaimer() {

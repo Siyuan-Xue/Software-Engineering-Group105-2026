@@ -40,7 +40,12 @@ public class WorkloadsServlet extends HttpServlet {
         }
 
         try {
-            List<Map<String, Object>> workloads = adminService.calculateTAWorkloads();
+            String keyword = normalize(req.getParameter("keyword"));
+            String department = normalize(req.getParameter("department"));
+
+            List<Map<String, Object>> allWorkloads = adminService.calculateTAWorkloads();
+            List<Map<String, Object>> workloads = adminService.filterTAWorkloads(allWorkloads, keyword, department);
+            boolean filtersActive = keyword != null || department != null;
 
             int totalAcceptedTAs = workloads.size();
             int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
@@ -50,8 +55,16 @@ public class WorkloadsServlet extends HttpServlet {
             }
             int overloadedTAs = (int) workloads.stream().filter(w -> "Overloaded".equals(w.get("workloadStatus"))).count();
 
-            req.setAttribute("pageState", workloads.isEmpty() ? "empty" : "normal");
+            String pageState;
+            if (workloads.isEmpty()) {
+                pageState = allWorkloads.isEmpty() ? "empty" : (filtersActive ? "noSearchResults" : "empty");
+            } else {
+                pageState = "normal";
+            }
+
+            req.setAttribute("pageState", pageState);
             req.setAttribute("workloads", workloads);
+            req.setAttribute("departmentOptions", adminService.listWorkloadDepartmentOptions());
             req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
             req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
@@ -64,9 +77,18 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("totalWeeklyHours", 0);
             req.setAttribute("totalEstimatedIncome", BigDecimal.ZERO);
             req.setAttribute("overloadedTAs", 0);
+            req.setAttribute("departmentOptions", List.of());
             req.setAttribute("errorMessage", I18n.message(req, "msg.workloadsLoadFailed"));
         }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private static String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

@@ -212,15 +212,23 @@
                             <%-- 申请弹窗依赖后端注入的 resumeList（契约）：无简历时 inline_state 提示 noResumeAvailable 语义，并禁用提交。 --%>
                             <!-- Apply Modal -->
                             <div id="applyModal" style="display:none" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                                <div class="portal-modal-card w-full max-w-md p-8 shadow-2xl" style="max-height:90vh;overflow-y:auto">
+                                <div class="portal-modal-card w-full max-w-lg p-8 shadow-2xl" style="max-height:90vh;overflow-y:auto">
                                     <div class="flex items-center justify-between mb-2">
-                                        <h3 class="text-2xl font-black text-slate-900">${language == 'zh' ? '选择简历' : 'Select Resume'}</h3>
+                                        <h3 class="text-2xl font-black text-slate-900">${language == 'zh' ? '提交申请' : 'Submit application'}</h3>
                                         <button type="button" onclick="closeApplyModal()"
                                                 class="text-slate-400 hover:text-slate-600 transition-colors">
                                             <span class="material-symbols-outlined text-2xl">close</span>
                                         </button>
                                     </div>
-                                    <p class="text-slate-500 text-sm mb-1">${language == 'zh' ? '选择你想用于本次申请的简历。使用「AI 匹配排序」前须在弹出层中阅读说明并点击同意按钮后才会请求模型。' : 'Choose which resume you want to submit. AI ranking runs only after you read the notice in the dialog and click the agree button.'}</p>
+                                    <p class="text-slate-500 text-sm mb-3">${language == 'zh' ? '从已上传的简历/文件中选择，或上传新文件（MO 将看到本次提交的文件）。可选「AI 匹配排序」辅助选择。' : 'Pick a previously uploaded resume/file or upload a new one (the module organiser will see what you submit). Optional AI ranking is available separately.'}</p>
+
+                                    <c:if test="${qwenConfigured && not empty resumeList}">
+                                        <button type="button" onclick="openAiRankFromApplyModal()"
+                                                class="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-violet-700 hover:text-violet-900 border border-violet-200 bg-violet-50 px-3 py-2 rounded-lg">
+                                            <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                            ${language == 'zh' ? 'AI 匹配排序（可选）' : 'AI rank resumes (optional)'}
+                                        </button>
+                                    </c:if>
 
                                     <!-- AI recommendation notice -->
                                     <div id="aiRankStatus" class="flex items-center gap-2 text-xs text-violet-600 mb-5" style="display:none!important">
@@ -233,43 +241,91 @@
                                     </div>
                                     <div id="aiRankErrorMsg" class="text-xs text-red-700 mb-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2" style="display:none"></div>
 
-                                    <form action="${pageContext.request.contextPath}/application" method="POST">
+                                    <form action="${pageContext.request.contextPath}/application" method="POST" enctype="multipart/form-data">
                                         <input type="hidden" name="vacancyId" value="${vacancy.vacancyId}">
-                                        <div id="resumeOptionsList" class="space-y-3 mb-8">
-                                            <c:choose>
-                                                <c:when test="${empty resumeList}">
-                                                    <jsp:include page="/WEB-INF/jsp/components/inline_state.jsp">
-                                                        <jsp:param name="icon" value="description" />
-                                                        <jsp:param name="title" value="${language == 'zh' ? '没有可用简历' : 'No resumes available'}" />
-                                                        <jsp:param name="message" value="${language == 'zh' ? '请先上传简历，再提交该申请。' : 'Upload a resume first so you can submit this application.'}" />
-                                                        <jsp:param name="actionHref" value="${pageContext.request.contextPath}/resumes" />
-                                                        <jsp:param name="actionLabel" value="${language == 'zh' ? '前往简历页面' : 'Go to Resumes'}" />
-                                                        <jsp:param name="containerClass" value="px-0 py-2" />
-                                                    </jsp:include>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <c:forEach items="${resumeList}" var="resume" varStatus="status">
-                                                        <label id="resumeLabel_${resume.resumeId}"
-                                                               class="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition-all flex items-center gap-4 cursor-pointer hover:border-violet-300 hover:bg-white">
-                                                            <input type="radio" name="resumeId" value="${resume.resumeId}"
-                                                                   class="w-5 h-5 text-primary border-slate-300 focus:ring-primary shrink-0"
-                                                                   <c:if test="${status.first}">required="required"</c:if>>
-                                                            <div class="flex-1 min-w-0">
-                                                                <p class="text-sm font-bold text-slate-900 truncate"><c:out value="${resume.resumeName}"/></p>
-                                                                <!-- AI score badge injected here by JS -->
-                                                                <div id="scoreBadge_${resume.resumeId}" class="mt-1"></div>
-                                                            </div>
-                                                        </label>
-                                                    </c:forEach>
-                                                </c:otherwise>
-                                            </c:choose>
+
+                                        <div class="mb-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-4" id="resumeSourceSection">
+                                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                                                ${language == 'zh' ? '简历文件（本次申请）' : 'Resume file (this application)'}
+                                            </label>
+                                            <div class="flex gap-2 mb-4" role="tablist">
+                                                <button type="button" id="resumeSourceSavedBtn" role="tab" aria-selected="true"
+                                                        class="resume-source-tab flex-1 py-2 px-3 rounded-xl text-sm font-bold border transition-all border-violet-300 bg-white text-violet-800 shadow-sm">
+                                                    ${language == 'zh' ? '从已上传中选择' : 'Choose uploaded'}
+                                                </button>
+                                                <button type="button" id="resumeSourceUploadBtn" role="tab" aria-selected="false"
+                                                        class="resume-source-tab flex-1 py-2 px-3 rounded-xl text-sm font-bold border transition-all border-transparent bg-transparent text-slate-600 hover:bg-white/80">
+                                                    ${language == 'zh' ? '上传新文件' : 'Upload new'}
+                                                </button>
+                                            </div>
+                                            <div id="resumeSourceSavedPanel" role="tabpanel">
+                                                <div id="resumeOptionsList" class="space-y-3 max-h-52 overflow-y-auto pr-1">
+                                                    <c:choose>
+                                                        <c:when test="${empty resumeList}">
+                                                            <p class="text-sm text-slate-500">${language == 'zh' ? '暂无已上传的简历，请切换到「上传新文件」或前往简历页上传。' : 'No uploaded resumes yet. Switch to Upload new or go to Resumes.'}</p>
+                                                            <a href="${pageContext.request.contextPath}/resumes" class="inline-flex items-center gap-1 text-sm font-semibold text-violet-700 hover:text-violet-900 mt-2">
+                                                                <span class="material-symbols-outlined text-base">folder_open</span>
+                                                                ${language == 'zh' ? '前往简历页' : 'Go to Resumes'}
+                                                            </a>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <c:forEach items="${resumeList}" var="resume" varStatus="status">
+                                                                <label id="resumeLabel_${resume.resumeId}"
+                                                                       class="resume-pick-option w-full rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all flex items-center gap-3 cursor-pointer hover:border-violet-300">
+                                                                    <input type="radio" name="resumeId" value="${resume.resumeId}"
+                                                                           class="resume-id-radio w-5 h-5 text-primary border-slate-300 focus:ring-primary shrink-0"
+                                                                           data-has-file="${resume.fileAvailable}"
+                                                                           <c:if test="${status.first}">checked="checked"</c:if>>
+                                                                    <span class="material-symbols-outlined text-2xl text-slate-400 shrink-0" style="font-variation-settings:'FILL' 0">
+                                                                        <c:choose>
+                                                                            <c:when test="${resume.fileAvailable}">description</c:when>
+                                                                            <c:otherwise>person</c:otherwise>
+                                                                        </c:choose>
+                                                                    </span>
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <p class="text-sm font-bold text-slate-900 truncate"><c:out value="${resume.resumeName}"/></p>
+                                                                        <p class="text-xs text-slate-500 truncate mt-0.5">
+                                                                            <c:choose>
+                                                                                <c:when test="${resume.fileAvailable && not empty resume.originalFileName}">
+                                                                                    <c:out value="${resume.originalFileName}"/>
+                                                                                </c:when>
+                                                                                <c:when test="${resume.fileAvailable}">
+                                                                                    ${language == 'zh' ? '已上传文件' : 'Uploaded file'}
+                                                                                </c:when>
+                                                                                <c:otherwise>
+                                                                                    ${language == 'zh' ? '仅文字档案（无附件）' : 'Profile only (no file)'}
+                                                                                </c:otherwise>
+                                                                            </c:choose>
+                                                                        </p>
+                                                                        <div id="scoreBadge_${resume.resumeId}" class="mt-1"></div>
+                                                                    </div>
+                                                                </label>
+                                                            </c:forEach>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </div>
+                                            </div>
+                                            <div id="resumeSourceUploadPanel" role="tabpanel" class="hidden">
+                                                <input type="file" id="applyResumeFileInput" name="resumeFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                                                       class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
+                                                <p class="text-xs text-slate-500 mt-2">${language == 'zh' ? '支持 PDF、Word、图片、TXT。' : 'PDF, Word, images, or TXT.'}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                                ${language == 'zh' ? '求职信 / 动机（可选）' : 'Cover letter (optional)'}
+                                            </label>
+                                            <textarea name="coverLetter" rows="3" maxlength="4000"
+                                                      class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-violet-200 focus:border-violet-400"
+                                                      placeholder="${language == 'zh' ? '简要说明申请动机…' : 'Brief motivation for this role…'}"></textarea>
                                         </div>
 
                                         <div class="flex gap-3">
                                             <button type="button" onclick="closeApplyModal()" class="portal-btn portal-btn-secondary flex-1">
                                                 ${language == 'zh' ? '取消' : 'Cancel'}
                                             </button>
-                                            <button type="submit" class="portal-btn portal-btn-primary flex-1" <c:if test="${empty resumeList}">disabled="disabled"</c:if>>
+                                            <button type="submit" id="applySubmitBtn" class="portal-btn portal-btn-primary flex-1">
                                                 ${language == 'zh' ? '确认申请' : 'Confirm Apply'}
                                             </button>
                                         </div>
@@ -348,14 +404,116 @@
                                     finally { btn.disabled = false; }
                                 }
 
-                                function openApplyModal() {
-                                    if (IS_TA && QWEN_OK && RESUME_COUNT > 0) {
-                                        var disc = document.getElementById('aiResumeRankDisclaimerModal');
-                                        if (disc) disc.classList.add('open');
-                                        else openApplyModalAfterConsent();
-                                    } else {
-                                        openApplyModalAfterConsent();
+                                var RESUME_SOURCE_SAVED = 'saved';
+                                var RESUME_SOURCE_UPLOAD = 'upload';
+
+                                function setResumeSourceTabActive(btn, active) {
+                                    if (!btn) return;
+                                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+                                    btn.classList.toggle('border-violet-300', active);
+                                    btn.classList.toggle('bg-white', active);
+                                    btn.classList.toggle('text-violet-800', active);
+                                    btn.classList.toggle('shadow-sm', active);
+                                    btn.classList.toggle('border-transparent', !active);
+                                    btn.classList.toggle('bg-transparent', !active);
+                                    btn.classList.toggle('text-slate-600', !active);
+                                }
+
+                                function switchResumeSource(mode) {
+                                    var savedBtn = document.getElementById('resumeSourceSavedBtn');
+                                    var uploadBtn = document.getElementById('resumeSourceUploadBtn');
+                                    var savedPanel = document.getElementById('resumeSourceSavedPanel');
+                                    var uploadPanel = document.getElementById('resumeSourceUploadPanel');
+                                    var fileInput = document.getElementById('applyResumeFileInput');
+                                    var isUpload = mode === RESUME_SOURCE_UPLOAD;
+
+                                    if (savedPanel) savedPanel.classList.toggle('hidden', isUpload);
+                                    if (uploadPanel) uploadPanel.classList.toggle('hidden', !isUpload);
+                                    setResumeSourceTabActive(savedBtn, !isUpload);
+                                    setResumeSourceTabActive(uploadBtn, isUpload);
+
+                                    document.querySelectorAll('.resume-id-radio').forEach(function(radio) {
+                                        if (isUpload) {
+                                            radio.checked = false;
+                                            radio.disabled = true;
+                                        } else {
+                                            radio.disabled = false;
+                                        }
+                                    });
+                                    if (!isUpload) {
+                                        var checked = document.querySelector('.resume-id-radio:checked');
+                                        if (!checked) {
+                                            var first = document.querySelector('.resume-id-radio');
+                                            if (first) first.checked = true;
+                                        }
                                     }
+                                    if (fileInput) {
+                                        if (isUpload) {
+                                            fileInput.disabled = false;
+                                            fileInput.setAttribute('name', 'resumeFile');
+                                        } else {
+                                            fileInput.value = '';
+                                            fileInput.disabled = true;
+                                            fileInput.removeAttribute('name');
+                                        }
+                                    }
+                                }
+
+                                function initResumeSourceTabs() {
+                                    var savedBtn = document.getElementById('resumeSourceSavedBtn');
+                                    var uploadBtn = document.getElementById('resumeSourceUploadBtn');
+                                    if (savedBtn) {
+                                        savedBtn.addEventListener('click', function() { switchResumeSource(RESUME_SOURCE_SAVED); });
+                                    }
+                                    if (uploadBtn) {
+                                        uploadBtn.addEventListener('click', function() { switchResumeSource(RESUME_SOURCE_UPLOAD); });
+                                    }
+                                    if (RESUME_COUNT <= 0 && savedBtn) {
+                                        savedBtn.disabled = true;
+                                        savedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                                    }
+                                    switchResumeSource(RESUME_COUNT > 0 ? RESUME_SOURCE_SAVED : RESUME_SOURCE_UPLOAD);
+
+                                    var applyForm = document.querySelector('#applyModal form');
+                                    if (applyForm) {
+                                        applyForm.addEventListener('submit', function(e) {
+                                            var uploadPanel = document.getElementById('resumeSourceUploadPanel');
+                                            var isUpload = uploadPanel && !uploadPanel.classList.contains('hidden');
+                                            var hasFile = document.getElementById('applyResumeFileInput');
+                                            hasFile = hasFile && hasFile.files && hasFile.files.length > 0;
+                                            var hasResume = document.querySelector('.resume-id-radio:checked');
+                                            if (!isUpload && !hasResume) {
+                                                e.preventDefault();
+                                                alert('${language == 'zh' ? '请选择一份已上传的简历。' : 'Please select an uploaded resume.'}');
+                                                return;
+                                            }
+                                            if (isUpload && !hasFile) {
+                                                e.preventDefault();
+                                                alert('${language == 'zh' ? '请选择要上传的简历文件。' : 'Please choose a resume file to upload.'}');
+                                            }
+                                        });
+                                    }
+                                }
+
+                                if (IS_TA) {
+                                    document.addEventListener('DOMContentLoaded', initResumeSourceTabs);
+                                }
+
+                                function openApplyModal() {
+                                    document.getElementById('applyModal').style.display = 'flex';
+                                    switchResumeSource(RESUME_COUNT > 0 ? RESUME_SOURCE_SAVED : RESUME_SOURCE_UPLOAD);
+                                }
+                                function openAiRankFromApplyModal() {
+                                    if (!QWEN_OK) {
+                                        alert('${language == 'zh' ? '未配置 QWEN_API_KEY，无法使用 AI。' : 'QWEN_API_KEY is not configured.'}');
+                                        return;
+                                    }
+                                    if (RESUME_COUNT <= 0) {
+                                        alert('${language == 'zh' ? '请先上传简历。' : 'Upload a resume first.'}');
+                                        return;
+                                    }
+                                    var disc = document.getElementById('aiResumeRankDisclaimerModal');
+                                    if (disc) disc.classList.add('open');
                                 }
                                 function closeAiResumeRankDisclaimer() {
                                     var disc = document.getElementById('aiResumeRankDisclaimerModal');
@@ -363,13 +521,10 @@
                                 }
                                 function agreeAiResumeRankDisclaimer() {
                                     closeAiResumeRankDisclaimer();
-                                    openApplyModalAfterConsent();
-                                }
-                                function openApplyModalAfterConsent() {
-                                    document.getElementById('applyModal').style.display = 'flex';
-                                    if (IS_TA && QWEN_OK && RESUME_COUNT > 0) {
-                                        fetchAIRankings();
+                                    if (document.getElementById('applyModal').style.display !== 'flex') {
+                                        document.getElementById('applyModal').style.display = 'flex';
                                     }
+                                    fetchAIRankings();
                                 }
                                 function closeApplyModal() {
                                     document.getElementById('applyModal').style.display = 'none';

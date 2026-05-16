@@ -206,8 +206,6 @@ public final class DatabaseSeeder {
         resume.setMaxWeeklyHours(maxWeeklyHours);
         resume.setBio(bio);
         resume.setAvailabilitySlots(availability);
-        resume.setOriginalFileName(title.replace(' ', '_').toLowerCase() + ".pdf");
-        resume.setUploadedFilePath("seed/resumes/" + owner.getEmail().replace("@", "_") + ".pdf");
         return database.resumes().save(resume);
     }
 
