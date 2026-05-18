@@ -23,7 +23,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,16 +43,7 @@ public class MatchingService {
         Job job = db.jobs().findById(application.getJobId())
                 .orElseThrow(() -> new ConstraintViolationException("Job not found: " + application.getJobId()));
 
-        List<JobRequirement> requirements = db.jobRequirements().listByJobId(job.getId());
-        List<ResumeSkill> resumeSkills = db.resumeSkills().listByResumeId(resume.getId());
-        Set<UUID> resumeSkillIds = resumeSkills.stream().map(ResumeSkill::getSkillId).collect(Collectors.toSet());
-        List<JobRequirement> requiredOnly = requirements.stream().filter(JobRequirement::isRequired).toList();
-        List<JobRequirement> missingRequired = requiredOnly.stream()
-                .filter(requirement -> !resumeSkillIds.contains(requirement.getSkillId()))
-                .toList();
-        int coveragePct = requiredOnly.isEmpty()
-                ? 100
-                : (requiredOnly.size() - missingRequired.size()) * 100 / requiredOnly.size();
+        SkillCoverageView coverage = computeCoverage(resume.getId(), job.getId());
 
         BigDecimal ruleScore = computeRuleScore(applicationId);
         BigDecimal aiScore = ruleScore;
@@ -66,12 +57,13 @@ public class MatchingService {
         score.setRuleScore(ruleScore);
         score.setAiScore(aiScore);
         score.setFinalScore(ruleScore.add(aiScore).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP));
-        score.setSkillCoveragePct(coveragePct);
-        score.setMissingRequiredCount(missingRequired.size());
+        score.setSkillCoveragePct(coverage.getRequiredCoveragePct());
+        score.setMissingRequiredCount(coverage.getMissingRequiredCount());
         score.setWorkloadRemainingHours(remainingHours(resume.getUserId(), job));
-        score.setMissingSkillSuggestions(computeMissingSkills(applicationId));
+        score.setMissingSkillSuggestions(coverage.getMissingRequiredSkills());
         score.setAiExplanation(aiExplanation);
-        score.setAiRecommend(score.getFinalScore().compareTo(BigDecimal.valueOf(70)) >= 0 && missingRequired.isEmpty());
+        score.setAiRecommend(score.getFinalScore().compareTo(BigDecimal.valueOf(70)) >= 0
+                && coverage.getMissingRequiredCount() == 0);
         score.setComputedAt(Instant.now());
 
         db.executeAtomically(() -> {
@@ -103,17 +95,11 @@ public class MatchingService {
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + application.getResumeId()));
         Job job = db.jobs().findById(application.getJobId())
                 .orElseThrow(() -> new ConstraintViolationException("Job not found: " + application.getJobId()));
-        List<JobRequirement> requirements = db.jobRequirements().listByJobId(job.getId());
-        List<ResumeSkill> resumeSkills = db.resumeSkills().listByResumeId(resume.getId());
-        Set<UUID> resumeSkillIds = resumeSkills.stream().map(ResumeSkill::getSkillId).collect(Collectors.toSet());
-
-        List<JobRequirement> required = requirements.stream().filter(JobRequirement::isRequired).toList();
-        List<JobRequirement> optional = requirements.stream().filter(requirement -> !requirement.isRequired()).toList();
-        long requiredMatched = required.stream().filter(requirement -> resumeSkillIds.contains(requirement.getSkillId())).count();
-        long optionalMatched = optional.stream().filter(requirement -> resumeSkillIds.contains(requirement.getSkillId())).count();
-
-        double requiredScore = required.isEmpty() ? 1.0 : (double) requiredMatched / required.size();
-        double optionalScore = optional.isEmpty() ? 1.0 : (double) optionalMatched / optional.size();
+        SkillCoverageView coverage = computeCoverage(resume.getId(), job.getId());
+        double requiredScore = coverage.getRequiredTotal() == 0 ? 1.0
+                : (double) coverage.getRequiredMatched() / coverage.getRequiredTotal();
+        double optionalScore = coverage.getOptionalTotal() == 0 ? 1.0
+                : (double) coverage.getOptionalMatched() / coverage.getOptionalTotal();
         int remainingHours = remainingHours(resume.getUserId(), job);
         double workloadFactor = remainingHours >= 0 ? 1.0 : Math.max(0.2, 1.0 + (remainingHours / 20.0));
         double score = ((requiredScore * 0.75) + (optionalScore * 0.25)) * 100.0 * workloadFactor;
@@ -123,15 +109,66 @@ public class MatchingService {
     public List<String> computeMissingSkills(UUID applicationId) {
         Application application = db.applications().findById(applicationId)
                 .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
-        Resume resume = db.resumes().findById(application.getResumeId())
-                .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + application.getResumeId()));
-        Set<UUID> ownedSkillIds = db.resumeSkills().listByResumeId(resume.getId()).stream()
-                .map(ResumeSkill::getSkillId)
-                .collect(Collectors.toSet());
-        return db.jobRequirements().listRequiredByJobId(application.getJobId()).stream()
-                .filter(requirement -> !ownedSkillIds.contains(requirement.getSkillId()))
-                .map(requirement -> db.skills().findById(requirement.getSkillId()).map(Skill::getName).orElse("Unknown skill"))
-                .toList();
+        return computeCoverage(application.getResumeId(), application.getJobId()).getMissingRequiredSkills();
+    }
+
+    public SkillCoverageView computeCoverage(UUID resumeId, UUID jobId) {
+        Resume resume = db.resumes().findById(resumeId)
+                .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
+        db.jobs().findById(jobId)
+                .orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
+
+        Map<UUID, ResumeSkill> resumeSkills = db.resumeSkills().listByResumeId(resume.getId()).stream()
+                .collect(Collectors.toMap(ResumeSkill::getSkillId, skill -> skill, (left, right) -> left));
+
+        int requiredTotal = 0;
+        int requiredMatched = 0;
+        int optionalTotal = 0;
+        int optionalMatched = 0;
+        List<String> missingRequired = new java.util.ArrayList<>();
+        List<String> missingOptional = new java.util.ArrayList<>();
+
+        for (JobRequirement requirement : db.jobRequirements().listByJobId(jobId)) {
+            boolean required = requirement.isRequired();
+            if (required) {
+                requiredTotal++;
+            } else {
+                optionalTotal++;
+            }
+
+            ResumeSkill resumeSkill = resumeSkills.get(requirement.getSkillId());
+            boolean matched = resumeSkill != null
+                    && meetsProficiency(resumeSkill.getProficiency(), requirement.getMinProficiency());
+            if (matched) {
+                if (required) {
+                    requiredMatched++;
+                } else {
+                    optionalMatched++;
+                }
+            } else if (required) {
+                missingRequired.add(requirementLabel(requirement));
+            } else {
+                missingOptional.add(requirementLabel(requirement));
+            }
+        }
+
+        return new SkillCoverageView(requiredMatched, requiredTotal, optionalMatched, optionalTotal,
+                missingRequired, missingOptional);
+    }
+
+    private String requirementLabel(JobRequirement requirement) {
+        String skillName = db.skills().findById(requirement.getSkillId()).map(Skill::getName).orElse("Unknown skill");
+        return requirement.getMinProficiency() == null
+                ? skillName
+                : skillName + " (" + requirement.getMinProficiency() + "+)";
+    }
+
+    private static boolean meetsProficiency(com.bupt.ta.domain.enums.ProficiencyLevel actual,
+                                            com.bupt.ta.domain.enums.ProficiencyLevel minimum) {
+        if (minimum == null) {
+            return true;
+        }
+        return actual != null && actual.ordinal() >= minimum.ordinal();
     }
 
     private int remainingHours(UUID taUserId, Job job) {
@@ -144,5 +181,68 @@ public class MatchingService {
                 .findFirst()
                 .orElse(null);
         return aggregate == null ? 20 : aggregate.getRemainingHours();
+    }
+
+    public static final class SkillCoverageView {
+        private final int requiredMatched;
+        private final int requiredTotal;
+        private final int optionalMatched;
+        private final int optionalTotal;
+        private final List<String> missingRequiredSkills;
+        private final List<String> missingOptionalSkills;
+
+        SkillCoverageView(int requiredMatched, int requiredTotal, int optionalMatched, int optionalTotal,
+                          List<String> missingRequiredSkills, List<String> missingOptionalSkills) {
+            this.requiredMatched = requiredMatched;
+            this.requiredTotal = requiredTotal;
+            this.optionalMatched = optionalMatched;
+            this.optionalTotal = optionalTotal;
+            this.missingRequiredSkills = List.copyOf(missingRequiredSkills);
+            this.missingOptionalSkills = List.copyOf(missingOptionalSkills);
+        }
+
+        public int getRequiredMatched() {
+            return requiredMatched;
+        }
+
+        public int getRequiredTotal() {
+            return requiredTotal;
+        }
+
+        public int getOptionalMatched() {
+            return optionalMatched;
+        }
+
+        public int getOptionalTotal() {
+            return optionalTotal;
+        }
+
+        public int getRequiredCoveragePct() {
+            return percent(requiredMatched, requiredTotal);
+        }
+
+        public int getOverallCoveragePct() {
+            return percent(requiredMatched + optionalMatched, requiredTotal + optionalTotal);
+        }
+
+        public int getMissingRequiredCount() {
+            return missingRequiredSkills.size();
+        }
+
+        public boolean isLowCoverageWarning() {
+            return getRequiredCoveragePct() < 50;
+        }
+
+        public List<String> getMissingRequiredSkills() {
+            return missingRequiredSkills;
+        }
+
+        public List<String> getMissingOptionalSkills() {
+            return missingOptionalSkills;
+        }
+
+        private static int percent(int matched, int total) {
+            return total == 0 ? 100 : matched * 100 / total;
+        }
     }
 }

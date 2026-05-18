@@ -54,6 +54,9 @@ public class ResumeService {
     public void delete(UUID operatorId, UUID resumeId) {
         Resume existing = db.resumes().findById(resumeId)
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
+        if (operatorId != null && !operatorId.equals(existing.getUserId())) {
+            throw new ConstraintViolationException("You can only delete your own resumes");
+        }
         boolean referenced = db.applications().listByResumeId(resumeId).stream()
                 .map(Application::getStatus)
                 .anyMatch(ACTIVE_APPLICATION_STATUSES::contains);
@@ -68,8 +71,11 @@ public class ResumeService {
     }
 
     public void replaceSkills(UUID operatorId, UUID resumeId, List<ResumeSkill> skills) {
-        db.resumes().findById(resumeId)
+        Resume resume = db.resumes().findById(resumeId)
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
+        if (operatorId != null && !operatorId.equals(resume.getUserId())) {
+            throw new ConstraintViolationException("You can only update skills on your own resumes");
+        }
         db.executeAtomically(() -> {
             db.resumeSkills().deleteByResumeId(resumeId);
             for (ResumeSkill skill : skills) {

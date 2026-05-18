@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * JSON API: POST /ai-ta-cover-letter
- * Body: vacancyId= & resumeId= (both required). TA only; resume must belong to current user.
+ * Body parameters: vacancyId and resumeId are both required. TA only; resume must belong to current user.
  */
 @WebServlet("/ai-ta-cover-letter")
 public class AiTaCoverLetterServlet extends HttpServlet {

@@ -36,7 +36,7 @@
         <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
             <div class="portal-page">
                 <c:set var="workloadsState" value="${empty pageState ? 'normal' : pageState}" />
-                <c:set var="workloadsActiveFilters" value="${not empty param.keyword or not empty param.department}" />
+                <c:set var="workloadsActiveFilters" value="${not empty param.keyword or not empty param.department or not empty param.semester}" />
 
                 <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
                     <jsp:param name="containerClass" value="mb-6" />
@@ -61,6 +61,15 @@
                                 </label>
                             </div>
                             <div class="flex flex-wrap gap-2">
+                                <div class="relative">
+                                    <select name="semester" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none pr-8 min-w-[10rem]">
+                                        <option value="">${language == 'zh' ? '学期：全部' : 'Semester: All'}</option>
+                                        <c:forEach items="${semesterOptions}" var="sem">
+                                            <option value="${sem}" ${param.semester == sem ? 'selected' : ''}><c:out value="${sem}"/></option>
+                                        </c:forEach>
+                                    </select>
+                                    <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">expand_more</span>
+                                </div>
                                 <div class="relative">
                                     <select name="department" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none pr-8 min-w-[10rem]">
                                         <option value="">${language == 'zh' ? '院系：全部' : 'Department: All'}</option>
@@ -145,6 +154,7 @@
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '助教信息' : 'TA Info'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '在岗岗位数' : 'Accepted Vacancies'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '每周总工时' : 'Weekly Hours'}</th>
+                                        <th class="px-6 py-4 font-semibold">${language == 'zh' ? '容量' : 'Capacity'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '总工时(8周)' : 'Total Workload (8 wk)'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '总预估收入(8周)' : 'Est. Income (8 wk)'}</th>
                                         <th class="px-6 py-4 font-semibold">${language == 'zh' ? '状态' : 'Status'}</th>
@@ -163,6 +173,13 @@
                                             </td>
                                             <td class="px-6 py-4 font-medium text-slate-700">${wl.acceptedVacancyCount}</td>
                                             <td class="px-6 py-4 text-slate-600">${wl.totalWeeklyHours} hrs</td>
+                                            <td class="px-6 py-4 text-slate-600">
+                                                <div class="font-medium">${wl.totalWeeklyHours}/${wl.capacityHours} hrs</div>
+                                                <div class="mt-1 h-2 w-28 rounded-full bg-slate-100">
+                                                    <div class="h-2 rounded-full ${wl.utilizationPct >= 100 ? 'bg-red-500' : (wl.utilizationPct >= 80 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width:${wl.utilizationPct > 100 ? 100 : wl.utilizationPct}%"></div>
+                                                </div>
+                                                <div class="mt-1 text-xs text-slate-400">${wl.utilizationPct}% · ${wl.remainingHours} hrs ${language == 'zh' ? '剩余' : 'left'}</div>
+                                            </td>
                                             <td class="px-6 py-4 text-slate-600">${wl.totalWorkloadHours} hrs</td>
                                             <td class="px-6 py-4 font-medium text-emerald-600">£ ${wl.totalEstimatedIncome}</td>
                                             <td class="px-6 py-4">
@@ -186,7 +203,7 @@
                                         </tr>
                                         <!-- Expandable Details Row -->
                                         <tr id="details-${loop.index}" class="hidden bg-slate-50/50">
-                                            <td colspan="7" class="px-6 py-4">
+                                            <td colspan="8" class="px-6 py-4">
                                                 <div class="pl-4 border-l-2 border-accent/20 my-2">
                                                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Assigned Vacancies Details</h4>
                                                     <div class="grid gap-3">

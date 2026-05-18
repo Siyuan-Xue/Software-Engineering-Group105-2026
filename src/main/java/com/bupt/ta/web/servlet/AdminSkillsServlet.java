@@ -1,14 +1,19 @@
 package com.bupt.ta.web.servlet;
 
 import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.core.JsonMapperFactory;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.AuditLog;
 import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.ResumeSkill;
 import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.AuditAction;
+import com.bupt.ta.domain.enums.EntityType;
 import com.bupt.ta.domain.enums.SkillCategory;
 import com.bupt.ta.domain.enums.UserRole;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,6 +24,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +35,7 @@ public class AdminSkillsServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/admin_skills.jsp";
 
     private TaDatabase database;
+    private final ObjectMapper mapper = JsonMapperFactory.create();
 
     @Override
     public void init() throws ServletException {
@@ -70,10 +77,16 @@ public class AdminSkillsServlet extends HttpServlet {
         String action = normalize(req.getParameter("action"));
         try {
             if ("delete".equals(action)) {
-                deleteSkill(req);
+                deleteSkill(req, currentUser);
                 redirect(req, resp, "successMessage", message(req, "Skill deleted.", "技能已删除。"));
+            } else if ("update".equals(action)) {
+                updateSkill(req, currentUser);
+                redirect(req, resp, "successMessage", message(req, "Skill updated.", "技能已更新。"));
+            } else if ("activate".equals(action) || "deactivate".equals(action)) {
+                setSkillActive(req, currentUser, "activate".equals(action));
+                redirect(req, resp, "successMessage", message(req, "Skill status updated.", "技能状态已更新。"));
             } else {
-                createSkill(req);
+                createSkill(req, currentUser);
                 redirect(req, resp, "successMessage", message(req, "Skill created.", "技能已创建。"));
             }
         } catch (Exception ex) {
@@ -82,7 +95,7 @@ public class AdminSkillsServlet extends HttpServlet {
         }
     }
 
-    private void createSkill(HttpServletRequest req) {
+    private void createSkill(HttpServletRequest req, User operator) {
         String name = require(req.getParameter("name"), message(req, "Skill name is required.", "技能名称不能为空。"));
         SkillCategory category = parseCategory(req.getParameter("category"));
         String description = normalize(req.getParameter("description"));
@@ -91,26 +104,54 @@ public class AdminSkillsServlet extends HttpServlet {
         skill.setName(name);
         skill.setCategory(category);
         skill.setDescription(description);
-        database.skills().save(skill);
+        Skill saved = database.skills().save(skill);
+        appendAudit(operator.getId(), AuditAction.CREATE, saved.getId(), null, saved);
     }
 
-    private void deleteSkill(HttpServletRequest req) {
+    private void updateSkill(HttpServletRequest req, User operator) {
         UUID skillId = parseUuid(req.getParameter("skillId"));
-        database.skills().findById(skillId)
+        Skill current = database.skills().findById(skillId)
                 .orElseThrow(() -> new IllegalArgumentException(message(req, "Skill not found.", "技能不存在。")));
 
+        Skill updated = mapper.convertValue(current, Skill.class);
+        updated.setName(require(req.getParameter("name"), message(req, "Skill name is required.", "技能名称不能为空。")));
+        updated.setCategory(parseCategory(req.getParameter("category")));
+        updated.setDescription(normalize(req.getParameter("description")));
+
+        Skill saved = database.skills().save(updated);
+        appendAudit(operator.getId(), AuditAction.UPDATE, saved.getId(), current, saved);
+    }
+
+    private void setSkillActive(HttpServletRequest req, User operator, boolean active) {
+        UUID skillId = parseUuid(req.getParameter("skillId"));
+        Skill current = database.skills().findById(skillId)
+                .orElseThrow(() -> new IllegalArgumentException(message(req, "Skill not found.", "技能不存在。")));
+        Skill updated = mapper.convertValue(current, Skill.class);
+        updated.setActive(active);
+        Skill saved = database.skills().save(updated);
+        appendAudit(operator.getId(), AuditAction.STATUS_CHANGE, saved.getId(), current, saved);
+    }
+
+    private void deleteSkill(HttpServletRequest req, User operator) {
+        UUID skillId = parseUuid(req.getParameter("skillId"));
+        Skill current = database.skills().findById(skillId)
+                .orElseThrow(() -> new IllegalArgumentException(message(req, "Skill not found.", "技能不存在。")));
+
+        long resumeUseCount = database.resumeSkills().findAll().stream()
+                .filter(resumeSkill -> skillId.equals(resumeSkill.getSkillId()))
+                .count();
+        long requirementUseCount = database.jobRequirements().findAll().stream()
+                .filter(requirement -> skillId.equals(requirement.getSkillId()))
+                .count();
+        if (resumeUseCount + requirementUseCount > 0) {
+            throw new IllegalArgumentException(message(req,
+                    "This skill is in use. Remove resume skills and job requirements before deleting it.",
+                    "该技能仍被简历或岗位要求引用，请先移除引用后再删除。"));
+        }
+
         database.executeAtomically(() -> {
-            database.resumeSkills().findAll().stream()
-                    .filter(resumeSkill -> skillId.equals(resumeSkill.getSkillId()))
-                    .map(ResumeSkill::getId)
-                    .toList()
-                    .forEach(id -> database.resumeSkills().delete(id));
-            database.jobRequirements().findAll().stream()
-                    .filter(requirement -> skillId.equals(requirement.getSkillId()))
-                    .map(JobRequirement::getId)
-                    .toList()
-                    .forEach(id -> database.jobRequirements().delete(id));
             database.skills().delete(skillId);
+            appendAudit(operator.getId(), AuditAction.DELETE, skillId, current, null);
         });
     }
 
@@ -124,6 +165,7 @@ public class AdminSkillsServlet extends HttpServlet {
                         "name", safe(skill.getName(), "Untitled skill"),
                         "category", skill.getCategory() == null ? "" : skill.getCategory().name(),
                         "description", safe(skill.getDescription(), ""),
+                        "active", skill.isActive(),
                         "resumeUseCount", resumeSkills.stream()
                                 .filter(item -> skill.getId().equals(item.getSkillId()))
                                 .count(),
@@ -192,5 +234,21 @@ public class AdminSkillsServlet extends HttpServlet {
 
     private String message(HttpServletRequest req, String en, String zh) {
         return "zh".equals(req.getAttribute("language")) ? zh : en;
+    }
+
+    private void appendAudit(UUID operatorId, AuditAction action, UUID entityId, Object oldValue, Object newValue) {
+        AuditLog log = new AuditLog();
+        log.setOperatorId(operatorId);
+        log.setAction(action);
+        log.setEntityType(EntityType.SKILL);
+        log.setEntityId(entityId);
+        if (oldValue != null) {
+            log.setOldValue(mapper.valueToTree(oldValue));
+        }
+        if (newValue != null) {
+            log.setNewValue(mapper.valueToTree(newValue));
+        }
+        log.setOperatedAt(Instant.now());
+        database.auditLogs().append(log);
     }
 }

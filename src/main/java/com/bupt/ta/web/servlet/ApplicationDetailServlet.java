@@ -4,12 +4,14 @@ import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.MatchScore;
 import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.service.ApplicationService;
+import com.bupt.ta.service.MatchingService;
 import com.bupt.ta.util.ApplicationSubmissionFiles;
 import com.bupt.ta.util.ResumeFilePaths;
 import jakarta.servlet.ServletException;
@@ -36,11 +38,13 @@ public class ApplicationDetailServlet extends HttpServlet {
 
     private TaDatabase database;
     private ApplicationService applicationService;
+    private MatchingService matchingService;
 
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.applicationService = new ApplicationService(database);
+        this.matchingService = new MatchingService(database);
     }
 
     @Override
@@ -52,11 +56,6 @@ public class ApplicationDetailServlet extends HttpServlet {
                     + URLEncoder.encode(I18n.message(req, "auth.loginRequired"), StandardCharsets.UTF_8));
             return;
         }
-        if (currentUser.getRole() != UserRole.MO) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Only module organisers can view applicant details");
-            return;
-        }
-
         String rawId = req.getParameter("applicationId");
         if (rawId == null || rawId.isBlank()) {
             resp.sendRedirect(req.getContextPath() + "/applications?errorMessage="
@@ -80,10 +79,21 @@ public class ApplicationDetailServlet extends HttpServlet {
             return;
         }
 
-        try {
-            applicationService.assertMoOwnsApplication(currentUser.getId(), application);
-        } catch (RuntimeException ex) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, ex.getMessage());
+        Resume resume = database.resumes().findById(application.getResumeId()).orElse(null);
+        boolean canMoManage = false;
+        boolean canTaView = false;
+        if (currentUser.getRole() == UserRole.MO) {
+            try {
+                applicationService.assertMoOwnsApplication(currentUser.getId(), application);
+                canMoManage = true;
+            } catch (RuntimeException ex) {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN, ex.getMessage());
+                return;
+            }
+        } else if (currentUser.getRole() == UserRole.TA && resume != null && currentUser.getId().equals(resume.getUserId())) {
+            canTaView = true;
+        } else {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "You can only view applicant details for your own applications or vacancies");
             return;
         }
 
@@ -92,13 +102,16 @@ public class ApplicationDetailServlet extends HttpServlet {
             return;
         }
 
-        Resume resume = database.resumes().findById(application.getResumeId()).orElse(null);
         Job job = database.jobs().findById(application.getJobId()).orElse(null);
         User applicant = resume == null ? null : database.users().findById(resume.getUserId()).orElse(null);
+        MatchScore matchScore = database.matchScores().findByApplicationId(application.getId()).orElse(null);
 
         req.setAttribute("successMessage", param(req, "successMessage"));
         req.setAttribute("errorMessage", param(req, "errorMessage"));
         req.setAttribute("applicationId", application.getId());
+        req.setAttribute("canMoManage", canMoManage);
+        req.setAttribute("canTaView", canTaView);
+        req.setAttribute("canTaRespond", canTaView && application.getStatus() == ApplicationStatus.OFFER_PENDING);
         req.setAttribute("applicationStatus", toDisplayStatus(application.getStatus()));
         req.setAttribute("applicationStatusRaw", application.getStatus().name());
         req.setAttribute("appliedDate", application.getCreatedAt() == null
@@ -126,6 +139,15 @@ public class ApplicationDetailServlet extends HttpServlet {
             displayFileName = resume == null ? "" : nullToEmpty(resume.getOriginalFileName());
         }
         req.setAttribute("resumeFileName", displayFileName);
+        if (matchScore != null) {
+            req.setAttribute("matchScore", matchScore);
+            req.setAttribute("matchComputedAt", matchScore.getComputedAt() == null
+                    ? ""
+                    : DATE_FORMATTER.format(matchScore.getComputedAt()));
+        }
+        if (resume != null && job != null) {
+            req.setAttribute("skillCoverage", matchingService.computeCoverage(resume.getId(), job.getId()));
+        }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }

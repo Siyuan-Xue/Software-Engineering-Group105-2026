@@ -42,10 +42,11 @@ public class WorkloadsServlet extends HttpServlet {
         try {
             String keyword = normalize(req.getParameter("keyword"));
             String department = normalize(req.getParameter("department"));
+            String semester = normalize(req.getParameter("semester"));
 
-            List<Map<String, Object>> allWorkloads = adminService.calculateTAWorkloads();
+            List<Map<String, Object>> allWorkloads = adminService.calculateTAWorkloads(semester, null, null);
             List<Map<String, Object>> workloads = adminService.filterTAWorkloads(allWorkloads, keyword, department);
-            boolean filtersActive = keyword != null || department != null;
+            boolean filtersActive = keyword != null || department != null || semester != null;
 
             int totalAcceptedTAs = workloads.size();
             int totalWeeklyHours = workloads.stream().mapToInt(w -> (Integer) w.get("totalWeeklyHours")).sum();
@@ -64,7 +65,8 @@ public class WorkloadsServlet extends HttpServlet {
 
             req.setAttribute("pageState", pageState);
             req.setAttribute("workloads", workloads);
-            req.setAttribute("departmentOptions", adminService.listWorkloadDepartmentOptions());
+            req.setAttribute("departmentOptions", adminService.listWorkloadDepartmentOptions(semester));
+            req.setAttribute("semesterOptions", adminService.listWorkloadSemesterOptions());
             req.setAttribute("totalAcceptedTAs", totalAcceptedTAs);
             req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
@@ -78,6 +80,7 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("totalEstimatedIncome", BigDecimal.ZERO);
             req.setAttribute("overloadedTAs", 0);
             req.setAttribute("departmentOptions", List.of());
+            req.setAttribute("semesterOptions", List.of());
             req.setAttribute("errorMessage", I18n.message(req, "msg.workloadsLoadFailed"));
         }
 

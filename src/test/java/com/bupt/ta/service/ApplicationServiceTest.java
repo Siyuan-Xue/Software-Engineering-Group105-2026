@@ -48,14 +48,33 @@ class ApplicationServiceTest {
         assertThrows(ConstraintViolationException.class, () ->
                 service.submit(ta.getId(), resume.getId(), job.getId(), "Again"));
 
-        application.setStatus(ApplicationStatus.OFFER_PENDING);
-        db.applications().save(application);
+        service.sendOffer(mo.getId(), application.getId());
+        assertEquals(workloadCount, db.workloadRecords().findAll().size());
         service.acceptOffer(ta.getId(), application.getId());
 
         assertEquals(workloadCount + 1, db.workloadRecords().findAll().size());
-        assertEquals(notificationCount + 3, db.notifications().findAll().size());
-        assertEquals(auditLogCount + 2, db.auditLogs().findAll().size());
+        assertEquals(notificationCount + 5, db.notifications().findAll().size());
+        assertEquals(auditLogCount + 3, db.auditLogs().findAll().size());
         assertEquals(ApplicationStatus.ACCEPTED, db.applications().findById(application.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void decliningOfferShouldNotCreateWorkload() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        ApplicationService service = new ApplicationService(db);
+        int workloadCount = db.workloadRecords().findAll().size();
+
+        User ta = db.users().save(user("decline-ta@example.com", UserRole.TA, "Decline TA"));
+        User mo = db.users().save(user("decline-mo@example.com", UserRole.MO, "Decline MO"));
+        Resume resume = db.resumes().save(resume(ta.getId()));
+        Job job = db.jobs().save(job(mo.getId(), "Offer Decline TA"));
+
+        Application application = service.submit(ta.getId(), resume.getId(), job.getId(), "Cover letter");
+        service.sendOffer(mo.getId(), application.getId());
+        service.declineOffer(ta.getId(), application.getId());
+
+        assertEquals(workloadCount, db.workloadRecords().findAll().size());
+        assertEquals(ApplicationStatus.DECLINED, db.applications().findById(application.getId()).orElseThrow().getStatus());
     }
 
     @Test

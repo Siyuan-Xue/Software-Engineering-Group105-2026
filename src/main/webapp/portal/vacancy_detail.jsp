@@ -298,6 +298,28 @@
                                                                             </c:choose>
                                                                         </p>
                                                                         <div id="scoreBadge_${resume.resumeId}" class="mt-1"></div>
+                                                                        <c:if test="${not empty resume.skillCoverage}">
+                                                                            <div class="mt-2 rounded-xl border ${resume.skillCoverage.lowCoverageWarning ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-100 bg-emerald-50 text-emerald-800'} px-3 py-2 text-[11px] leading-relaxed">
+                                                                                <div class="font-bold">
+                                                                                    ${language == 'zh' ? '技能覆盖' : 'Skill coverage'}:
+                                                                                    <c:out value="${resume.skillCoverage.requiredMatched}"/>/<c:out value="${resume.skillCoverage.requiredTotal}"/>
+                                                                                    ${language == 'zh' ? '必需' : 'required'}
+                                                                                    (<c:out value="${resume.skillCoverage.requiredCoveragePct}"/>%),
+                                                                                    <c:out value="${resume.skillCoverage.overallCoveragePct}"/>% ${language == 'zh' ? '总体' : 'overall'}
+                                                                                </div>
+                                                                                <c:if test="${resume.skillCoverage.lowCoverageWarning}">
+                                                                                    <div class="mt-1 font-semibold">${language == 'zh' ? '必需技能覆盖低于 50%，建议补充技能证据后再提交。' : 'Required skill coverage is below 50%; consider adding evidence before applying.'}</div>
+                                                                                </c:if>
+                                                                                <c:if test="${not empty resume.skillCoverage.missingRequiredSkills}">
+                                                                                    <div class="mt-1">
+                                                                                        ${language == 'zh' ? '缺失：' : 'Missing: '}
+                                                                                        <c:forEach items="${resume.skillCoverage.missingRequiredSkills}" var="missing" varStatus="ms">
+                                                                                            <c:if test="${!ms.first}">, </c:if><c:out value="${missing}"/>
+                                                                                        </c:forEach>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </div>
+                                                                        </c:if>
                                                                     </div>
                                                                 </label>
                                                             </c:forEach>

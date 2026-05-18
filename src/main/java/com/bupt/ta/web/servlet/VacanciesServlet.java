@@ -7,6 +7,9 @@ import com.bupt.ta.domain.entity.Job;
 import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.ApplicationStatus;
+import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
 import com.bupt.ta.service.JobService;
 import com.bupt.ta.service.QwenAiService;
 import jakarta.servlet.ServletException;
@@ -58,6 +61,9 @@ public class VacanciesServlet extends HttpServlet {
             String keyword    = normalize(req.getParameter("keyword"));
             String department = normalize(req.getParameter("department"));
             String term       = normalize(req.getParameter("term"));
+            JobType type      = parseJobType(req.getParameter("type"));
+            Integer minHours  = parseInteger(req.getParameter("minHours"));
+            Integer maxHours  = parseInteger(req.getParameter("maxHours"));
             int page          = parsePage(req.getParameter("page"));
 
             Map<UUID, User> userById = database.users()
@@ -76,6 +82,9 @@ public class VacanciesServlet extends HttpServlet {
                     .filter(job -> keyword == null || matchesKeyword(job, keyword) || matchesJobTags(job, keyword, jobSkillNames))
                     .filter(job -> matchesDepartment(job, department))
                     .filter(job -> matchesTerm(job, term))
+                    .filter(job -> type == null || job.getType() == type)
+                    .filter(job -> minHours == null || Math.max(job.getRequiredHours(), 1) >= minHours)
+                    .filter(job -> maxHours == null || Math.max(job.getRequiredHours(), 1) <= maxHours)
                     .map(job -> toCard(job, userById, savedIds, currentUser))
                     .sorted(Comparator.comparing(VacancyCardView::isSaved).reversed())
                     .toList();
@@ -95,6 +104,11 @@ public class VacanciesServlet extends HttpServlet {
             req.setAttribute("totalPages", totalPages);
             req.setAttribute("hasMore", page < totalPages);
             req.setAttribute("termOptions", buildTermOptions());
+            req.setAttribute("jobTypes", JobType.values());
+            req.setAttribute("skills", database.skills().findAll().stream()
+                    .sorted(Comparator.comparing(Skill::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                    .toList());
+            req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
             req.setAttribute("pageState", "normal");
             applyFlashFromQuery(req);
         } catch (Exception ex) {
@@ -115,6 +129,9 @@ public class VacanciesServlet extends HttpServlet {
         req.setAttribute("totalPages", 1);
         req.setAttribute("hasMore", false);
         req.setAttribute("termOptions", List.of());
+        req.setAttribute("jobTypes", JobType.values());
+        req.setAttribute("skills", List.of());
+        req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
     }
 
     private void applyFlashFromQuery(HttpServletRequest req) {
@@ -144,6 +161,12 @@ public class VacanciesServlet extends HttpServlet {
         boolean saved = savedIds.contains(job.getId());
         boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
         List<String> labels = job.getLabels();
+        int accepted = (int) database.applications().listByJobId(job.getId()).stream()
+                .filter(app -> app.getStatus() == ApplicationStatus.ACCEPTED)
+                .count();
+        int slotsRemaining = Math.max(0, Math.max(job.getSlots(), 1) - accepted);
+        boolean applied = currentUser != null && "TA".equals(currentUser.getRole().name())
+                && database.applications().existsByTaAndJob(currentUser.getId(), job.getId());
 
         return new VacancyCardView(
                 job.getId().toString(),
@@ -157,7 +180,10 @@ public class VacanciesServlet extends HttpServlet {
                 moduleOwner,
                 saved,
                 isOwner,
-                labels
+                labels,
+                job.getType() == null ? JobType.MODULE_SUPPORT.name() : job.getType().name(),
+                slotsRemaining,
+                applied
         );
     }
 
@@ -303,6 +329,30 @@ public class VacanciesServlet extends HttpServlet {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private JobType parseJobType(String raw) {
+        String normalized = normalize(raw);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return JobType.valueOf(normalized.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private Integer parseInteger(String raw) {
+        String normalized = normalize(raw);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private String safe(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }
@@ -322,11 +372,15 @@ public class VacanciesServlet extends HttpServlet {
         private final boolean saved;
         private final boolean isOwner;
         private final List<String> labels;
+        private final String type;
+        private final int slotsRemaining;
+        private final boolean applied;
 
         public VacancyCardView(String vacancyId, String courseCode, String title,
                                String description, String department, int hoursPerWeek,
                                String hourlyRate, String deadline, String moduleOwner,
-                               boolean saved, boolean isOwner, List<String> labels) {
+                               boolean saved, boolean isOwner, List<String> labels,
+                               String type, int slotsRemaining, boolean applied) {
             this.vacancyId   = vacancyId;
             this.courseCode  = courseCode;
             this.title       = title;
@@ -339,6 +393,9 @@ public class VacanciesServlet extends HttpServlet {
             this.saved       = saved;
             this.isOwner     = isOwner;
             this.labels      = labels == null ? List.of() : List.copyOf(labels);
+            this.type        = type;
+            this.slotsRemaining = slotsRemaining;
+            this.applied     = applied;
         }
 
         public String getVacancyId()    { return vacancyId; }
@@ -353,5 +410,8 @@ public class VacanciesServlet extends HttpServlet {
         public boolean isSaved()        { return saved; }
         public boolean isOwner()        { return isOwner; }
         public List<String> getLabels() { return labels; }
+        public String getType()         { return type; }
+        public int getSlotsRemaining()  { return slotsRemaining; }
+        public boolean isApplied()      { return applied; }
     }
 }

@@ -3,7 +3,10 @@ package com.bupt.ta.web.servlet;
 import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.AuditLog;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.AuditAction;
+import com.bupt.ta.domain.enums.EntityType;
 import com.bupt.ta.service.AuthService;
 
 import jakarta.servlet.ServletException;
@@ -14,16 +17,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
     private AuthService authService;
+    private TaDatabase database;
 
     @Override
     public void init() throws ServletException {
-        TaDatabase database = DatabaseProvider.get(getServletContext());
+        this.database = DatabaseProvider.get(getServletContext());
         this.authService = new AuthService(database);
     }
 
@@ -58,6 +63,7 @@ public class LoginServlet extends HttpServlet {
         if (userOpt.isPresent()) {
             // 登录成功！
             User realUser = userOpt.get();
+            appendLoginAudit(realUser, true);
             HttpSession session = req.getSession(true);
             // session 身份供 AuthFilter 注入 request、后续页面与 Servlet 共用
             session.setAttribute("currentUser", realUser);
@@ -67,7 +73,13 @@ public class LoginServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/dashboard");
         } else {
             // 登录失败
-            req.setAttribute("errorMessage", I18n.message(language, "auth.invalidCredentials"));
+            Optional<User> foundUser = authService.findByEmail(email);
+            foundUser.ifPresent(user -> appendLoginAudit(user, false));
+            if (foundUser.isPresent() && !foundUser.get().isActive()) {
+                req.setAttribute("errorMessage", "Account inactive. Please contact an administrator.");
+            } else {
+                req.setAttribute("errorMessage", I18n.message(language, "auth.invalidCredentials"));
+            }
             req.getRequestDispatcher("/login.jsp").forward(req, resp);
         }
     }
@@ -85,5 +97,21 @@ public class LoginServlet extends HttpServlet {
             return I18n.normalizeLanguage(value);
         }
         return I18n.DEFAULT_LANGUAGE;
+    }
+
+    private void appendLoginAudit(User user, boolean success) {
+        try {
+            AuditLog log = new AuditLog();
+            log.setOperatorId(user.getId());
+            log.setAction(AuditAction.LOGIN);
+            log.setEntityType(EntityType.USER);
+            log.setEntityId(user.getId());
+            log.setNewValue(com.bupt.ta.db.core.JsonMapperFactory.create()
+                    .valueToTree(success ? "SUCCESS" : "FAILURE"));
+            log.setOperatedAt(Instant.now());
+            database.auditLogs().append(log);
+        } catch (RuntimeException ex) {
+            getServletContext().log("Unable to append login audit", ex);
+        }
     }
 }

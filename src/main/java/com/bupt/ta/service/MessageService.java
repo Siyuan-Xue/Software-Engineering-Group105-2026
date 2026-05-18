@@ -256,8 +256,11 @@ public class MessageService {
         for (Notification n : systemNotifications) {
             MessageDTO msg = new MessageDTO();
             msg.setMessageId(n.getId() != null ? n.getId().toString() : UUID.randomUUID().toString());
-            msg.setContent(n.getMessage());
+            String title = n.getTitle() == null || n.getTitle().isBlank() ? typeLabel(n.getNotifType(), zh) : n.getTitle();
+            msg.setContent(title + " - " + n.getMessage());
             msg.setTimestamp(n.getCreatedAt() != null ? TIME_FORMATTER.format(n.getCreatedAt()) : "");
+            msg.setTypeLabel(typeLabel(n.getNotifType(), zh));
+            msg.setActionHref(actionHref(n));
             msg.setIsMine(false);
             msg.setIsSystemMessage(true);
             messageDTOs.add(msg);
@@ -276,6 +279,36 @@ public class MessageService {
         markSystemNotificationsRead(currentUserId, systemNotifications);
 
         return conv;
+    }
+
+    private String typeLabel(NotificationType type, boolean zh) {
+        if (type == null) {
+            return zh ? "通知" : "Notification";
+        }
+        return switch (type) {
+            case APPLICATION_STATUS -> zh ? "申请" : "Application";
+            case NEW_JOB -> zh ? "新岗位" : "New job";
+            case NEW_APPLICANT -> zh ? "新申请人" : "Applicant";
+            case OFFER_RECEIVED -> zh ? "Offer" : "Offer";
+            case WORKLOAD_ALERT -> zh ? "工作量" : "Workload";
+            case SYSTEM -> zh ? "系统" : "System";
+            case MESSAGE -> zh ? "消息" : "Message";
+        };
+    }
+
+    private String actionHref(Notification notification) {
+        EntityType entityType = notification.getEntityType();
+        UUID entityId = notification.getEntityId();
+        if (entityType == null || entityId == null) {
+            return null;
+        }
+        return switch (entityType) {
+            case APPLICATION -> "/application/detail?applicationId=" + entityId;
+            case JOB -> "/vacancy?vacancyId=" + entityId;
+            case WORKLOAD_RECORD -> "/workloads";
+            case MATCH_SCORE -> "/applications";
+            default -> null;
+        };
     }
 
     private void markSystemNotificationsRead(UUID userId, List<Notification> systemNotifications) {

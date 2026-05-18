@@ -15,7 +15,9 @@ import com.bupt.ta.domain.enums.EntityType;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.NotificationType;
 import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.domain.enums.WorkloadStatus;
+import com.bupt.ta.domain.value.WorkloadAggregate;
 import com.bupt.ta.db.core.JsonMapperFactory;
 import com.bupt.ta.util.ApplicationSubmissionFiles;
 import com.bupt.ta.util.ResumeFilePaths;
@@ -166,7 +168,13 @@ public class ApplicationService {
         }
         Job job = requireJob(current.getJobId());
         assertVacancyHasOfferCapacity(job, applicationId);
-        return transition(moUserId, applicationId, ApplicationStatus.OFFER_PENDING, null);
+        Application saved = transition(moUserId, applicationId, ApplicationStatus.OFFER_PENDING, null);
+        Resume resume = requireResume(saved.getResumeId());
+        notifyUser(resume.getUserId(), NotificationType.OFFER_RECEIVED,
+                "Offer received",
+                "You received an offer for " + safeJobTitle(job) + ". Please accept or decline it from My Applications.",
+                EntityType.APPLICATION, applicationId);
+        return saved;
     }
 
     public Application reject(UUID moUserId, UUID applicationId, String notes) {
@@ -176,45 +184,6 @@ public class ApplicationService {
             throw new ConstraintViolationException("This application can no longer be rejected");
         }
         return transition(moUserId, applicationId, ApplicationStatus.REJECTED, notes);
-    }
-
-    public Application moDirectAccept(UUID moUserId, UUID applicationId) {
-        Application current = requireApplication(applicationId);
-        assertMoOwnsApplication(moUserId, current);
-        ApplicationStatus status = current.getStatus();
-        if (isTerminalStatus(status)) {
-            throw new ConstraintViolationException("This application can no longer be accepted");
-        }
-        Job job = requireJob(current.getJobId());
-        assertVacancyHasOfferCapacity(job, applicationId);
-
-        Application updated = mapper.convertValue(current, Application.class);
-        updated.setStatus(ApplicationStatus.ACCEPTED);
-        updated.setReviewedBy(moUserId);
-        updated.setReviewedAt(Instant.now());
-
-        Resume resume = requireResume(current.getResumeId());
-
-        WorkloadRecord record = db.workloadRecords().findByApplicationId(applicationId)
-                .orElseGet(WorkloadRecord::new);
-        record.setApplicationId(applicationId);
-        record.setTaId(resume.getUserId());
-        record.setJobId(job.getId());
-        record.setSemester(resolveSemester(job));
-        record.setAssignedHours(job.getRequiredHours());
-        record.setStatus(WorkloadStatus.ACTIVE);
-
-        db.executeAtomically(() -> {
-            db.applications().save(updated);
-            db.workloadRecords().save(record);
-            notifyUser(resume.getUserId(), NotificationType.APPLICATION_STATUS,
-                    "Application Accepted",
-                    "Your application for " + safeJobTitle(job) + " was accepted by the module organiser.",
-                    EntityType.APPLICATION, applicationId);
-            appendAudit(moUserId, AuditAction.STATUS_CHANGE, applicationId, current, updated);
-            closeCompetingApplications(job, applicationId);
-        });
-        return db.applications().findById(applicationId).orElseThrow();
     }
 
     public Application acceptOffer(UUID taUserId, UUID applicationId) {
@@ -246,7 +215,7 @@ public class ApplicationService {
 
         db.executeAtomically(() -> {
             db.applications().save(updated);
-            db.workloadRecords().save(record);
+            WorkloadRecord savedRecord = db.workloadRecords().save(record);
             notifyUser(taUserId, NotificationType.OFFER_RECEIVED,
                     "Offer accepted",
                     "You accepted the offer and your workload was updated.",
@@ -257,6 +226,7 @@ public class ApplicationService {
                     EntityType.APPLICATION, applicationId);
             appendAudit(taUserId, AuditAction.STATUS_CHANGE, applicationId, current, updated);
             closeCompetingApplications(job, applicationId);
+            sendWorkloadAlerts(savedRecord, job);
         });
         return db.applications().findById(applicationId).orElseThrow();
     }
@@ -280,7 +250,13 @@ public class ApplicationService {
                 && status != ApplicationStatus.OFFER_PENDING) {
             throw new ConstraintViolationException("This application cannot be withdrawn in its current state");
         }
-        return transition(taUserId, applicationId, ApplicationStatus.WITHDRAWN, current.getMoNotes());
+        Application saved = transition(taUserId, applicationId, ApplicationStatus.WITHDRAWN, current.getMoNotes());
+        Job job = requireJob(saved.getJobId());
+        notifyUser(job.getPostedBy(), NotificationType.APPLICATION_STATUS,
+                "Application withdrawn",
+                "A TA withdrew an application for " + safeJobTitle(job) + ".",
+                EntityType.APPLICATION, applicationId);
+        return saved;
     }
 
     private Application respondToOffer(UUID taUserId, UUID applicationId, ApplicationStatus targetStatus) {
@@ -428,6 +404,53 @@ public class ApplicationService {
         db.notifications().save(notification);
     }
 
+    private void sendWorkloadAlerts(WorkloadRecord record, Job job) {
+        WorkloadAggregate aggregate = db.workloadRecords().aggregateBySemester(record.getSemester()).stream()
+                .filter(item -> record.getTaId().equals(item.getTaId()))
+                .findFirst()
+                .orElse(null);
+        if (aggregate == null || aggregate.getCapacityHours() <= 0) {
+            return;
+        }
+
+        String threshold = null;
+        if (aggregate.getUtilizationRatio() >= 1.0) {
+            threshold = "100%";
+        } else if (aggregate.getUtilizationRatio() >= 0.8) {
+            threshold = "80%";
+        }
+        if (threshold == null) {
+            return;
+        }
+
+        User ta = db.users().findById(record.getTaId()).orElse(null);
+        String taName = ta == null ? "TA" : safe(ta.getFullName(), "TA");
+        String title = "Workload alert: " + threshold + " capacity";
+        String message = taName + " reached " + threshold + " capacity for " + record.getSemester()
+                + " after accepting " + safeJobTitle(job) + " ("
+                + aggregate.getAssignedHours() + "/" + aggregate.getCapacityHours()
+                + " hours, TA ID " + record.getTaId() + ").";
+
+        notifyWorkloadAlert(record.getTaId(), record, title, message, threshold);
+        for (User admin : db.users().listByRole(UserRole.ADMIN)) {
+            notifyWorkloadAlert(admin.getId(), record, title, message, threshold);
+        }
+    }
+
+    private void notifyWorkloadAlert(UUID recipientId, WorkloadRecord record, String title,
+                                     String message, String threshold) {
+        boolean alreadySent = db.notifications().findAll().stream()
+                .filter(notification -> recipientId.equals(notification.getUserId()))
+                .filter(notification -> notification.getNotifType() == NotificationType.WORKLOAD_ALERT)
+                .anyMatch(notification -> safe(notification.getTitle(), "").contains(threshold)
+                        && safe(notification.getMessage(), "").contains(record.getSemester())
+                        && safe(notification.getMessage(), "").contains(record.getTaId().toString()));
+        if (!alreadySent) {
+            notifyUser(recipientId, NotificationType.WORKLOAD_ALERT, title, message,
+                    EntityType.WORKLOAD_RECORD, record.getId());
+        }
+    }
+
     private void appendAudit(UUID operatorId, AuditAction action, UUID entityId, Object oldValue, Object newValue) {
         AuditLog log = new AuditLog();
         log.setOperatorId(operatorId);
@@ -459,5 +482,9 @@ public class ApplicationService {
             month = today.getMonthValue();
         }
         return (month >= 8 ? "Fall " : "Spring ") + year;
+    }
+
+    private static String safe(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

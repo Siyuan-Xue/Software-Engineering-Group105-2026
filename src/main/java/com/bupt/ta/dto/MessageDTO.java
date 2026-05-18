@@ -8,6 +8,8 @@ public class MessageDTO {
     private String messageId;
     private String content;
     private String timestamp;
+    private String typeLabel;
+    private String actionHref;
     private boolean isMine;
     private boolean isSystemMessage;
 
@@ -33,6 +35,22 @@ public class MessageDTO {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getTypeLabel() {
+        return typeLabel;
+    }
+
+    public void setTypeLabel(String typeLabel) {
+        this.typeLabel = typeLabel;
+    }
+
+    public String getActionHref() {
+        return actionHref;
+    }
+
+    public void setActionHref(String actionHref) {
+        this.actionHref = actionHref;
     }
 
     public boolean getIsMine() {

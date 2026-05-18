@@ -136,7 +136,7 @@
                         <div class="flex items-center justify-between border-b border-slate-100 px-6 py-5">
                             <div>
                                 <h3 class="font-bold text-slate-900">${language == 'zh' ? '技能目录' : 'Skill Catalogue'}</h3>
-                                <p class="mt-1 text-xs text-slate-500">${language == 'zh' ? '删除技能会同时移除关联的简历技能和岗位要求。' : 'Deleting a skill also removes linked resume skills and job requirements.'}</p>
+                                <p class="mt-1 text-xs text-slate-500">${language == 'zh' ? '可编辑技能；已被简历或岗位引用的技能不能直接删除。' : 'Edit catalogue entries; skills used by resumes or vacancy requirements are protected from deletion.'}</p>
                             </div>
                             <span class="material-symbols-outlined text-slate-400">psychology</span>
                         </div>
@@ -167,6 +167,11 @@
                                                 <tr class="transition-colors hover:bg-slate-50">
                                                     <td class="px-6 py-4">
                                                         <p class="font-semibold text-slate-900"><c:out value="${skill.name}"/></p>
+                                                        <p class="mt-1">
+                                                            <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${skill.active ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-700'}">
+                                                                ${skill.active ? (language == 'zh' ? '启用' : 'Active') : (language == 'zh' ? '停用' : 'Inactive')}
+                                                            </span>
+                                                        </p>
                                                         <p class="mt-1 max-w-xl text-xs leading-5 text-slate-500">
                                                             <c:choose>
                                                                 <c:when test="${not empty skill.description}"><c:out value="${skill.description}"/></c:when>
@@ -186,15 +191,49 @@
                                                         </div>
                                                     </td>
                                                     <td class="px-6 py-4 text-right">
-                                                        <form action="${pageContext.request.contextPath}/admin/skills" method="POST"
-                                                              onsubmit="return confirm('${language == 'zh' ? '确定删除该技能及其关联引用吗？' : 'Delete this skill and its linked references?'}');">
-                                                            <input type="hidden" name="action" value="delete" />
-                                                            <input type="hidden" name="skillId" value="${skill.id}" />
-                                                            <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-50">
-                                                                <span class="material-symbols-outlined text-[16px]">delete</span>
-                                                                ${language == 'zh' ? '删除' : 'Delete'}
-                                                            </button>
-                                                        </form>
+                                                        <div class="flex flex-col items-end gap-2">
+                                                            <details class="w-full max-w-md text-left">
+                                                                <summary class="ml-auto inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50">
+                                                                    <span class="material-symbols-outlined text-[16px]">edit</span>
+                                                                    ${language == 'zh' ? '编辑' : 'Edit'}
+                                                                </summary>
+                                                                <form action="${pageContext.request.contextPath}/admin/skills" method="POST" class="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm">
+                                                                    <input type="hidden" name="action" value="update" />
+                                                                    <input type="hidden" name="skillId" value="${skill.id}" />
+                                                                    <label class="skills-label">${language == 'zh' ? '技能名称' : 'Skill Name'}</label>
+                                                                    <input class="skills-input mb-3" type="text" name="name" maxlength="80" value="${fn:escapeXml(skill.name)}" required />
+                                                                    <label class="skills-label">${language == 'zh' ? '类别' : 'Category'}</label>
+                                                                    <select class="skills-input mb-3" name="category" required>
+                                                                        <c:forEach items="${skillCategories}" var="category">
+                                                                            <option value="${category}" ${skill.category == category ? 'selected' : ''}><c:out value="${category}"/></option>
+                                                                        </c:forEach>
+                                                                    </select>
+                                                                    <label class="skills-label">${language == 'zh' ? '描述' : 'Description'}</label>
+                                                                    <textarea class="skills-input mb-3" name="description" maxlength="280"><c:out value="${skill.description}"/></textarea>
+                                                                    <button type="submit" class="portal-btn portal-btn-primary text-xs">
+                                                                        <span class="material-symbols-outlined text-[16px]">save</span>
+                                                                        ${language == 'zh' ? '保存' : 'Save'}
+                                                                    </button>
+                                                                </form>
+                                                            </details>
+                                                            <form action="${pageContext.request.contextPath}/admin/skills" method="POST">
+                                                                <input type="hidden" name="action" value="${skill.active ? 'deactivate' : 'activate'}" />
+                                                                <input type="hidden" name="skillId" value="${skill.id}" />
+                                                                <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold ${skill.active ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-green-200 text-green-700 hover:bg-green-50'}">
+                                                                    <span class="material-symbols-outlined text-[16px]">${skill.active ? 'visibility_off' : 'visibility'}</span>
+                                                                    ${skill.active ? (language == 'zh' ? '停用' : 'Deactivate') : (language == 'zh' ? '启用' : 'Activate')}
+                                                                </button>
+                                                            </form>
+                                                            <form action="${pageContext.request.contextPath}/admin/skills" method="POST"
+                                                                  onsubmit="return confirm('${language == 'zh' ? '确定删除该技能？若仍被引用，系统会阻止删除。' : 'Delete this skill? The system will block deletion if it is still referenced.'}');">
+                                                                <input type="hidden" name="action" value="delete" />
+                                                                <input type="hidden" name="skillId" value="${skill.id}" />
+                                                                <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-50">
+                                                                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                                                                    ${language == 'zh' ? '删除' : 'Delete'}
+                                                                </button>
+                                                            </form>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </c:forEach>

@@ -9,12 +9,14 @@ import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Notification;
 import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.entity.WorkloadRecord;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.AuditAction;
 import com.bupt.ta.domain.enums.EntityType;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.NotificationType;
 import com.bupt.ta.domain.enums.UserRole;
+import com.bupt.ta.domain.enums.WorkloadStatus;
 import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.db.core.JsonMapperFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +31,8 @@ public class JobService {
     private static final Set<ApplicationStatus> IN_PROGRESS_APPLICATIONS = Set.of(
             ApplicationStatus.PENDING,
             ApplicationStatus.REVIEWING,
-            ApplicationStatus.OFFER_PENDING
+            ApplicationStatus.OFFER_PENDING,
+            ApplicationStatus.ACCEPTED
     );
 
     private final TaDatabase db;
@@ -65,6 +68,9 @@ public class JobService {
         }
         Job saved = db.jobs().save(job);
         appendAudit(job.getPostedBy(), AuditAction.CREATE, EntityType.JOB, null, saved);
+        if (saved.getStatus() == JobStatus.OPEN) {
+            notifyActiveTasAboutNewJob(saved);
+        }
         return saved;
     }
 
@@ -90,6 +96,9 @@ public class JobService {
         if (status != JobStatus.CANCELLED) {
             Job saved = db.jobs().save(updated);
             appendAudit(operatorId, AuditAction.STATUS_CHANGE, EntityType.JOB, existing, saved);
+            if (status == JobStatus.OPEN && existing.getStatus() != JobStatus.OPEN) {
+                notifyActiveTasAboutNewJob(saved);
+            }
             return saved;
         }
 
@@ -99,6 +108,11 @@ public class JobService {
                 Application mutated = mapper.convertValue(application, Application.class);
                 mutated.setStatus(ApplicationStatus.WITHDRAWN);
                 db.applications().save(mutated);
+                db.workloadRecords().findByApplicationId(mutated.getId()).ifPresent(record -> {
+                    WorkloadRecord cancelledRecord = mapper.convertValue(record, WorkloadRecord.class);
+                    cancelledRecord.setStatus(WorkloadStatus.CANCELLED);
+                    db.workloadRecords().save(cancelledRecord);
+                });
                 notifyResumeOwner(mutated.getResumeId(),
                         NotificationType.APPLICATION_STATUS,
                         "Application withdrawn",
@@ -109,6 +123,30 @@ public class JobService {
             appendAudit(operatorId, AuditAction.STATUS_CHANGE, EntityType.JOB, existing, cancelled);
         });
         return db.jobs().findById(jobId).orElseThrow();
+    }
+
+    private void notifyActiveTasAboutNewJob(Job job) {
+        for (User ta : db.users().listByRole(UserRole.TA)) {
+            if (!ta.isActive()) {
+                continue;
+            }
+            boolean alreadySent = db.notifications().findAll().stream()
+                    .filter(notification -> ta.getId().equals(notification.getUserId()))
+                    .filter(notification -> notification.getNotifType() == NotificationType.NEW_JOB)
+                    .anyMatch(notification -> notification.getEntityType() == EntityType.JOB
+                            && job.getId().equals(notification.getEntityId()));
+            if (alreadySent) {
+                continue;
+            }
+            Notification notification = new Notification();
+            notification.setUserId(ta.getId());
+            notification.setNotifType(NotificationType.NEW_JOB);
+            notification.setTitle("New vacancy posted");
+            notification.setMessage("A new TA vacancy is open: " + (job.getTitle() == null ? "Untitled vacancy" : job.getTitle()) + ".");
+            notification.setEntityType(EntityType.JOB);
+            notification.setEntityId(job.getId());
+            db.notifications().save(notification);
+        }
     }
 
     public void replaceRequirements(UUID operatorId, UUID jobId, List<JobRequirement> requirements) {

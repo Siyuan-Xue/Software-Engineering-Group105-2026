@@ -30,6 +30,11 @@ public final class TaAccountService {
 
     public void registerTa(String email, String plainPassword, String confirmPassword, String fullName,
                            String phone, String department, String studentId) {
+        registerUser(email, plainPassword, confirmPassword, fullName, phone, department, studentId, UserRole.TA);
+    }
+
+    public void registerUser(String email, String plainPassword, String confirmPassword, String fullName,
+                             String phone, String department, String studentId, UserRole role) {
         requireNonBlank(email, ERR_EMAIL_REQUIRED);
         requireNonBlank(fullName, ERR_FULL_NAME_REQUIRED);
         requireNonBlank(plainPassword, ERR_PASSWORD_REQUIRED);
@@ -48,7 +53,7 @@ public final class TaAccountService {
         User user = new User();
         user.setEmail(email.trim());
         user.setFullName(fullName.trim());
-        user.setRole(UserRole.TA);
+        user.setRole(role == null || role == UserRole.ADMIN ? UserRole.TA : role);
         user.setActive(true);
         user.setPhone(trimToNull(phone));
         user.setDepartment(trimToNull(department));

@@ -104,6 +104,15 @@ public class MessagesServlet extends HttpServlet {
         String language = I18n.resolveLanguage(req);
         boolean zh = I18n.isChinese(language);
 
+        String action = normalize(req.getParameter("action"));
+        if ("markAllRead".equals(action)) {
+            database.notifications().markAllRead(currentUser.getId());
+            String successMsg = zh ? "所有通知已标记为已读。" : "All notifications marked as read.";
+            resp.sendRedirect(req.getContextPath() + "/messages?conversationId=system"
+                    + "&successMessage=" + URLEncoder.encode(successMsg, StandardCharsets.UTF_8));
+            return;
+        }
+
         String conversationId = normalize(req.getParameter("conversationId"));
         String messageContent = normalize(req.getParameter("messageContent"));
 

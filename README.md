@@ -26,23 +26,24 @@ QM HIRE connects **Teaching Assistants (TAs)**, **Module Organisers (MOs)**, and
 ### Teaching Assistant (TA)
 
 - Browse and favourite open vacancies; filter and search job listings
-- Manage multiple resumes (profile + file upload: PDF, Word, images, TXT)
+- Manage multiple resumes (profile + file upload: PDF, Word, images, TXT), duplicate resumes, and bind skills
 - **Apply with resume file**: choose a previously uploaded resume or upload a new file; optional cover letter
 - Application lifecycle: submit, withdraw, accept/decline offers
 - Optional **AI assistance** (requires `QWEN_API_KEY`): resume review, vacancy match scores, per-job resume ranking when applying, cover-letter draft
 
 ### Module Organiser (MO)
 
-- Create, edit, and publish vacancies (labels, deadlines, slots)
-- Review applications: start review, send offer, reject; view applicant detail and **download submitted resume files**
+- Create, edit, draft/publish/cancel vacancies (labels, deadlines, type, slots, dates) and manage job skill requirements
+- Review applications: start review, refresh persisted match analysis, send offer, reject; view applicant detail and **download submitted resume files**
 - Optional **AI assistance**: applicant ranking per vacancy, offer/reject advisory (non-binding)
 - In-app notifications for new applicants and responses
 
 ### Administrator
 
-- Skills catalogue management
+- User management for TA/MO/Admin accounts
+- Skills catalogue management with edit/deactivate/reference protection
 - **Workload** oversight with keyword and department filters
-- Audit trail and system-wide data access via JSON repositories
+- Audit trail search/export and system-wide data access via JSON repositories
 
 ### Platform
 
@@ -236,6 +237,7 @@ Software-Engineering-Group105-2026/
 | `/resumes` | Resume CRUD & upload |
 | `/applications` | Application inbox |
 | `/workloads` | Admin workloads |
+| `/admin/users`, `/admin/skills`, `/admin/audit` | Admin user, skill, and audit management |
 | `/ai-match`, `/ai-resume-rank`, … | Optional AI endpoints |
 
 ---

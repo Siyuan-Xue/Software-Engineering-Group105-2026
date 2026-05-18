@@ -89,6 +89,14 @@
                                             </c:otherwise>
                                         </c:choose>
                                     </p>
+                                    <c:if test="${unreadNotificationCount > 0}">
+                                        <form action="${pageContext.request.contextPath}/messages" method="POST" class="mt-3">
+                                            <input type="hidden" name="action" value="markAllRead" />
+                                            <button type="submit" class="text-xs font-bold text-primary hover:underline">
+                                                ${language == 'zh' ? '全部标记已读' : 'Mark all read'}
+                                            </button>
+                                        </form>
+                                    </c:if>
                                 </div>
                             </div>
 
@@ -217,7 +225,17 @@
                                                                 <c:when test="${msg.isSystemMessage}">
                                                                     <div class="flex gap-3">
                                                                         <div class="mx-auto max-w-[70%] rounded-lg bg-slate-200 p-3 text-center text-sm italic text-slate-700">
+                                                                            <c:if test="${not empty msg.typeLabel}">
+                                                                                <span class="mb-2 inline-flex rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                                                                                    <c:out value="${msg.typeLabel}" />
+                                                                                </span>
+                                                                            </c:if>
                                                                             <c:out value="${msg.content}" />
+                                                                            <c:if test="${not empty msg.actionHref}">
+                                                                                <a href="${pageContext.request.contextPath}${msg.actionHref}" class="mt-2 block text-xs font-bold not-italic text-primary hover:underline">
+                                                                                    ${language == 'zh' ? '打开相关页面' : 'Open related page'}
+                                                                                </a>
+                                                                            </c:if>
                                                                             <div class="mt-1 text-[10px] text-slate-400">
                                                                                 <c:out value="${messageTimestamp}" />
                                                                             </div>

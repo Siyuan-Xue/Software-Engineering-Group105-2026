@@ -178,11 +178,26 @@
                                 </select>
                                 <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
                             </div>
+                            <div class="relative">
+                                <select name="type" class="h-11 rounded-lg bg-white border border-slate-200 pl-4 pr-8 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none">
+                                    <option value="">${language == 'zh' ? '全部类型' : 'All Types'}</option>
+                                    <c:forEach items="${jobTypes}" var="jobType">
+                                        <option value="${jobType}" ${param.type == jobType ? 'selected' : ''}><c:out value="${jobType}"/></option>
+                                    </c:forEach>
+                                </select>
+                                <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+                            </div>
+                            <input type="number" min="1" name="minHours" value="${fn:escapeXml(param.minHours)}"
+                                   class="h-11 w-24 rounded-lg bg-white border border-slate-200 px-3 text-sm font-medium text-slate-700"
+                                   placeholder="${language == 'zh' ? '最少时' : 'Min hrs'}" />
+                            <input type="number" min="1" name="maxHours" value="${fn:escapeXml(param.maxHours)}"
+                                   class="h-11 w-24 rounded-lg bg-white border border-slate-200 px-3 text-sm font-medium text-slate-700"
+                                   placeholder="${language == 'zh' ? '最多时' : 'Max hrs'}" />
                             <button type="submit" class="portal-btn portal-btn-primary">
                                 <span class="material-symbols-outlined text-sm">search</span>
                                 ${language == 'zh' ? '搜索' : 'Search'}
                             </button>
-                            <c:if test="${not empty param.keyword or not empty param.department or not empty param.term}">
+                            <c:if test="${not empty param.keyword or not empty param.department or not empty param.term or not empty param.type or not empty param.minHours or not empty param.maxHours}">
                                 <a href="${pageContext.request.contextPath}/vacancies" class="portal-btn portal-btn-secondary" title="${language == 'zh' ? '清除筛选' : 'Clear filters'}">
                                     <span class="material-symbols-outlined text-sm">close</span>
                                     ${language == 'zh' ? '清除' : 'Clear'}
@@ -254,6 +269,15 @@
                                                         <span class="shrink-0 px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase rounded-md tracking-wider">
                                                             <c:out value="${vacancy.courseCode}"/>
                                                         </span>
+                                                        <span class="shrink-0 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase rounded-md tracking-wider">
+                                                            <c:out value="${vacancy.type}"/>
+                                                        </span>
+                                                        <c:if test="${vacancy.applied}">
+                                                            <span class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase rounded-md tracking-wider">
+                                                                <span class="material-symbols-outlined text-[14px]">task_alt</span>
+                                                                ${language == 'zh' ? '已申请' : 'Applied'}
+                                                            </span>
+                                                        </c:if>
                                                         <a href="${pageContext.request.contextPath}/vacancy?vacancyId=${vacancy.vacancyId}"
                                                            class="text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors truncate">
                                                             <c:out value="${vacancy.title}"/>
@@ -289,6 +313,10 @@
                                                         <div class="flex items-center gap-1.5 text-slate-400">
                                                             <span class="material-symbols-outlined text-[17px]">person</span>
                                                             <c:out value="${vacancy.moduleOwner}"/>
+                                                        </div>
+                                                        <div class="flex items-center gap-1.5 font-medium ${vacancy.slotsRemaining > 0 ? 'text-slate-500' : 'text-red-600'}">
+                                                            <span class="material-symbols-outlined text-[17px]">event_seat</span>
+                                                            <c:out value="${vacancy.slotsRemaining}"/> ${language == 'zh' ? '个剩余名额' : 'slots left'}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -351,7 +379,7 @@
                                 <!-- Previous -->
                                 <c:choose>
                                     <c:when test="${currentPage > 1}">
-                                        <a href="${pageContext.request.contextPath}/vacancies?page=${currentPage - 1}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}"
+                                        <a href="${pageContext.request.contextPath}/vacancies?page=${currentPage - 1}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}&type=${fn:escapeXml(param.type)}&minHours=${fn:escapeXml(param.minHours)}&maxHours=${fn:escapeXml(param.maxHours)}"
                                            class="portal-btn portal-btn-secondary px-3">
                                             <span class="material-symbols-outlined text-lg">chevron_left</span>
                                         </a>
@@ -371,7 +399,7 @@
                                                   style="background:#0f172a;">${p}</span>
                                         </c:when>
                                         <c:otherwise>
-                                            <a href="${pageContext.request.contextPath}/vacancies?page=${p}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}"
+                                            <a href="${pageContext.request.contextPath}/vacancies?page=${p}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}&type=${fn:escapeXml(param.type)}&minHours=${fn:escapeXml(param.minHours)}&maxHours=${fn:escapeXml(param.maxHours)}"
                                                class="w-10 h-10 flex items-center justify-center rounded-xl text-sm font-semibold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition-colors">${p}</a>
                                         </c:otherwise>
                                     </c:choose>
@@ -380,7 +408,7 @@
                                 <!-- Next -->
                                 <c:choose>
                                     <c:when test="${currentPage < totalPages}">
-                                        <a href="${pageContext.request.contextPath}/vacancies?page=${currentPage + 1}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}"
+                                        <a href="${pageContext.request.contextPath}/vacancies?page=${currentPage + 1}&keyword=${fn:escapeXml(param.keyword)}&department=${fn:escapeXml(param.department)}&term=${fn:escapeXml(param.term)}&type=${fn:escapeXml(param.type)}&minHours=${fn:escapeXml(param.minHours)}&maxHours=${fn:escapeXml(param.maxHours)}"
                                            class="portal-btn portal-btn-secondary px-3">
                                             <span class="material-symbols-outlined text-lg">chevron_right</span>
                                         </a>
@@ -484,6 +512,27 @@
                             </select>
                         </div>
                     </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '岗位类型' : 'Type'}</label>
+                            <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                <option value="MODULE_SUPPORT">${language == 'zh' ? '课程支持' : 'Module support'}</option>
+                                <option value="INVIGILATION">${language == 'zh' ? '监考' : 'Invigilation'}</option>
+                                <option value="OTHER">${language == 'zh' ? '其他' : 'Other'}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '名额' : 'Slots'}</label>
+                            <input type="number" name="slots" min="1" value="1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '发布状态' : 'Publish status'}</label>
+                            <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                <option value="OPEN">${language == 'zh' ? '立即发布' : 'Publish now'}</option>
+                                <option value="DRAFT">${language == 'zh' ? '保存草稿' : 'Save draft'}</option>
+                            </select>
+                        </div>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
                         <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '简要描述岗位内容...' : 'Brief description of the role...'}"></textarea>
@@ -492,6 +541,32 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标签' : 'Labels'}</label>
                         <input type="text" name="labels" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java, 实验课, 答疑' : 'e.g. Java, lab, coursework'}"/>
                         <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '逗号、分号、竖线或换行；最多 24 个，每个最长 48 字符。' : 'Commas, semicolons, pipes, or newlines; up to 24 tags, 48 chars each.'}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">${language == 'zh' ? '技能要求' : 'Skill requirements'}</label>
+                        <div class="space-y-2">
+                            <c:forEach begin="0" end="2" var="idx">
+                                <div class="grid grid-cols-1 gap-2 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+                                    <select name="skillId" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                                        <option value="">${language == 'zh' ? '添加技能要求' : 'Add requirement'}</option>
+                                        <c:forEach items="${skills}" var="skill">
+                                            <c:if test="${skill.active}">
+                                                <option value="${skill.id}"><c:out value="${skill.name}"/></option>
+                                            </c:if>
+                                        </c:forEach>
+                                    </select>
+                                    <select name="minProficiency" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                                        <c:forEach items="${proficiencyLevels}" var="level">
+                                            <option value="${level}"><c:out value="${level}"/></option>
+                                        </c:forEach>
+                                    </select>
+                                    <label class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+                                        <input type="checkbox" name="requiredSkill" value="${idx}" class="rounded border-slate-300 text-primary" ${idx == 0 ? 'checked' : ''}/>
+                                        ${language == 'zh' ? '必需' : 'Required'}
+                                    </label>
+                                </div>
+                            </c:forEach>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -505,6 +580,16 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '截止时间' : 'Deadline'}</label>
                             <input type="datetime-local" name="deadline" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '开始日期' : 'Start Date'}</label>
+                            <input type="date" name="startDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '结束日期' : 'End Date'}</label>
+                            <input type="date" name="endDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                         </div>
                     </div>
                 </div>

@@ -235,6 +235,7 @@
                                                                         data-hours="${r.maxWeeklyHours}"
                                                                         data-bio="${fn:escapeXml(r.bio)}"
                                                                         data-resume-labels='<c:forEach items="${r.labels}" var="lb" varStatus="vs"><c:if test="${!vs.first}">|</c:if><c:out value="${lb}"/></c:forEach>'
+                                                                        data-availability-json='${fn:escapeXml(availabilityJsonByResumeId[r.id])}'
                                                                         onclick="openEditModalFromBtn(this)">
                                                                     <span class="material-symbols-outlined text-[18px]">edit</span>
                                                                 </button>
@@ -243,6 +244,12 @@
                                                                         title="${language == 'zh' ? '删除简历' : 'Delete resume'}"
                                                                         onclick="deleteResume('${r.id}')">
                                                                     <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                                </button>
+                                                                <button type="button"
+                                                                        class="card-action-btn bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                                        title="${language == 'zh' ? '复制简历' : 'Duplicate resume'}"
+                                                                        onclick="duplicateResume('${r.id}')">
+                                                                    <span class="material-symbols-outlined text-[18px]">content_copy</span>
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -259,6 +266,72 @@
                                                                 <span><c:out value="${r.originalFileName}"/></span>
                                                             </div>
                                                         </c:if>
+                                                        <c:set var="resumeSkillsForCard" value="${resumeSkillViewsByResumeId[r.id]}" />
+                                                        <div class="mt-3">
+                                                            <c:choose>
+                                                                <c:when test="${not empty resumeSkillsForCard}">
+                                                                    <div class="flex flex-wrap gap-2">
+                                                                        <c:forEach items="${resumeSkillsForCard}" var="rs">
+                                                                            <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-700">
+                                                                                <c:out value="${rs.name}"/> · <c:out value="${rs.proficiency}"/> · <c:out value="${rs.yearsExp}"/>y
+                                                                            </span>
+                                                                        </c:forEach>
+                                                                    </div>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <p class="text-xs text-slate-400">${language == 'zh' ? '尚未绑定技能' : 'No skills linked yet'}</p>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                            <details class="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                                                <summary class="cursor-pointer text-xs font-bold text-primary">
+                                                                    ${language == 'zh' ? '管理简历技能' : 'Manage resume skills'}
+                                                                </summary>
+                                                                <form action="${pageContext.request.contextPath}/resumes" method="POST" class="mt-3 space-y-3">
+                                                                    <input type="hidden" name="action" value="skills" />
+                                                                    <input type="hidden" name="resumeId" value="${r.id}" />
+                                                                    <c:forEach items="${resumeSkillsForCard}" var="rs">
+                                                                        <div class="grid grid-cols-1 gap-2 md:grid-cols-[1.2fr_1fr_0.6fr]">
+                                                                            <select name="skillId" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                                                                <option value="">${language == 'zh' ? '选择技能' : 'Select skill'}</option>
+                                                                                <c:forEach items="${skills}" var="skill">
+                                                                                    <c:if test="${skill.active or skill.id == rs.skillId}">
+                                                                                        <option value="${skill.id}" ${skill.id == rs.skillId ? 'selected' : ''}><c:out value="${skill.name}"/></option>
+                                                                                    </c:if>
+                                                                                </c:forEach>
+                                                                            </select>
+                                                                            <select name="proficiency" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                                                                <c:forEach items="${proficiencyLevels}" var="level">
+                                                                                    <option value="${level}" ${rs.proficiency == level ? 'selected' : ''}><c:out value="${level}"/></option>
+                                                                                </c:forEach>
+                                                                            </select>
+                                                                            <input name="yearsExp" type="number" min="0" max="40" value="${rs.yearsExp}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700" />
+                                                                        </div>
+                                                                    </c:forEach>
+                                                                    <c:forEach begin="1" end="3">
+                                                                        <div class="grid grid-cols-1 gap-2 md:grid-cols-[1.2fr_1fr_0.6fr]">
+                                                                            <select name="skillId" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                                                                <option value="">${language == 'zh' ? '添加技能' : 'Add skill'}</option>
+                                                                                <c:forEach items="${skills}" var="skill">
+                                                                                    <c:if test="${skill.active}">
+                                                                                        <option value="${skill.id}"><c:out value="${skill.name}"/></option>
+                                                                                    </c:if>
+                                                                                </c:forEach>
+                                                                            </select>
+                                                                            <select name="proficiency" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                                                                <c:forEach items="${proficiencyLevels}" var="level">
+                                                                                    <option value="${level}"><c:out value="${level}"/></option>
+                                                                                </c:forEach>
+                                                                            </select>
+                                                                            <input name="yearsExp" type="number" min="0" max="40" value="0" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700" />
+                                                                        </div>
+                                                                    </c:forEach>
+                                                                    <button type="submit" class="portal-btn portal-btn-primary text-xs">
+                                                                        <span class="material-symbols-outlined text-sm">save</span>
+                                                                        ${language == 'zh' ? '保存技能' : 'Save skills'}
+                                                                    </button>
+                                                                </form>
+                                                            </details>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -268,6 +341,10 @@
                                                         <span class="flex items-center gap-1">
                                                             <span class="material-symbols-outlined text-[13px]">schedule</span>
                                                             ${language == 'zh' ? '最多 ' : 'Max '}<strong class="text-slate-600"><c:out value="${r.maxWeeklyHours}"/></strong> ${language == 'zh' ? '小时/周' : 'hrs/wk'}
+                                                        </span>
+                                                        <span class="flex items-center gap-1">
+                                                            <span class="material-symbols-outlined text-[13px]">event_available</span>
+                                                            <strong class="text-slate-600"><c:out value="${fn:length(r.availabilitySlots)}"/></strong> ${language == 'zh' ? '个可用时段' : 'availability slots'}
                                                         </span>
                                                         <span>${language == 'zh' ? '更新于：' : 'Updated: '}<c:out value="${r.updatedAtDisplay}"/></span>
                                                     </div>
@@ -603,6 +680,26 @@
                 <textarea name="bio" id="editBio" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 resize-y"></textarea>
             </div>
             <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">${language == 'zh' ? '可用时间' : 'Availability'}</label>
+                <div class="space-y-2">
+                    <c:forEach begin="0" end="2" var="idx">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1.2fr_1fr_1fr]">
+                            <select name="availabilityDay" id="editAvailDay${idx}"
+                                    class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300">
+                                <option value="">${language == 'zh' ? '选择星期' : 'Select day'}</option>
+                                <c:forEach items="${daysOfWeek}" var="day">
+                                    <option value="${day}"><c:out value="${day}"/></option>
+                                </c:forEach>
+                            </select>
+                            <input type="time" name="availabilityStart" id="editAvailStart${idx}"
+                                   class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                            <input type="time" name="availabilityEnd" id="editAvailEnd${idx}"
+                                   class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                        </div>
+                    </c:forEach>
+                </div>
+            </div>
+            <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">${language == 'zh' ? '标签' : 'Labels'}</label>
                 <input type="text" name="resumeLabels" id="editResumeLabels"
                        class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
@@ -772,7 +869,7 @@
     function closeAIModal() {
         document.getElementById('aiResultModal').classList.remove('open');
     }
-    function openEditModal(id, title, dept, degree, gpa, hours, bio, labelsJoined) {
+    function openEditModal(id, title, dept, degree, gpa, hours, bio, labelsJoined, availabilityJson) {
         document.getElementById('editResumeId').value = id;
         document.getElementById('editTitle').value    = title  || '';
         document.getElementById('editDept').value     = dept   || '';
@@ -784,6 +881,7 @@
         if (lr) {
             lr.value = (labelsJoined || '').split('|').join(', ');
         }
+        fillAvailabilityRows(availabilityJson || '[]');
         document.getElementById('editModal').classList.add('open');
     }
     function closeEditModal() {
@@ -793,7 +891,27 @@
     // ── Edit from data-* attributes (safe with special chars) ─────────────────
     function openEditModalFromBtn(btn) {
         var d = btn.dataset;
-        openEditModal(d.resumeId, d.title, d.dept, d.degree, d.gpa, d.hours, d.bio, d.resumeLabels || '');
+        openEditModal(d.resumeId, d.title, d.dept, d.degree, d.gpa, d.hours, d.bio,
+            d.resumeLabels || '', d.availabilityJson || '[]');
+    }
+
+    function fillAvailabilityRows(rawJson) {
+        var slots = [];
+        try { slots = JSON.parse(rawJson || '[]') || []; } catch (e) { slots = []; }
+        for (var i = 0; i < 3; i++) {
+            var slot = slots[i] || {};
+            var day = document.getElementById('editAvailDay' + i);
+            var start = document.getElementById('editAvailStart' + i);
+            var end = document.getElementById('editAvailEnd' + i);
+            if (day) day.value = slot.dayOfWeek || '';
+            if (start) start.value = normalizeTime(slot.startTime);
+            if (end) end.value = normalizeTime(slot.endTime);
+        }
+    }
+
+    function normalizeTime(value) {
+        if (!value) return '';
+        return String(value).substring(0, 5);
     }
 
     // ── AI Review ─────────────────────────────────────────────────────────────
@@ -862,6 +980,14 @@
         f.method = 'POST';
         f.action = '${pageContext.request.contextPath}/resumes';
         f.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="resumeId" value="' + id + '">';
+        document.body.appendChild(f);
+        f.submit();
+    }
+    function duplicateResume(id) {
+        var f = document.createElement('form');
+        f.method = 'POST';
+        f.action = '${pageContext.request.contextPath}/resumes';
+        f.innerHTML = '<input type="hidden" name="action" value="duplicate"><input type="hidden" name="resumeId" value="' + id + '">';
         document.body.appendChild(f);
         f.submit();
     }

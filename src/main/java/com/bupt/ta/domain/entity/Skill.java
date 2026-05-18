@@ -8,6 +8,7 @@ public class Skill extends AbstractEntity {
     private String name;
     private SkillCategory category;
     private String description;
+    private boolean active = true;
 
     public String getName() {
         return name;
@@ -31,5 +32,13 @@ public class Skill extends AbstractEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

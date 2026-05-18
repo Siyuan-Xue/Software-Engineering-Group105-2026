@@ -4,8 +4,12 @@ import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
 import com.bupt.ta.service.JobService;
 import com.bupt.ta.util.Labels;
 import jakarta.servlet.ServletException;
@@ -23,7 +27,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @WebServlet("/vacancy/edit")
 public class VacancyEditServlet extends HttpServlet {
@@ -74,6 +86,10 @@ public class VacancyEditServlet extends HttpServlet {
             req.setAttribute("editCourseCode", job.getModuleCode() != null ? job.getModuleCode() : "");
             req.setAttribute("editDescription", job.getDescription() != null ? job.getDescription() : "");
             req.setAttribute("editHoursPerWeek", Math.max(job.getRequiredHours(), 1));
+            req.setAttribute("editSlots", Math.max(job.getSlots(), 1));
+            req.setAttribute("editType", job.getType() == null ? JobType.MODULE_SUPPORT.name() : job.getType().name());
+            req.setAttribute("editStartDate", job.getStartDate() == null ? "" : job.getStartDate().toString());
+            req.setAttribute("editEndDate", job.getEndDate() == null ? "" : job.getEndDate().toString());
             BigDecimal rate = job.getHourlyRate();
             req.setAttribute("editHourlyRate", rate != null ? rate.toPlainString() : "20.00");
             if (job.getDeadline() != null) {
@@ -85,6 +101,11 @@ public class VacancyEditServlet extends HttpServlet {
             req.setAttribute("editTerm", formatTerm(job.getStartDate()));
             req.setAttribute("editStatus", job.getStatus() != null ? job.getStatus().name() : JobStatus.OPEN.name());
             req.setAttribute("editLabels", String.join(", ", job.getLabels()));
+            req.setAttribute("skills", database.skills().findAll().stream()
+                    .sorted(Comparator.comparing(Skill::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                    .toList());
+            req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
+            req.setAttribute("jobRequirements", buildRequirementViews(job.getId()));
             req.setAttribute("termOptions", VacanciesServlet.buildTermOptions());
             String returnTo = req.getParameter("returnTo");
             req.setAttribute("editReturnTo", "list".equalsIgnoreCase(returnTo) ? "list" : "detail");
@@ -149,6 +170,14 @@ public class VacancyEditServlet extends HttpServlet {
             if (hoursPerWeek != null && !hoursPerWeek.isBlank()) {
                 job.setRequiredHours(Integer.parseInt(hoursPerWeek.trim()));
             }
+            String slots = req.getParameter("slots");
+            if (slots != null && !slots.isBlank()) {
+                job.setSlots(Math.max(1, Integer.parseInt(slots.trim())));
+            }
+            String type = req.getParameter("type");
+            if (type != null && !type.isBlank()) {
+                job.setType(JobType.valueOf(type.trim().toUpperCase()));
+            }
             String hourlyRate = req.getParameter("hourlyRate");
             if (hourlyRate != null && !hourlyRate.isBlank()) {
                 job.setHourlyRate(new BigDecimal(hourlyRate.trim()));
@@ -163,22 +192,26 @@ public class VacancyEditServlet extends HttpServlet {
             if (term != null && !term.isBlank()) {
                 applyTerm(job, term.trim());
             }
-
-            String statusRaw = req.getParameter("status");
-            if (statusRaw != null && !statusRaw.isBlank()) {
-                try {
-                    JobStatus st = JobStatus.valueOf(statusRaw.trim().toUpperCase());
-                    if (st != JobStatus.CANCELLED) {
-                        job.setStatus(st);
-                    }
-                } catch (IllegalArgumentException ignored) {
-                    // keep existing status
-                }
+            String startDate = req.getParameter("startDate");
+            if (startDate != null && !startDate.isBlank()) {
+                job.setStartDate(LocalDate.parse(startDate.trim()));
             }
+            String endDate = req.getParameter("endDate");
+            if (endDate != null && !endDate.isBlank()) {
+                job.setEndDate(LocalDate.parse(endDate.trim()));
+            }
+
+            JobStatus originalStatus = job.getStatus() == null ? JobStatus.DRAFT : job.getStatus();
+            JobStatus desiredStatus = parseStatus(req.getParameter("status"), originalStatus);
+            job.setStatus(originalStatus);
 
             job.setLabels(Labels.parseList(req.getParameter("labels"), 24));
 
             jobService.update(currentUser.getId(), job);
+            if (desiredStatus != originalStatus) {
+                jobService.changeStatus(currentUser.getId(), job.getId(), desiredStatus);
+            }
+            replaceRequirements(req, currentUser.getId(), job.getId());
 
             String ok = URLEncoder.encode(I18n.message(req, "msg.vacancyUpdated"), StandardCharsets.UTF_8);
             if ("list".equalsIgnoreCase(returnTo)) {
@@ -225,6 +258,71 @@ public class VacancyEditServlet extends HttpServlet {
         } else if ("Fall".equalsIgnoreCase(parts[0])) {
             job.setStartDate(LocalDate.of(year, 8, 1));
         }
+    }
+
+    private JobStatus parseStatus(String raw, JobStatus fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        try {
+            return JobStatus.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
+    }
+
+    private void replaceRequirements(HttpServletRequest req, UUID operatorId, UUID jobId) {
+        String[] skillIds = req.getParameterValues("skillId");
+        String[] requiredValues = req.getParameterValues("requiredSkill");
+        String[] proficiencies = req.getParameterValues("minProficiency");
+        Set<String> requiredIndexes = requiredValues == null ? Set.of() : Set.of(requiredValues);
+        List<JobRequirement> requirements = new ArrayList<>();
+        Set<UUID> seenSkillIds = new HashSet<>();
+        if (skillIds != null) {
+            for (int i = 0; i < skillIds.length; i++) {
+                if (skillIds[i] == null || skillIds[i].isBlank()) {
+                    continue;
+                }
+                UUID skillId = UUID.fromString(skillIds[i].trim());
+                Skill skill = database.skills().findById(skillId)
+                        .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillId));
+                if (!skill.isActive()) {
+                    throw new IllegalArgumentException("Inactive skill cannot be required: " + skill.getName());
+                }
+                if (!seenSkillIds.add(skillId)) {
+                    continue;
+                }
+                JobRequirement requirement = new JobRequirement();
+                requirement.setSkillId(skillId);
+                requirement.setRequired(requiredIndexes.contains(String.valueOf(i)));
+                requirement.setMinProficiency(parseProficiency(proficiencies, i));
+                requirements.add(requirement);
+            }
+        }
+        jobService.replaceRequirements(operatorId, jobId, requirements);
+    }
+
+    private ProficiencyLevel parseProficiency(String[] values, int index) {
+        if (values == null || index >= values.length || values[index] == null || values[index].isBlank()) {
+            return ProficiencyLevel.BEGINNER;
+        }
+        return ProficiencyLevel.valueOf(values[index].trim());
+    }
+
+    private List<Map<String, Object>> buildRequirementViews(UUID jobId) {
+        Map<UUID, Skill> skillsById = database.skills().findAll().stream()
+                .collect(Collectors.toMap(Skill::getId, skill -> skill));
+        return database.jobRequirements().listByJobId(jobId).stream()
+                .map(requirement -> {
+                    Skill skill = skillsById.get(requirement.getSkillId());
+                    return Map.<String, Object>of(
+                            "skillId", requirement.getSkillId(),
+                            "name", skill == null ? "Unknown skill" : skill.getName(),
+                            "required", requirement.isRequired(),
+                            "minProficiency", requirement.getMinProficiency() == null ? ProficiencyLevel.BEGINNER : requirement.getMinProficiency()
+                    );
+                })
+                .toList();
     }
 
     private void redirectError(HttpServletRequest req, HttpServletResponse resp, String vacancyId, String message,

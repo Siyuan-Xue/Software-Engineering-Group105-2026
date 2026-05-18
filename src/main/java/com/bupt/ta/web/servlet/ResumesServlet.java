@@ -6,8 +6,12 @@ import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Job;
 import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.value.AvailabilitySlot;
 import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
@@ -33,9 +37,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -85,6 +96,13 @@ public class ResumesServlet extends HttpServlet {
         try {
             List<Resume> resumes = resumeService.listByUserId(user.getId());
             req.setAttribute("resumes", resumes);
+            req.setAttribute("skills", database.skills().findAll().stream()
+                    .sorted(Comparator.comparing(Skill::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                    .toList());
+            req.setAttribute("proficiencyLevels", ProficiencyLevel.values());
+            req.setAttribute("resumeSkillViewsByResumeId", buildResumeSkillViews(resumes));
+            req.setAttribute("availabilityJsonByResumeId", buildAvailabilityJsonViews(resumes));
+            req.setAttribute("daysOfWeek", DayOfWeek.values());
             if ("uploadSuccess".equals(queryPageState)) {
                 req.setAttribute("pageState", "uploadSuccess");
             } else if ("uploadFailure".equals(queryPageState)) {
@@ -142,6 +160,8 @@ public class ResumesServlet extends HttpServlet {
             switch (action != null ? action : "") {
                 case "save"   -> handleManualSave(req, user);
                 case "rename" -> handleRename(req, user);
+                case "duplicate" -> handleDuplicate(req, user);
+                case "skills" -> handleSkillsSave(req, user);
                 case "delete" -> handleDelete(req, user);
                 default -> throw new IllegalArgumentException(I18n.message(req, "msg.resumeUnknownActionPrefix") + action);
             }
@@ -196,7 +216,7 @@ public class ResumesServlet extends HttpServlet {
 
             Resume resume = new Resume();
             resume.setUserId(user.getId());
-            resume.setTitle(I18n.message(req, "msg.resumeUntitled"));   // user renames in the modal after upload
+            resume.setTitle(uniqueResumeTitle(user.getId(), I18n.message(req, "msg.resumeUntitled"), null));
             resume.setDepartment(user.getDepartment() != null ? user.getDepartment() : "");
             resume.setDegreeLevel(DegreeLevel.BACHELOR);
             resume.setGpa(new BigDecimal("0.00"));
@@ -338,34 +358,187 @@ public class ResumesServlet extends HttpServlet {
         }
         String gpaStr = req.getParameter("gpa");
         if (gpaStr != null && !gpaStr.isBlank()) {
-            resume.setGpa(new BigDecimal(gpaStr));
+            BigDecimal gpa = new BigDecimal(gpaStr);
+            if (gpa.compareTo(BigDecimal.ZERO) < 0 || gpa.compareTo(new BigDecimal("4.00")) > 0) {
+                throw new IllegalArgumentException("GPA must be between 0 and 4.");
+            }
+            resume.setGpa(gpa);
         }
         String hoursStr = req.getParameter("maxWeeklyHours");
         if (hoursStr != null && !hoursStr.isBlank()) {
             resume.setMaxWeeklyHours(Integer.parseInt(hoursStr));
         }
         resume.setBio(req.getParameter("bio"));
+        resume.setAvailabilitySlots(parseAvailabilitySlots(req));
         resume.setLabels(Labels.parseList(req.getParameter("resumeLabels"), 24));
         resumeService.save(resume);
     }
 
+    private void handleDuplicate(HttpServletRequest req, User user) {
+        UUID id = UUID.fromString(req.getParameter("resumeId"));
+        Resume original = ensureOwnedResume(user, id);
+        Resume copy = resumeService.duplicate(original.getId());
+        for (ResumeSkill originalSkill : database.resumeSkills().listByResumeId(original.getId())) {
+            ResumeSkill copiedSkill = new ResumeSkill();
+            copiedSkill.setResumeId(copy.getId());
+            copiedSkill.setSkillId(originalSkill.getSkillId());
+            copiedSkill.setProficiency(originalSkill.getProficiency());
+            copiedSkill.setYearsExp(originalSkill.getYearsExp());
+            database.resumeSkills().save(copiedSkill);
+        }
+    }
+
+    private void handleSkillsSave(HttpServletRequest req, User user) {
+        UUID resumeId = UUID.fromString(req.getParameter("resumeId"));
+        ensureOwnedResume(user, resumeId);
+        String[] skillIds = req.getParameterValues("skillId");
+        String[] proficiencies = req.getParameterValues("proficiency");
+        String[] years = req.getParameterValues("yearsExp");
+        List<ResumeSkill> selected = new ArrayList<>();
+        Set<UUID> seenSkillIds = new HashSet<>();
+        if (skillIds != null) {
+            for (int i = 0; i < skillIds.length; i++) {
+                String rawSkillId = skillIds[i];
+                if (rawSkillId == null || rawSkillId.isBlank()) {
+                    continue;
+                }
+                UUID skillId = UUID.fromString(rawSkillId.trim());
+                Skill skill = database.skills().findById(skillId)
+                        .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillId));
+                if (!skill.isActive()) {
+                    throw new IllegalArgumentException("Inactive skill cannot be assigned: " + skill.getName());
+                }
+                if (!seenSkillIds.add(skillId)) {
+                    continue;
+                }
+                ResumeSkill resumeSkill = new ResumeSkill();
+                resumeSkill.setSkillId(skillId);
+                resumeSkill.setProficiency(parseProficiency(proficiencies, i));
+                resumeSkill.setYearsExp(parseYears(years, i));
+                selected.add(resumeSkill);
+            }
+        }
+        resumeService.replaceSkills(user.getId(), resumeId, selected);
+    }
+
     private void handleDelete(HttpServletRequest req, User user) throws Exception {
         UUID id = UUID.fromString(req.getParameter("resumeId"));
-        // Optionally: delete the uploaded file too
-        List<Resume> resumes = resumeService.listByUserId(user.getId());
-        resumes.stream()
-               .filter(r -> r.getId().equals(id))
-               .findFirst()
-               .ifPresent(r -> {
-                   if (r.getUploadedFilePath() != null) {
-                       try { Files.deleteIfExists(Path.of(r.getUploadedFilePath())); }
-                       catch (IOException ignored) { /* best-effort */ }
-                   }
-               });
-        resumeService.delete(id);
+        Resume owned = ensureOwnedResume(user, id);
+        if (owned.getUploadedFilePath() != null) {
+            try { Files.deleteIfExists(Path.of(owned.getUploadedFilePath())); }
+            catch (IOException ignored) { /* best-effort */ }
+        }
+        resumeService.delete(user.getId(), id);
     }
 
     // ── helpers ────────────────────────────────────────────────────────────
+
+    private Map<UUID, List<Map<String, Object>>> buildResumeSkillViews(List<Resume> resumes) {
+        Map<UUID, Skill> skillsById = database.skills().findAll().stream()
+                .collect(Collectors.toMap(Skill::getId, skill -> skill));
+        return resumes.stream().collect(Collectors.toMap(
+                Resume::getId,
+                resume -> database.resumeSkills().listByResumeId(resume.getId()).stream()
+                        .map(resumeSkill -> {
+                            Skill skill = skillsById.get(resumeSkill.getSkillId());
+                            return Map.<String, Object>of(
+                                    "skillId", resumeSkill.getSkillId(),
+                                    "name", skill == null ? "Unknown skill" : skill.getName(),
+                                    "category", skill == null || skill.getCategory() == null ? "" : skill.getCategory().name(),
+                                    "proficiency", resumeSkill.getProficiency() == null ? ProficiencyLevel.BEGINNER : resumeSkill.getProficiency(),
+                                    "yearsExp", resumeSkill.getYearsExp()
+                            );
+                        })
+                        .toList()
+        ));
+    }
+
+    private Map<UUID, String> buildAvailabilityJsonViews(List<Resume> resumes) {
+        return resumes.stream().collect(Collectors.toMap(
+                Resume::getId,
+                resume -> {
+                    try {
+                        return objectMapper.writeValueAsString(resume.getAvailabilitySlots());
+                    } catch (Exception ex) {
+                        return "[]";
+                    }
+                }
+        ));
+    }
+
+    private Resume ensureOwnedResume(User user, UUID resumeId) {
+        return resumeService.listByUserId(user.getId()).stream()
+                .filter(resume -> resume.getId().equals(resumeId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Resume not found."));
+    }
+
+    private ProficiencyLevel parseProficiency(String[] values, int index) {
+        if (values == null || index >= values.length || values[index] == null || values[index].isBlank()) {
+            return ProficiencyLevel.BEGINNER;
+        }
+        return ProficiencyLevel.valueOf(values[index].trim());
+    }
+
+    private int parseYears(String[] values, int index) {
+        if (values == null || index >= values.length || values[index] == null || values[index].isBlank()) {
+            return 0;
+        }
+        return Math.max(0, Integer.parseInt(values[index].trim()));
+    }
+
+    private List<AvailabilitySlot> parseAvailabilitySlots(HttpServletRequest req) {
+        String[] days = req.getParameterValues("availabilityDay");
+        String[] starts = req.getParameterValues("availabilityStart");
+        String[] ends = req.getParameterValues("availabilityEnd");
+        List<AvailabilitySlot> slots = new ArrayList<>();
+        if (days == null) {
+            return slots;
+        }
+        for (int i = 0; i < days.length; i++) {
+            String day = valueAt(days, i);
+            String start = valueAt(starts, i);
+            String end = valueAt(ends, i);
+            if (day == null && start == null && end == null) {
+                continue;
+            }
+            if (day == null || start == null || end == null) {
+                throw new IllegalArgumentException("Availability slots require day, start time, and end time.");
+            }
+            AvailabilitySlot slot = new AvailabilitySlot();
+            slot.setDayOfWeek(DayOfWeek.valueOf(day));
+            slot.setStartTime(LocalTime.parse(start));
+            slot.setEndTime(LocalTime.parse(end));
+            if (!slot.getEndTime().isAfter(slot.getStartTime())) {
+                throw new IllegalArgumentException("Availability end time must be after start time.");
+            }
+            slots.add(slot);
+        }
+        return slots;
+    }
+
+    private String uniqueResumeTitle(UUID userId, String baseTitle, UUID excludingId) {
+        String base = baseTitle == null || baseTitle.isBlank() ? "Untitled" : baseTitle.trim();
+        String candidate = base;
+        int suffix = 2;
+        while (titleExists(userId, candidate, excludingId)) {
+            candidate = base + " " + suffix++;
+        }
+        return candidate;
+    }
+
+    private boolean titleExists(UUID userId, String title, UUID excludingId) {
+        return resumeService.listByUserId(userId).stream()
+                .filter(resume -> excludingId == null || !excludingId.equals(resume.getId()))
+                .anyMatch(resume -> title.equalsIgnoreCase(resume.getTitle()));
+    }
+
+    private static String valueAt(String[] values, int index) {
+        if (values == null || index >= values.length || values[index] == null || values[index].isBlank()) {
+            return null;
+        }
+        return values[index].trim();
+    }
 
     private User currentUser(HttpServletRequest req) {
         HttpSession s = req.getSession(false);

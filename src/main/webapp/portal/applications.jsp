@@ -306,6 +306,10 @@
                                                                         <a href="${pageContext.request.contextPath}/vacancies" class="text-sm font-bold text-slate-600 hover:text-primary hover:underline">${language == 'zh' ? '浏览岗位' : 'Browse vacancies'}</a>
                                                                     </c:otherwise>
                                                                 </c:choose>
+                                                                <c:if test="${userRole == 'TA'}">
+                                                                    <a href="${pageContext.request.contextPath}/application/detail?applicationId=${app.applicationId}"
+                                                                       class="text-xs font-bold text-primary hover:underline">${language == 'zh' ? '查看反馈' : 'View feedback'}</a>
+                                                                </c:if>
                                                                 <c:if test="${userRole == 'MO' && app.status != 'Withdrawn' && app.status != 'Accepted' && app.status != 'Rejected' && app.status != 'Declined'}">
                                                                     <c:if test="${app.status == 'Submitted'}">
                                                                         <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline">
@@ -315,10 +319,10 @@
                                                                         </form>
                                                                     </c:if>
                                                                     <c:if test="${app.status == 'Submitted' || app.status == 'Under Review'}">
-                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定直接录用该申请人？' : 'Accept this applicant?'}');">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '向该申请人发送 offer？TA 接受后才会生成工作量。' : 'Send an offer? Workload is created only after the TA accepts.'}');">
                                                                             <input type="hidden" name="applicationId" value="${app.applicationId}"/>
-                                                                            <input type="hidden" name="action" value="mo_accept"/>
-                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '录用' : 'Accept'}</button>
+                                                                            <input type="hidden" name="action" value="offer"/>
+                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '发 offer' : 'Send offer'}</button>
                                                                         </form>
                                                                     </c:if>
                                                                     <c:if test="${app.status != 'Offer Pending'}">

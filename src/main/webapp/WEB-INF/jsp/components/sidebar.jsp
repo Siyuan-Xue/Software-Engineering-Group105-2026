@@ -10,6 +10,8 @@
 <c:set var="messagesActive" value="${fn:contains(currentPath, 'messages')}" />
 <c:set var="settingsActive" value="${fn:contains(currentPath, 'settings')}" />
 <c:set var="skillsActive" value="${fn:contains(currentPath, 'admin/skills')}" />
+<c:set var="adminUsersActive" value="${fn:contains(currentPath, 'admin/users')}" />
+<c:set var="auditActive" value="${fn:contains(currentPath, 'admin/audit')}" />
 <c:set var="profileCompletion" value="${empty profileCompletionPercentage ? 0 : profileCompletionPercentage}" />
 <aside class="hidden w-64 shrink-0 flex-col border-r border-slate-100 bg-white p-4 lg:flex">
     <nav class="flex flex-col gap-1">
@@ -44,9 +46,17 @@
                 <span class="material-symbols-outlined text-[20px]">group</span>
                 <span class="text-sm font-semibold">${i18n['common.workloads']}</span>
             </a>
+            <a href="${contextPath}/admin/users" style="${adminUsersActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${adminUsersActive ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                <span class="text-sm font-semibold">${language == 'zh' ? '用户管理' : 'Users'}</span>
+            </a>
             <a href="${contextPath}/admin/skills" style="${skillsActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${skillsActive ? 'shadow-sm' : ''}">
                 <span class="material-symbols-outlined text-[20px]">psychology</span>
                 <span class="text-sm font-semibold">${i18n['common.skills']}</span>
+            </a>
+            <a href="${contextPath}/admin/audit" style="${auditActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${auditActive ? 'shadow-sm' : ''}">
+                <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                <span class="text-sm font-semibold">${language == 'zh' ? '审计日志' : 'Audit Logs'}</span>
             </a>
         </c:if>
 

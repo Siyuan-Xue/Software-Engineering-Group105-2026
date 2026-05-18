@@ -3,6 +3,7 @@ package com.bupt.ta.web.servlet;
 import com.bupt.ta.db.core.ConstraintViolationException;
 import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.service.TaAccountService;
 
@@ -43,9 +44,10 @@ public class RegisterServlet extends HttpServlet {
         String phone = req.getParameter("phone");
         String department = req.getParameter("department");
         String studentId = req.getParameter("studentId");
+        UserRole role = parseSelfRegistrationRole(req.getParameter("role"));
 
         try {
-            accountService.registerTa(email, password, confirmPassword, fullName, phone, department, studentId);
+            accountService.registerUser(email, password, confirmPassword, fullName, phone, department, studentId, role);
             String ok = URLEncoder.encode(I18n.message(language, "auth.registerSuccess"), StandardCharsets.UTF_8);
             resp.sendRedirect(req.getContextPath() + "/login?successMessage=" + ok);
         } catch (ConstraintViolationException e) {
@@ -55,7 +57,20 @@ public class RegisterServlet extends HttpServlet {
             req.setAttribute("phone", phone != null ? phone : "");
             req.setAttribute("department", department != null ? department : "");
             req.setAttribute("studentId", studentId != null ? studentId : "");
+            req.setAttribute("role", role.name());
             req.getRequestDispatcher("/register.jsp").forward(req, resp);
+        }
+    }
+
+    private static UserRole parseSelfRegistrationRole(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return UserRole.TA;
+        }
+        try {
+            UserRole role = UserRole.valueOf(raw.trim().toUpperCase());
+            return role == UserRole.MO ? UserRole.MO : UserRole.TA;
+        } catch (IllegalArgumentException ex) {
+            return UserRole.TA;
         }
     }
 

@@ -9,6 +9,7 @@ import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.service.MatchingService;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
 import com.bupt.ta.util.ResumeFilePaths;
@@ -38,11 +39,13 @@ public class VacancyDetailServlet extends HttpServlet {
 
     private TaDatabase database;
     private ResumeService resumeService;
+    private MatchingService matchingService;
 
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.resumeService = new ResumeService(database);
+        this.matchingService = new MatchingService(database);
     }
 
     @Override
@@ -76,7 +79,8 @@ public class VacancyDetailServlet extends HttpServlet {
                             resume.getId().toString(),
                             safe(resume.getTitle(), "Untitled Resume"),
                             safe(resume.getOriginalFileName(), ""),
-                            ResumeFilePaths.isAvailable(resume)
+                            ResumeFilePaths.isAvailable(resume),
+                            job == null ? null : matchingService.computeCoverage(resume.getId(), job.getId())
                     ))
                     .toList();
 
@@ -323,12 +327,15 @@ public class VacancyDetailServlet extends HttpServlet {
         private final String resumeName;
         private final String originalFileName;
         private final boolean fileAvailable;
+        private final MatchingService.SkillCoverageView skillCoverage;
 
-        public ResumeSelectionView(String resumeId, String resumeName, String originalFileName, boolean fileAvailable) {
+        public ResumeSelectionView(String resumeId, String resumeName, String originalFileName, boolean fileAvailable,
+                                   MatchingService.SkillCoverageView skillCoverage) {
             this.resumeId = resumeId;
             this.resumeName = resumeName;
             this.originalFileName = originalFileName;
             this.fileAvailable = fileAvailable;
+            this.skillCoverage = skillCoverage;
         }
 
         public String getResumeId() {
@@ -345,6 +352,10 @@ public class VacancyDetailServlet extends HttpServlet {
 
         public boolean isFileAvailable() {
             return fileAvailable;
+        }
+
+        public MatchingService.SkillCoverageView getSkillCoverage() {
+            return skillCoverage;
         }
     }
 }

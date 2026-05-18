@@ -95,7 +95,106 @@
                             </section>
                         </c:if>
 
-                        <c:if test="${applicationStatus != 'Withdrawn' && applicationStatus != 'Accepted' && applicationStatus != 'Rejected' && applicationStatus != 'Declined'}">
+                        <c:if test="${canTaRespond}">
+                            <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="text-sm font-black text-amber-950">${language == 'zh' ? '你收到了录用 offer' : 'You received an offer'}</h3>
+                                        <p class="mt-1 text-sm text-amber-900">${language == 'zh' ? '接受后系统会生成你的工作量记录；拒绝则不会生成工作量。' : 'Accepting creates your workload record; declining leaves workload unchanged.'}</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST">
+                                            <input type="hidden" name="applicationId" value="${applicationId}"/>
+                                            <input type="hidden" name="action" value="accept"/>
+                                            <input type="hidden" name="returnTo" value="detail"/>
+                                            <button type="submit" class="portal-btn portal-btn-primary text-sm">${language == 'zh' ? '接受 offer' : 'Accept offer'}</button>
+                                        </form>
+                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirm('${language == 'zh' ? '确定拒绝该录用？' : 'Decline this offer?'}');">
+                                            <input type="hidden" name="applicationId" value="${applicationId}"/>
+                                            <input type="hidden" name="action" value="decline"/>
+                                            <input type="hidden" name="returnTo" value="detail"/>
+                                            <button type="submit" class="portal-btn portal-btn-secondary text-sm text-red-700">${language == 'zh' ? '拒绝' : 'Decline'}</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </section>
+                        </c:if>
+
+                        <section class="border-t border-slate-100 pt-6">
+                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '匹配分析' : 'Match analysis'}</h3>
+                                    <p class="mt-1 text-xs text-slate-500">${language == 'zh' ? '显示规则分、AI/fallback 分和最终分；仅作为辅助参考。' : 'Shows rule score, AI/fallback score, and final score; guidance only.'}</p>
+                                </div>
+                                <c:if test="${canMoManage}">
+                                    <form action="${pageContext.request.contextPath}/match-analysis" method="POST">
+                                        <input type="hidden" name="applicationId" value="${applicationId}"/>
+                                        <button type="submit" class="portal-btn portal-btn-secondary text-sm">
+                                            <span class="material-symbols-outlined text-sm">analytics</span>
+                                            ${language == 'zh' ? '刷新分析' : 'Refresh analysis'}
+                                        </button>
+                                    </form>
+                                </c:if>
+                            </div>
+                            <c:if test="${not empty skillCoverage}">
+                                <div class="mb-4 rounded-xl border ${skillCoverage.lowCoverageWarning ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-100 bg-emerald-50 text-emerald-900'} p-4 text-sm">
+                                    <div class="font-bold">
+                                        ${language == 'zh' ? '规则技能覆盖' : 'Rule-based skill coverage'}:
+                                        <c:out value="${skillCoverage.requiredMatched}"/>/<c:out value="${skillCoverage.requiredTotal}"/>
+                                        ${language == 'zh' ? '必需' : 'required'}
+                                        (<c:out value="${skillCoverage.requiredCoveragePct}"/>%),
+                                        <c:out value="${skillCoverage.overallCoveragePct}"/>% ${language == 'zh' ? '总体' : 'overall'}.
+                                    </div>
+                                    <c:if test="${not empty skillCoverage.missingRequiredSkills}">
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            <c:forEach items="${skillCoverage.missingRequiredSkills}" var="missingSkill">
+                                                <span class="rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-red-700"><c:out value="${missingSkill}"/></span>
+                                            </c:forEach>
+                                        </div>
+                                    </c:if>
+                                </div>
+                            </c:if>
+                            <c:choose>
+                                <c:when test="${not empty matchScore}">
+                                    <div class="grid gap-3 sm:grid-cols-3">
+                                        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${language == 'zh' ? '规则分' : 'Rule score'}</p>
+                                            <p class="mt-1 text-2xl font-black text-slate-900"><c:out value="${matchScore.ruleScore}"/></p>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${language == 'zh' ? 'AI/Fallback 分' : 'AI/Fallback score'}</p>
+                                            <p class="mt-1 text-2xl font-black text-slate-900"><c:out value="${matchScore.aiScore}"/></p>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${language == 'zh' ? '最终分' : 'Final score'}</p>
+                                            <p class="mt-1 text-2xl font-black ${matchScore.aiRecommend ? 'text-green-700' : 'text-amber-700'}"><c:out value="${matchScore.finalScore}"/></p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                        <div class="text-sm text-slate-600">${language == 'zh' ? '技能覆盖' : 'Skill coverage'}: <strong><c:out value="${matchScore.skillCoveragePct}"/>%</strong></div>
+                                        <div class="text-sm text-slate-600">${language == 'zh' ? '缺失必需技能' : 'Missing required'}: <strong><c:out value="${matchScore.missingRequiredCount}"/></strong></div>
+                                        <div class="text-sm text-slate-600">${language == 'zh' ? '剩余工时' : 'Remaining hours'}: <strong><c:out value="${matchScore.workloadRemainingHours}"/></strong></div>
+                                    </div>
+                                    <p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><c:out value="${matchScore.aiExplanation}"/></p>
+                                    <c:if test="${not empty matchScore.missingSkillSuggestions}">
+                                        <div class="mt-4">
+                                            <p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '技能缺口' : 'Skill gaps'}</p>
+                                            <div class="flex flex-wrap gap-2">
+                                                <c:forEach items="${matchScore.missingSkillSuggestions}" var="missingSkill">
+                                                    <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700"><c:out value="${missingSkill}"/></span>
+                                                </c:forEach>
+                                            </div>
+                                        </div>
+                                    </c:if>
+                                    <p class="mt-3 text-xs text-slate-400">${language == 'zh' ? '更新时间' : 'Updated'}: <c:out value="${matchComputedAt}"/></p>
+                                </c:when>
+                                <c:otherwise>
+                                    <p class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-500">${language == 'zh' ? '尚未生成匹配分析。点击“刷新分析”后，结果会持久化到 match_scores.json。' : 'No persisted match analysis yet. Click “Refresh analysis” to save results to match_scores.json.'}</p>
+                                </c:otherwise>
+                            </c:choose>
+                        </section>
+
+                        <c:if test="${canMoManage && applicationStatus != 'Withdrawn' && applicationStatus != 'Accepted' && applicationStatus != 'Rejected' && applicationStatus != 'Declined'}">
                             <section class="border-t border-slate-100 pt-6">
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">${language == 'zh' ? '处理申请' : 'Manage application'}</h3>
                                 <div class="flex flex-wrap gap-3">
@@ -108,11 +207,11 @@
                                         </form>
                                     </c:if>
                                     <c:if test="${applicationStatus == 'Submitted' || applicationStatus == 'Under Review'}">
-                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirm('${language == 'zh' ? '确定直接录用该申请人？' : 'Accept this applicant?'}');">
+                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirm('${language == 'zh' ? '向该申请人发送 offer？TA 接受后才会生成工作量。' : 'Send an offer? Workload is created only after the TA accepts.'}');">
                                             <input type="hidden" name="applicationId" value="${applicationId}"/>
-                                            <input type="hidden" name="action" value="mo_accept"/>
+                                            <input type="hidden" name="action" value="offer"/>
                                             <input type="hidden" name="returnTo" value="detail"/>
-                                            <button type="submit" class="portal-btn portal-btn-primary text-sm">${language == 'zh' ? '录用' : 'Accept'}</button>
+                                            <button type="submit" class="portal-btn portal-btn-primary text-sm">${language == 'zh' ? '发 offer' : 'Send offer'}</button>
                                         </form>
                                     </c:if>
                                     <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirmReject(this, '${language == 'zh' ? 'zh' : 'en'}');">

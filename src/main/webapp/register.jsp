@@ -56,6 +56,15 @@
                        placeholder="${i18n['common.fullName']}" autocomplete="name" required />
             </div>
             <div>
+                <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${language == 'zh' ? '账号角色' : 'Account Role'}</label>
+                <select name="role"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all">
+                    <option value="TA" ${role == 'TA' || empty role ? 'selected' : ''}>${language == 'zh' ? 'TA / 学生申请者' : 'TA / Student applicant'}</option>
+                    <option value="MO" ${role == 'MO' ? 'selected' : ''}>${language == 'zh' ? 'MO / 课程负责人' : 'MO / Module organiser'}</option>
+                </select>
+                <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '管理员账号请由 Admin 在系统内创建。' : 'Admin accounts are created by an existing admin inside the system.'}</p>
+            </div>
+            <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${i18n['login.emailLabel']}</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">mail</span>

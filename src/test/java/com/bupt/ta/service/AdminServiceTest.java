@@ -8,11 +8,13 @@ import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.Job;
 import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.entity.WorkloadRecord;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.domain.enums.UserRole;
+import com.bupt.ta.domain.enums.WorkloadStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -43,7 +45,16 @@ class AdminServiceTest {
         application.setResumeId(resume.getId());
         application.setJobId(job.getId());
         application.setStatus(ApplicationStatus.ACCEPTED);
-        db.applications().save(application);
+        application = db.applications().save(application);
+
+        WorkloadRecord record = new WorkloadRecord();
+        record.setApplicationId(application.getId());
+        record.setTaId(ta.getId());
+        record.setJobId(job.getId());
+        record.setSemester("Spring 2026");
+        record.setAssignedHours(10);
+        record.setStatus(WorkloadStatus.ACTIVE);
+        db.workloadRecords().save(record);
 
         List<Map<String, Object>> all = service.calculateTAWorkloads();
 

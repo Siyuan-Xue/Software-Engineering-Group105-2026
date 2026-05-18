@@ -1,7 +1,10 @@
 package com.bupt.ta.web.filter;
 
 import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.value.NotificationQuery;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -115,6 +118,7 @@ public class AuthFilter implements Filter {
         // 4.2 动态计算并注入 sidebar 需要的 profileCompletionPercentage
         int completion = calculateProfileCompletion(currentUser);
         req.setAttribute("profileCompletionPercentage", completion);
+        req.setAttribute("unreadNotificationCount", unreadNotificationCount(req, currentUser));
 
         // 5. 放行请求，继续走到对应的 Servlet
         chain.doFilter(request, response);
@@ -183,5 +187,19 @@ public class AuthFilter implements Filter {
         req.setAttribute("userRole", "DEMO");
         req.setAttribute("profileCompletionPercentage", 100);
         req.setAttribute("userRoleLabel", "Public Demo");
+    }
+
+    private int unreadNotificationCount(HttpServletRequest req, User currentUser) {
+        try {
+            TaDatabase database = DatabaseProvider.get(req.getServletContext());
+            NotificationQuery query = new NotificationQuery();
+            query.setUserId(currentUser.getId());
+            query.setUnreadOnly(true);
+            query.setLimit(1000);
+            return database.notifications().listByUser(query).size();
+        } catch (RuntimeException ex) {
+            req.getServletContext().log("Unable to load unread notification count", ex);
+            return 0;
+        }
     }
 }

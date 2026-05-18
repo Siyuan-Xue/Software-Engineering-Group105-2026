@@ -81,6 +81,26 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '岗位类型' : 'Type'}</label>
+                                <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                    <option value="MODULE_SUPPORT" ${editType == 'MODULE_SUPPORT' ? 'selected' : ''}>${language == 'zh' ? '课程支持' : 'Module support'}</option>
+                                    <option value="INVIGILATION" ${editType == 'INVIGILATION' ? 'selected' : ''}>${language == 'zh' ? '监考' : 'Invigilation'}</option>
+                                    <option value="OTHER" ${editType == 'OTHER' ? 'selected' : ''}>${language == 'zh' ? '其他' : 'Other'}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '名额' : 'Slots'}</label>
+                                <input type="number" name="slots" min="1" value="${editSlots}"
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '开始日期' : 'Start Date'}</label>
+                                <input type="date" name="startDate" value="${fn:escapeXml(editStartDate)}"
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"/>
+                            </div>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
                             <textarea name="description" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"><c:out value="${editDescription}"/></textarea>
@@ -108,6 +128,65 @@
                                 <input type="datetime-local" name="deadline" required value="${fn:escapeXml(editDeadline)}"
                                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"/>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '结束日期' : 'End Date'}</label>
+                                <input type="date" name="endDate" value="${fn:escapeXml(editEndDate)}"
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"/>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-800">${language == 'zh' ? '技能要求' : 'Skill Requirements'}</label>
+                                    <p class="mt-1 text-xs text-slate-500">${language == 'zh' ? '用于申请详情中的覆盖率、缺口和持久化匹配分析。' : 'Used for coverage, skill gaps, and persisted match analysis in applicant details.'}</p>
+                                </div>
+                                <span class="material-symbols-outlined text-slate-400">psychology</span>
+                            </div>
+                            <div class="space-y-3">
+                                <c:forEach items="${jobRequirements}" var="jr" varStatus="jrs">
+                                    <div class="grid grid-cols-1 gap-2 md:grid-cols-[1.2fr_1fr_0.6fr]">
+                                        <select name="skillId" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                            <option value="">${language == 'zh' ? '选择技能' : 'Select skill'}</option>
+                                            <c:forEach items="${skills}" var="skill">
+                                                <c:if test="${skill.active or skill.id == jr.skillId}">
+                                                    <option value="${skill.id}" ${skill.id == jr.skillId ? 'selected' : ''}><c:out value="${skill.name}"/></option>
+                                                </c:if>
+                                            </c:forEach>
+                                        </select>
+                                        <select name="minProficiency" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                            <c:forEach items="${proficiencyLevels}" var="level">
+                                                <option value="${level}" ${jr.minProficiency == level ? 'selected' : ''}><c:out value="${level}"/></option>
+                                            </c:forEach>
+                                        </select>
+                                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
+                                            <input type="checkbox" name="requiredSkill" value="${jrs.index}" ${jr.required ? 'checked' : ''} />
+                                            ${language == 'zh' ? '必需' : 'Required'}
+                                        </label>
+                                    </div>
+                                </c:forEach>
+                                <c:set var="baseRequirementIndex" value="${fn:length(jobRequirements)}" />
+                                <c:forEach begin="0" end="2" var="extra">
+                                    <div class="grid grid-cols-1 gap-2 md:grid-cols-[1.2fr_1fr_0.6fr]">
+                                        <select name="skillId" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                            <option value="">${language == 'zh' ? '添加技能要求' : 'Add requirement'}</option>
+                                            <c:forEach items="${skills}" var="skill">
+                                                <c:if test="${skill.active}">
+                                                    <option value="${skill.id}"><c:out value="${skill.name}"/></option>
+                                                </c:if>
+                                            </c:forEach>
+                                        </select>
+                                        <select name="minProficiency" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
+                                            <c:forEach items="${proficiencyLevels}" var="level">
+                                                <option value="${level}"><c:out value="${level}"/></option>
+                                            </c:forEach>
+                                        </select>
+                                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
+                                            <input type="checkbox" name="requiredSkill" value="${baseRequirementIndex + extra}" />
+                                            ${language == 'zh' ? '必需' : 'Required'}
+                                        </label>
+                                    </div>
+                                </c:forEach>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '状态' : 'Status'}</label>
@@ -115,6 +194,7 @@
                                 <option value="OPEN" ${editStatus == 'OPEN' ? 'selected' : ''}>${language == 'zh' ? '开放申请' : 'Open'}</option>
                                 <option value="CLOSED" ${editStatus == 'CLOSED' ? 'selected' : ''}>${language == 'zh' ? '已关闭' : 'Closed'}</option>
                                 <option value="DRAFT" ${editStatus == 'DRAFT' ? 'selected' : ''}>${language == 'zh' ? '草稿' : 'Draft'}</option>
+                                <option value="CANCELLED" ${editStatus == 'CANCELLED' ? 'selected' : ''}>${language == 'zh' ? '已取消' : 'Cancelled'}</option>
                             </select>
                         </div>
                         <div>

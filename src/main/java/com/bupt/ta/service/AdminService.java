@@ -3,8 +3,10 @@ package com.bupt.ta.service;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.*;
 import com.bupt.ta.domain.enums.ApplicationStatus;
+import com.bupt.ta.domain.enums.WorkloadStatus;
 import com.bupt.ta.domain.value.AuditLogQuery;
 import com.bupt.ta.domain.value.WorkloadAggregate;
+import java.math.RoundingMode;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.Locale;
@@ -19,16 +21,34 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> calculateTAWorkloads() {
-        return calculateTAWorkloads(null, null);
+        return calculateTAWorkloads(null, null, null);
     }
 
     public List<Map<String, Object>> calculateTAWorkloads(String keyword, String departmentFilter) {
-        return filterTAWorkloads(buildTAWorkloads(), keyword, departmentFilter);
+        return calculateTAWorkloads(null, keyword, departmentFilter);
+    }
+
+    public List<Map<String, Object>> calculateTAWorkloads(String semester, String keyword, String departmentFilter) {
+        return filterTAWorkloads(buildTAWorkloads(semester), keyword, departmentFilter);
     }
 
     public List<String> listWorkloadDepartmentOptions() {
-        return buildTAWorkloads().stream()
+        return listWorkloadDepartmentOptions(null);
+    }
+
+    public List<String> listWorkloadDepartmentOptions(String semester) {
+        return buildTAWorkloads(semester).stream()
                 .flatMap(this::departmentsForWorkload)
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    public List<String> listWorkloadSemesterOptions() {
+        return db.workloadRecords().findAll().stream()
+                .filter(record -> record.getStatus() == WorkloadStatus.ACTIVE)
+                .map(WorkloadRecord::getSemester)
                 .filter(value -> value != null && !value.isBlank())
                 .distinct()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
@@ -44,27 +64,23 @@ public class AdminService {
                 .toList();
     }
 
-    private List<Map<String, Object>> buildTAWorkloads() {
-        List<Application> allApplications = db.applications().findAll();
-        List<Application> acceptedApps = allApplications.stream()
-                .filter(app -> app.getStatus() == ApplicationStatus.ACCEPTED)
+    private List<Map<String, Object>> buildTAWorkloads(String semesterFilter) {
+        List<WorkloadRecord> activeRecords = db.workloadRecords().findAll().stream()
+                .filter(record -> record.getStatus() == WorkloadStatus.ACTIVE)
+                .filter(record -> semesterFilter == null || semesterFilter.equalsIgnoreCase(record.getSemester()))
                 .collect(Collectors.toList());
 
-        // Group by resumeId (which maps to TA user)
-        Map<UUID, List<Application>> appsByResume = acceptedApps.stream()
-                .collect(Collectors.groupingBy(Application::getResumeId));
+        Map<UUID, List<WorkloadRecord>> recordsByTa = activeRecords.stream()
+                .collect(Collectors.groupingBy(WorkloadRecord::getTaId));
 
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (Map.Entry<UUID, List<Application>> entry : appsByResume.entrySet()) {
-            Optional<Resume> resumeOpt = db.resumes().findById(entry.getKey());
-            if (resumeOpt.isEmpty()) continue;
-            
-            Resume resume = resumeOpt.get();
-            Optional<User> taUserOpt = db.users().findById(resume.getUserId());
+        for (Map.Entry<UUID, List<WorkloadRecord>> entry : recordsByTa.entrySet()) {
+            Optional<User> taUserOpt = db.users().findById(entry.getKey());
             if (taUserOpt.isEmpty()) continue;
 
             User taUser = taUserOpt.get();
+            int capacityHours = resolveCapacityHours(taUser.getId());
 
             Map<String, Object> view = new HashMap<>();
             view.put("taId", taUser.getId());
@@ -78,14 +94,17 @@ public class AdminService {
             int totalWeeklyHours = 0;
             BigDecimal totalEstimatedIncome = BigDecimal.ZERO;
 
-            for (Application app : entry.getValue()) {
-                Optional<Job> jobOpt = db.jobs().findById(app.getJobId());
+            for (WorkloadRecord record : entry.getValue()) {
+                Optional<Application> appOpt = db.applications().findById(record.getApplicationId());
+                Optional<Job> jobOpt = db.jobs().findById(record.getJobId());
                 if (jobOpt.isEmpty()) continue;
                 Job job = jobOpt.get();
-                int requiredHours = Math.max(0, job.getRequiredHours());
+                int requiredHours = Math.max(0, record.getAssignedHours());
 
                 Map<String, Object> vView = new HashMap<>();
                 vView.put("vacancyId", job.getId());
+                vView.put("applicationId", appOpt.map(Application::getId).orElse(null));
+                vView.put("semester", record.getSemester());
                 vView.put("title", job.getTitle());
                 vView.put("courseCode", job.getModuleCode());
                 vView.put("weeklyHours", requiredHours);
@@ -120,10 +139,17 @@ public class AdminService {
             view.put("totalWeeklyHours", totalWeeklyHours);
             view.put("totalWorkloadHours", totalWeeklyHours * 8);
             view.put("totalEstimatedIncome", totalEstimatedIncome);
+            view.put("capacityHours", capacityHours);
+            view.put("remainingHours", capacityHours - totalWeeklyHours);
+            int utilizationPct = capacityHours <= 0 ? 0 : BigDecimal.valueOf(totalWeeklyHours)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(BigDecimal.valueOf(capacityHours), 0, RoundingMode.HALF_UP)
+                    .intValue();
+            view.put("utilizationPct", utilizationPct);
 
-            if (totalWeeklyHours <= 10) {
+            if (utilizationPct < 80) {
                 view.put("workloadStatus", "Normal");
-            } else if (totalWeeklyHours <= 15) {
+            } else if (utilizationPct < 100) {
                 view.put("workloadStatus", "Busy");
             } else {
                 view.put("workloadStatus", "Overloaded");
@@ -133,6 +159,15 @@ public class AdminService {
         }
 
         return result;
+    }
+
+    private int resolveCapacityHours(UUID taId) {
+        return db.resumes().listByUserId(taId).stream()
+                .sorted(Comparator.comparing(Resume::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .findFirst()
+                .map(Resume::getMaxWeeklyHours)
+                .filter(hours -> hours > 0)
+                .orElse(20);
     }
 
     private boolean matchesWorkloadKeyword(Map<String, Object> row, String keyword) {

@@ -23,9 +23,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MatchingServiceTest {
     @TempDir
@@ -88,6 +90,69 @@ class MatchingServiceTest {
         assertEquals(matchScoreCount + 1, db.matchScores().findAll().size());
         assertEquals(notificationCount + 1, db.notifications().findAll().size());
         assertEquals(auditLogCount + 1, db.auditLogs().findAll().size());
+    }
+
+    @Test
+    void computeCoverageShouldRespectRequiredSkillsAndMinimumProficiency() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        MatchingService service = new MatchingService(db);
+
+        User ta = db.users().save(user("coverage-ta@example.com", UserRole.TA, "Coverage TA"));
+        User mo = db.users().save(user("coverage-mo@example.com", UserRole.MO, "Coverage MO"));
+
+        Resume resume = new Resume();
+        resume.setUserId(ta.getId());
+        resume.setTitle("Coverage Resume");
+        resume.setDegreeLevel(DegreeLevel.MASTER);
+        resume = db.resumes().save(resume);
+
+        Job job = new Job();
+        job.setPostedBy(mo.getId());
+        job.setTitle("Coverage Job");
+        job.setType(JobType.MODULE_SUPPORT);
+        job.setStatus(JobStatus.OPEN);
+        job.setRequiredHours(8);
+        job.setDeadline(Instant.now().plusSeconds(3600));
+        job = db.jobs().save(job);
+
+        Skill java = skill("Coverage Java " + UUID.randomUUID());
+        java = db.skills().save(java);
+        Skill sql = skill("Coverage SQL " + UUID.randomUUID());
+        sql = db.skills().save(sql);
+
+        ResumeSkill javaSkill = new ResumeSkill();
+        javaSkill.setResumeId(resume.getId());
+        javaSkill.setSkillId(java.getId());
+        javaSkill.setProficiency(ProficiencyLevel.BEGINNER);
+        db.resumeSkills().save(javaSkill);
+
+        db.jobRequirements().save(requirement(job.getId(), java.getId(), true, ProficiencyLevel.INTERMEDIATE));
+        db.jobRequirements().save(requirement(job.getId(), sql.getId(), true, ProficiencyLevel.BEGINNER));
+
+        MatchingService.SkillCoverageView coverage = service.computeCoverage(resume.getId(), job.getId());
+
+        assertEquals(0, coverage.getRequiredMatched());
+        assertEquals(2, coverage.getRequiredTotal());
+        assertEquals(0, coverage.getRequiredCoveragePct());
+        assertEquals(2, coverage.getMissingRequiredCount());
+        assertTrue(coverage.isLowCoverageWarning());
+    }
+
+    private Skill skill(String name) {
+        Skill skill = new Skill();
+        skill.setName(name);
+        skill.setCategory(SkillCategory.PROGRAMMING);
+        return skill;
+    }
+
+    private JobRequirement requirement(java.util.UUID jobId, java.util.UUID skillId, boolean required,
+                                       ProficiencyLevel proficiency) {
+        JobRequirement requirement = new JobRequirement();
+        requirement.setJobId(jobId);
+        requirement.setSkillId(skillId);
+        requirement.setRequired(required);
+        requirement.setMinProficiency(proficiency);
+        return requirement;
     }
 
     private User user(String email, UserRole role, String name) {

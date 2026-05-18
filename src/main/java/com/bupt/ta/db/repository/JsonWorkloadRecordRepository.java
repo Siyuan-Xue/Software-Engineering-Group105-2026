@@ -3,6 +3,7 @@ package com.bupt.ta.db.repository;
 import com.bupt.ta.db.core.ConstraintViolationException;
 import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.WorkloadRecord;
+import com.bupt.ta.domain.enums.WorkloadStatus;
 import com.bupt.ta.domain.value.WorkloadAggregate;
 import com.bupt.ta.db.store.JsonTableStore;
 
@@ -39,6 +40,7 @@ public class JsonWorkloadRecordRepository extends BaseJsonRepository<WorkloadRec
     public List<WorkloadAggregate> aggregateBySemester(String semester) {
         Map<UUID, List<WorkloadRecord>> grouped = findAll().stream()
                 .filter(record -> semester.equals(record.getSemester()))
+                .filter(record -> record.getStatus() == WorkloadStatus.ACTIVE)
                 .collect(Collectors.groupingBy(WorkloadRecord::getTaId));
         return grouped.entrySet().stream()
                 .map(entry -> aggregate(entry.getKey(), semester, entry.getValue()))

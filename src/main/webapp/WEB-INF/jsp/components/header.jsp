@@ -37,6 +37,8 @@
 <c:set var="settingsActive" value="${fn:contains(currentPath, 'settings')}" />
 <c:set var="workloadsActive" value="${fn:contains(currentPath, 'workloads')}" />
 <c:set var="skillsActive" value="${fn:contains(currentPath, 'admin/skills')}" />
+<c:set var="adminUsersActive" value="${fn:contains(currentPath, 'admin/users')}" />
+<c:set var="auditActive" value="${fn:contains(currentPath, 'admin/audit')}" />
 <c:set var="showTaLinks" value="${userRole == 'TA'}" />
 <c:set var="showMoLinks" value="${userRole == 'MO'}" />
 <c:set var="showAdminLinks" value="${userRole == 'ADMIN'}" />
@@ -71,9 +73,14 @@
 
         <div class="flex items-center gap-4">
             <div class="hidden items-center gap-2 sm:flex">
-                <button type="button" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="${i18n['common.notifications']}">
+                <a href="${contextPath}/messages?conversationId=system" class="relative flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="${i18n['common.notifications']}">
                     <span class="material-symbols-outlined">notifications</span>
-                </button>
+                    <c:if test="${unreadNotificationCount > 0}">
+                        <span class="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black leading-5 text-white">
+                            <c:out value="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}" />
+                        </span>
+                    </c:if>
+                </a>
                 <a href="${contextPath}/settings" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="${i18n['common.settings']}">
                     <span class="material-symbols-outlined">settings</span>
                 </a>
@@ -112,7 +119,9 @@
             </c:if>
             <c:if test="${showAdminLinks}">
                 <a href="${contextPath}/workloads" style="${workloadsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.workloads']}</a>
+                <a href="${contextPath}/admin/users" style="${adminUsersActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${language == 'zh' ? '用户' : 'Users'}</a>
                 <a href="${contextPath}/admin/skills" style="${skillsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.skills']}</a>
+                <a href="${contextPath}/admin/audit" style="${auditActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${language == 'zh' ? '审计' : 'Audit'}</a>
             </c:if>
             <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.messages']}</a>
             <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.settings']}</a>

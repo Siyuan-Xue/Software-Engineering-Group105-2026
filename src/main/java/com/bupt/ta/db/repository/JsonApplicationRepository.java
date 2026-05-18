@@ -48,6 +48,8 @@ public class JsonApplicationRepository extends BaseJsonRepository<Application> i
     @Override
     public boolean existsByTaAndJob(UUID taUserId, UUID jobId) {
         return store.query(app -> jobId.equals(app.getJobId())).stream().anyMatch(application ->
+                application.getStatus() != ApplicationStatus.WITHDRAWN
+                        &&
                 resumeStore.findById(application.getResumeId())
                         .map(Resume::getUserId)
                         .filter(taUserId::equals)
