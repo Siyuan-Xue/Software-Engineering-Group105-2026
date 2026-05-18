@@ -204,6 +204,74 @@
                                                                         <a href="${pageContext.request.contextPath}/vacancies" class="text-sm font-bold text-slate-600 hover:text-primary hover:underline">Browse vacancies</a>
                                                                     </c:otherwise>
                                                                 </c:choose>
+<<<<<<< Updated upstream
+=======
+                                                                <c:if test="${userRole == 'MO' && app.status != 'Withdrawn' && app.status != 'Accepted' && app.status != 'Rejected' && app.status != 'Declined'}">
+                                                                    <c:if test="${app.status == 'Submitted'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="review"/>
+                                                                            <button type="submit" class="text-xs font-bold text-blue-700 hover:underline">${language == 'zh' ? '开始审核' : 'Start review'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                    <c:if test="${app.status == 'Submitted' || app.status == 'Under Review'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定直接录用该申请人？' : 'Accept this applicant?'}');">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="mo_accept"/>
+                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '录用' : 'Accept'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                    <c:if test="${app.status != 'Offer Pending'}">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirmReject(this, '${language == 'zh' ? 'zh' : 'en'}');">
+                                                                            <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                            <input type="hidden" name="action" value="reject"/>
+                                                                            <input type="hidden" name="rejectionNote" value=""/>
+                                                                            <button type="submit" class="text-xs font-bold text-red-700 hover:underline">${language == 'zh' ? '拒绝' : 'Reject'}</button>
+                                                                        </form>
+                                                                    </c:if>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'MO' && app.status != 'Withdrawn'}">
+                                                                    <button type="button"
+                                                                            class="inline-flex items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-900 disabled:opacity-40 disabled:pointer-events-none"
+                                                                            data-app-id="${app.applicationId}"
+                                                                            ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                                                            onclick="openMoAdviceDisclaimer(this.dataset.appId)">
+                                                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                                                                        ${language == 'zh' ? 'AI 决策建议' : 'AI decision hints'}
+                                                                    </button>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && app.status == 'Offer Pending'}">
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="accept"/>
+                                                                        <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '接受录用' : 'Accept offer'}</button>
+                                                                    </form>
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定拒绝该录用？' : 'Decline this offer?'}');">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="decline"/>
+                                                                        <button type="submit" class="text-xs font-bold text-red-700 hover:underline">${language == 'zh' ? '拒绝录用' : 'Decline offer'}</button>
+                                                                    </form>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && app.status != 'Withdrawn' && app.status != 'Accepted' && app.status != 'Rejected' && app.status != 'Declined'}">
+                                                                    <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定撤回该申请？' : 'Withdraw this application?'}');">
+                                                                        <input type="hidden" name="applicationId" value="${app.applicationId}"/>
+                                                                        <input type="hidden" name="action" value="withdraw"/>
+                                                                        <button type="submit" class="text-xs font-bold text-slate-600 hover:underline">${language == 'zh' ? '撤回申请' : 'Withdraw'}</button>
+                                                                    </form>
+                                                                </c:if>
+                                                                <c:if test="${userRole == 'TA' && not empty app.vacancyId && not empty app.resumeId && app.status != 'Withdrawn'}">
+                                                                    <button type="button"
+                                                                            class="inline-flex items-center gap-1 text-xs font-bold text-sky-700 hover:text-sky-900 disabled:opacity-40 disabled:pointer-events-none"
+                                                                            data-vacancy-id="${app.vacancyId}"
+                                                                            data-resume-id="${app.resumeId}"
+                                                                            ${qwenConfigured ? '' : 'disabled="disabled"'}
+                                                                            onclick="openTaMotivationDisclaimer(this.dataset.vacancyId, this.dataset.resumeId)">
+                                                                        <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">edit_note</span>
+                                                                        ${language == 'zh' ? 'AI 动机草稿' : 'AI motivation draft'}
+                                                                    </button>
+                                                                </c:if>
+                                                                </div>
+>>>>>>> Stashed changes
                                                             </td>
                                                         </tr>
                                                     </c:forEach>
