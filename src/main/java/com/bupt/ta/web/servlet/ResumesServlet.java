@@ -1,13 +1,17 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.DegreeLevel;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.config.AppConfig;
+import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
+import com.bupt.ta.util.Labels;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.ServletException;
@@ -44,22 +48,23 @@ import java.util.stream.Collectors;
 public class ResumesServlet extends HttpServlet {
 
     private static final String VIEW_PATH   = "/portal/resumes.jsp";
-    private static final String UPLOAD_DIR  = "data/resumes/uploads";
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd MMM yyyy").withZone(ZoneId.systemDefault());
 
     private TaDatabase    database;
     private ResumeService resumeService;
     private ObjectMapper  objectMapper;
+    private Path uploadDir;
 
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
-        this.resumeService = new ResumeService(database.resumes());
-        this.objectMapper  = new ObjectMapper();
+        this.resumeService = new ResumeService(database);
+        this.objectMapper  = AppConfig.createObjectMapper();
+        this.uploadDir = AppConfig.resolveDataDirectory().resolve("resumes").resolve("uploads");
 
         try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
+            Files.createDirectories(uploadDir);
         } catch (IOException e) {
             throw new ServletException("Cannot create upload directory", e);
         }
@@ -73,12 +78,42 @@ public class ResumesServlet extends HttpServlet {
         User user = currentUser(req);
         if (user == null) { resp.sendRedirect(req.getContextPath() + "/login"); return; }
 
-        List<Resume> resumes = resumeService.listByUserId(user.getId());
-        req.setAttribute("resumes", resumes);
-        req.setAttribute("pageState", "normal");
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.setAttribute("qwenVlModel", QwenAiService.resolveVlModel());
+
+        String queryPageState = normalizeParam(req.getParameter("pageState"));
+        try {
+            List<Resume> resumes = resumeService.listByUserId(user.getId());
+            req.setAttribute("resumes", resumes);
+            if ("uploadSuccess".equals(queryPageState)) {
+                req.setAttribute("pageState", "uploadSuccess");
+            } else if ("uploadFailure".equals(queryPageState)) {
+                req.setAttribute("pageState", "uploadFailure");
+                req.setAttribute("errorMessage", normalizeParam(req.getParameter("errorMessage")));
+            } else {
+                req.setAttribute("pageState", "normal");
+            }
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load resumes", ex);
+            applyLoadError(req);
+        }
+
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("resumes", List.of());
+        req.setAttribute("successMessage", null);
+        req.setAttribute("errorMessage", I18n.message(req, "msg.resumesLoadFailed"));
+    }
+
+    private static String normalizeParam(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     // ── POST ───────────────────────────────────────────────────────────────
@@ -108,7 +143,7 @@ public class ResumesServlet extends HttpServlet {
                 case "save"   -> handleManualSave(req, user);
                 case "rename" -> handleRename(req, user);
                 case "delete" -> handleDelete(req, user);
-                default -> throw new IllegalArgumentException("Unknown action: " + action);
+                default -> throw new IllegalArgumentException(I18n.message(req, "msg.resumeUnknownActionPrefix") + action);
             }
             resp.sendRedirect(req.getContextPath() + "/resumes");
         } catch (Exception e) {
@@ -135,7 +170,7 @@ public class ResumesServlet extends HttpServlet {
             Part filePart = req.getPart("resumeFile");
             if (filePart == null || filePart.getSize() == 0) {
                 json.put("ok", false);
-                json.put("error", "No file selected.");
+                json.put("error", I18n.message(req, "msg.resumeNoFile"));
                 objectMapper.writeValue(resp.getWriter(), json);
                 return;
             }
@@ -146,14 +181,12 @@ public class ResumesServlet extends HttpServlet {
 
             if (!ext.matches("\\.(pdf|doc|docx|jpg|jpeg|png|txt)$")) {
                 json.put("ok", false);
-                json.put("error", "Unsupported file type. Allowed: PDF, DOC, DOCX, JPG, PNG, TXT.");
+                json.put("error", I18n.message(req, "msg.resumeUnsupportedType"));
                 objectMapper.writeValue(resp.getWriter(), json);
                 return;
             }
 
             // Use absolute path so Files.copy() (not Part.write) goes to the right place
-            Path uploadDir  = Paths.get(UPLOAD_DIR).toAbsolutePath();
-            Files.createDirectories(uploadDir);
             String savedName  = user.getId() + "_" + UUID.randomUUID() + ext;
             Path   uploadPath = uploadDir.resolve(savedName);
 
@@ -163,7 +196,7 @@ public class ResumesServlet extends HttpServlet {
 
             Resume resume = new Resume();
             resume.setUserId(user.getId());
-            resume.setTitle("Untitled");   // user renames in the modal after upload
+            resume.setTitle(I18n.message(req, "msg.resumeUntitled"));   // user renames in the modal after upload
             resume.setDepartment(user.getDepartment() != null ? user.getDepartment() : "");
             resume.setDegreeLevel(DegreeLevel.BACHELOR);
             resume.setGpa(new BigDecimal("0.00"));
@@ -171,6 +204,7 @@ public class ResumesServlet extends HttpServlet {
             resume.setBio("");
             resume.setUploadedFilePath(uploadPath.toString());
             resume.setOriginalFileName(originalName);
+            resume.setLabels(Labels.parseList(req.getParameter("labels"), 24));
 
             Resume saved = resumeService.save(resume);
 
@@ -180,7 +214,7 @@ public class ResumesServlet extends HttpServlet {
 
         } catch (Exception e) {
             json.put("ok", false);
-            json.put("error", "Upload failed: " + e.getMessage());
+            json.put("error", I18n.message(req, "msg.resumeUploadFailedPrefix") + e.getMessage());
         }
 
         objectMapper.writeValue(resp.getWriter(), json);
@@ -190,16 +224,17 @@ public class ResumesServlet extends HttpServlet {
     private void handleRename(HttpServletRequest req, User user) throws Exception {
         String resumeId = req.getParameter("resumeId");
         if (resumeId == null || resumeId.isBlank()) {
-            throw new IllegalArgumentException("resumeId is required.");
+            throw new IllegalArgumentException(I18n.message(req, "msg.resumeIdRequired"));
         }
         String title = req.getParameter("title");
-        if (title == null || title.isBlank()) title = "Untitled";
+        if (title == null || title.isBlank()) title = I18n.message(req, "msg.resumeUntitled");
 
         Resume resume = resumeService.listByUserId(user.getId()).stream()
                 .filter(r -> r.getId().toString().equals(resumeId.trim()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Resume not found."));
+                .orElseThrow(() -> new IllegalArgumentException(I18n.message(req, "msg.resumeNotFound")));
         resume.setTitle(title.trim());
+        resume.setLabels(Labels.parseList(req.getParameter("labels"), 24));
         resumeService.save(resume);
     }
 
@@ -212,8 +247,7 @@ public class ResumesServlet extends HttpServlet {
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
             json.put("ok", false);
-            json.put("error", "Qwen API key is not configured on this server. " +
-                    "Please ask your administrator to add QWEN_API_KEY to Tomcat's setenv.bat.");
+            json.put("error", I18n.message(req, "msg.aiKeyMissing"));
             objectMapper.writeValue(resp.getWriter(), json);
             return;
         }
@@ -246,7 +280,9 @@ public class ResumesServlet extends HttpServlet {
             final Resume chosen = target;
 
             // Gather open vacancies for context
-            List<Job> openJobs = database.jobs().listOpen(Instant.now());
+            JobQuery query = new JobQuery();
+            query.setNow(Instant.now());
+            List<Job> openJobs = database.jobs().listOpen(query);
             List<String> vacancyTitles = openJobs.stream()
                     .map(Job::getTitle)
                     .collect(Collectors.toList());
@@ -309,6 +345,7 @@ public class ResumesServlet extends HttpServlet {
             resume.setMaxWeeklyHours(Integer.parseInt(hoursStr));
         }
         resume.setBio(req.getParameter("bio"));
+        resume.setLabels(Labels.parseList(req.getParameter("resumeLabels"), 24));
         resumeService.save(resume);
     }
 

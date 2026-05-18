@@ -69,11 +69,6 @@ public class ApplicationDecisionServlet extends HttpServlet {
                     applicationService.sendOffer(currentUser.getId(), applicationId);
                     yield "msg.appOfferSent";
                 }
-                case "mo_accept" -> {
-                    requireRole(currentUser, UserRole.MO);
-                    applicationService.moDirectAccept(currentUser.getId(), applicationId);
-                    yield "msg.appAccepted";
-                }
                 case "reject" -> {
                     requireRole(currentUser, UserRole.MO);
                     applicationService.reject(currentUser.getId(), applicationId, req.getParameter("rejectionNote"));

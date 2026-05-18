@@ -1,271 +1,286 @@
-# ta105 - 105组TA招聘系统
+# QM HIRE · TA105
 
-## 组员信息
+**A full-stack Teaching Assistant recruitment platform** for the BUPT × QMUL Software Engineering Group 105 course project.
 
+QM HIRE connects **Teaching Assistants (TAs)**, **Module Organisers (MOs)**, and **Administrators** in one workflow: discover vacancies, submit applications with resume files, review candidates, manage workloads, and optionally leverage **Qwen (DashScope)** AI for ranking and drafting—always with explicit in-app consent before any model call.
 
-| Name          | QM Stu Number | BUPT Stu Number | GitHub email                                              |
-| ------------- | ------------- | --------------- | --------------------------------------------------------- |
-| Wanran Sun    | 231223254     | 2023213626      | [112358wan@gmail.com](mailto:112358wan@gmail.com)         |
-| Xiankun Jiang | 231223542     | 2023213655      | [jp2023213655@qmul.ac.uk](mailto:jp2023213655@qmul.ac.uk) |
-| Siyuan Xue    | 231223564     | 2023213657      | [jp2023213657@qmul.ac.uk](mailto:jp2023213657@qmul.ac.uk) |
-| Yutong Wu     | 231223575     | 2023213658      | [serovia@126.com](mailto:serovia@126.com)                 |
-| Xiaoxiao Ma   | 231223715     | 2023213672      | [maxiaoxiao@bupt.edu.cn](mailto:maxiaoxiao@bupt.edu.cn)   |
-| Rui Ma        | 231223151     | 2023213616      | [940874485@qq.com](mailto:940874485@qq.com)               |
+| | |
+|---|---|
+| **Context path** | `/ta105` |
+| **Artifact** | `ta105.war` |
+| **Runtime** | Java 17+, Apache Tomcat 11 |
+| **Persistence** | Jackson JSON files under `data/` (11 tables, no external DB) |
 
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#documentation">Documentation</a> ·
+  <a href="#team">Team</a>
+</p>
 
-## TA-information
+---
 
-Wang Ruijia [wang_ruijia@bupt.edu.cn](mailto:wang_ruijia@bupt.edu.cn)
+## Features
 
-## Stack
+### Teaching Assistant (TA)
 
-- OpenJDK 25.0.2 (or any Java 17+ runtime)
-- Tomcat 11
-- Servlet API (Jakarta) + JSP
-- Jackson JSON persistence
-- JUnit 6
-- Maven WAR project
+- Browse and favourite open vacancies; filter and search job listings
+- Manage multiple resumes (profile + file upload: PDF, Word, images, TXT)
+- **Apply with resume file**: choose a previously uploaded resume or upload a new file; optional cover letter
+- Application lifecycle: submit, withdraw, accept/decline offers
+- Optional **AI assistance** (requires `QWEN_API_KEY`): resume review, vacancy match scores, per-job resume ranking when applying, cover-letter draft
+
+### Module Organiser (MO)
+
+- Create, edit, and publish vacancies (labels, deadlines, slots)
+- Review applications: start review, send offer, reject; view applicant detail and **download submitted resume files**
+- Optional **AI assistance**: applicant ranking per vacancy, offer/reject advisory (non-binding)
+- In-app notifications for new applicants and responses
+
+### Administrator
+
+- Skills catalogue management
+- **Workload** oversight with keyword and department filters
+- Audit trail and system-wide data access via JSON repositories
+
+### Platform
+
+- Role-based auth (TA / MO / Admin), session filter, i18n (EN / 中文)
+- File-backed data layer with `TaDatabase` facade; demo seed on empty `data/`
+- Servlet-first Jakarta EE app (JSP + Tailwind CDN UI)
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Language | Java 17 (`maven.compiler.release`) |
+| Web | Jakarta Servlet 6, JSP, `@WebServlet` / `@WebFilter` |
+| Server | Apache Tomcat 11 |
+| JSON store | Jackson 2.x, file-per-entity under `data/` |
+| AI (optional) | Alibaba DashScope (Qwen VL + text models) |
+| Build & test | Maven, JUnit 6 |
+| UI | JSP, Tailwind CSS (CDN), Material Symbols |
+
+---
 
 ## Architecture
 
-- 单 WAR 同源部署
-- 前端：JSP 页面与共享组件
-- 后端：Servlet/JSP Web 应用 + 基于文件的持久化层
-- 数据存储：`data/*.json`，不使用数据库
-- 注解注册：`@WebFilter`，`web.xml` 仅保留最小描述符
+Single **WAR** deployment. The browser talks only to same-origin servlets; API keys never ship to the client.
 
-## Project Layout
+```mermaid
+flowchart TB
+  subgraph client [Browser]
+    JSP[JSP Portal Pages]
+  end
 
-```text
-.
-├── pom.xml
-└── src/
-    └── main/
-        ├── java/com/bupt/ta/
-        │   ├── config/
-        │   ├── bootstrap/
-        │   ├── model/
-        │   ├── persistence/
-        │   ├── repository/
-        │   ├── service/
-        │   └── web/
-        ├── test/
-        └── webapp/
-            ├── index.jsp
-            └── portal/
+  subgraph tomcat [Tomcat 11 - /ta105]
+    Filter[AuthFilter + I18n]
+    Servlet[Servlets]
+    Service[Service Layer]
+    DB[TaDatabase Facade]
+    Store[JSON Table Stores]
+  end
+
+  subgraph disk [Filesystem]
+    Data[(data/*.json)]
+    Uploads[(resumes/uploads + application snapshots)]
+  end
+
+  subgraph external [Optional]
+    Qwen[DashScope Qwen API]
+  end
+
+  JSP --> Filter --> Servlet --> Service --> DB --> Store --> Data
+  Service --> Uploads
+  Service -.->|QWEN_API_KEY| Qwen
 ```
 
-## macOS 从零安装并运行（Homebrew）
+**Design choices**
 
-### 1) 安装依赖
+- **No ORM** — repositories over JSON files; suitable for coursework and single-JVM demos
+- **Application resume snapshots** — each submission stores a file copy so MOs see what was submitted, even if the TA edits their resume later
+- **AI gated by UI** — disclaimer modals + explicit “Agree and …” actions before server-side model calls
 
-```bash
-brew update
-brew install openjdk maven tomcat
-```
+---
 
-### 2) 配置 Java（zsh）
+## Quick start
 
-```bash
-sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk
-echo 'export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
+### Prerequisites
 
-### 3) 验证安装
+- **JDK 17+**
+- **Maven 3.9+**
+- **Apache Tomcat 11**
 
-```bash
-java -version
-mvn -version
-"$(brew --prefix tomcat)/bin/catalina" version
-```
-
-### 4) 构建与测试项目
+### Build & test
 
 ```bash
-cd /path/to/your/TA_recruitment_system
+git clone <repository-url>
+cd Software-Engineering-Group105-2026
 mvn test
 mvn clean package
 ```
 
-### 5) 部署到 Tomcat 11
+### Deploy
 
-```bash
-cp target/ta105.war "$(brew --prefix tomcat)/libexec/webapps/"
-```
+Copy `target/ta105.war` to Tomcat `webapps/`, start Tomcat, then open:
 
-### 6) 启动 Tomcat
+**http://localhost:8080/ta105/**
 
-前台运行（便于看日志）：
+> After redeploying a new WAR, remove the exploded folder `webapps/ta105/` if Tomcat does not pick up changes.
 
-```bash
-"$(brew --prefix tomcat)/bin/catalina" run
-```
+### Demo accounts
 
-或后台服务：
+On first run with an **empty** `data/` directory, the seeder creates demo users. Password for all: **`password`**
 
-```bash
-brew services start tomcat
-```
+| Role | Email |
+|------|--------|
+| TA | `test@example.com` |
+| MO | `mo@example.com` |
+| Admin | `admin@example.com` |
 
-### 7) 验证
+Additional demo TAs/MOs are seeded for richer scenarios—see the login page or seeder source.
 
-前端入口：
+### Data directory
 
-- `http://localhost:8080/ta105/`
+| Setting | Default | Override |
+|---------|---------|----------|
+| JSON database | `./data` | JVM `-Dta105.data.dir=/absolute/path` or env `TA105_DATA_DIR` |
+| Resume uploads | `{data}/resumes/uploads` | — |
+| Application file snapshots | `{data}/applications/submissions` | — |
 
-运行项目：
-启动 Tomcat。
-访问 `http://localhost:8080/`（或你配置的端口），你将看到 QM HIRE 的落地页。
-测试账号：系统首次启动时会自动生成三个测试账号，密码均为 `password`：
-- TA 账号：[test@example.com](mailto:test@example.com)
-- MO 账号：[mo@example.com](mailto:mo@example.com)
-- Admin 账号：[admin@example.com](mailto:admin@example.com)
+Seeding runs **only when all business tables are empty**. To reset demo data: back up and clear `data/`, then restart.
 
-运行期数据目录：
+---
 
-- 默认：`./data`
-- 可覆盖：`-Dta105.data.dir=/absolute/path/to/data`
+## Configuration
 
-数据库层使用方式：
+### Optional: Qwen / DashScope AI
 
-```java
-TaDatabase db = DatabaseProvider.get(servletContext);
-db.users().findByEmail("user@example.com");
-db.resumes().listByUserId(userId);
-db.jobs().listOpen(Instant.now());
-db.applications().listByJobId(jobId);
-```
+Set before starting Tomcat (never commit keys to Git):
 
-### 8) 停止 Tomcat
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `QWEN_API_KEY` | For AI features | DashScope API key (`sk-…`) |
+| `QWEN_MODEL` | No | Vision model (default `qwen2.5-vl-72b-instruct`) |
+| `QWEN_TEXT_MODEL` | No | Text model (default `qwen3.5-plus`) |
 
-前台 `catalina run`：`Ctrl + C`
-
-后台服务：
-
-```bash
-brew services stop tomcat
-```
-
-## Windows 从零安装并运行
-
-### 1) 安装依赖
-
-- **JDK**：安装 **Java 17 或以上**（项目编译目标为 17，运行时用 17/21 等均可）。可从 [Eclipse Temurin](https://adoptium.net/) 或 Oracle 下载 Windows x64 安装包，或使用 `winget`（包名以当时仓库为准，例如 Temurin 17）。
-- **Maven**：从 [Maven 下载页](https://maven.apache.org/download.cgi) 解压到任意目录（如 `D:\Tools\apache-maven-3.9.x`），把其中的 `bin` 加入系统 **Path**。
-- **Tomcat 11**：从 [Tomcat 11 下载页](https://tomcat.apache.org/download-11.cgi) 获取 **`apache-tomcat-*-windows-x64.zip`**（含 Windows 本机库与服务封装；Tomcat 11 需要 **Java 17+**），解压到任意目录（下文以 `D:\Programs\Tomcat 11.0` 为例）。
-
-### 2) 配置环境变量
-
-在「系统属性 → 高级 → 环境变量」中：
-
-- 新建或编辑 **`JAVA_HOME`**，指向 JDK 根目录（例如 `D:\Programs\JAVA17`）。
-- 编辑 **`Path`**，确保包含 **`%JAVA_HOME%\bin`**，且排在其他 JDK 路径之前（避免 `java -version` 仍指向旧版本）。
-
-若希望 Tomcat 脚本固定使用某套 JRE，可另设 **`JRE_HOME`**（与 `JAVA_HOME` 指向同一 JDK 根目录即可）。
-
-### 3) 验证安装
-
-在 **新的** PowerShell 或 CMD 中：
-
-```powershell
-java -version
-mvn -version
-```
-
-进入 Tomcat 的 `bin` 目录执行：
-
-```powershell
-cd "D:\Programs\Tomcat 11.0\bin"
-.\catalina.bat version
-```
-
-### 4) 构建与测试项目
-
-```powershell
-cd "C:\path\to\Software-Engineering-Group105-2026"
-mvn test
-mvn clean package
-```
-
-生成的 WAR 为 **`target\ta105.war`**。
-
-### 5) 部署到 Tomcat 11
-
-将 WAR 复制到 Tomcat 的 **`webapps`** 目录（路径按你的解压位置修改）：
-
-```powershell
-Copy-Item ".\target\ta105.war" -Destination "D:\Programs\Tomcat 11.0\webapps\ta105.war" -Force
-```
-
-或在 CMD 中：
+**Windows (Tomcat `bin/setenv.bat`):**
 
 ```bat
-copy /Y target\ta105.war "D:\Programs\Tomcat 11.0\webapps\ta105.war"
+set "QWEN_API_KEY=sk-your-key-here"
 ```
 
-### 6) 启动 Tomcat
-
-在 **`Tomcat\bin`** 下：
-
-**后台启动**（当前终端立即返回）：
-
-```powershell
-cd "D:\Programs\Tomcat 11.0\bin"
-.\startup.bat
-```
-
-若 PowerShell 下提示 **`CATALINA_HOME` 未正确设置**，可在同一目录改用：
-
-```powershell
-cmd /c startup.bat
-```
-
-**前台启动**（便于看日志，用 `Ctrl+C` 停止）：
-
-```powershell
-.\catalina.bat run
-```
-
-### 7) 验证
-
-- 应用入口：<http://localhost:8080/ta105/>（HTTP 端口以 `conf\server.xml` 中 `Connector` 为准，默认 **8080**。）
-- 访问 <http://localhost:8080/> 可打开 Tomcat 根应用 / 欢迎页。
-- 测试账号（首次启动自动生成），密码均为 `password`：
-  - TA 账号：`test@example.com`
-  - MO 账号：`mo@example.com`
-  - Admin 账号：`admin@example.com`
-
-运行期数据目录、`-Dta105.data.dir` 与 macOS 一节相同。
-
-### 8) 停止 Tomcat
-
-```powershell
-cd "D:\Programs\Tomcat 11.0\bin"
-.\shutdown.bat
-```
-
-**说明**：Tomcat 11 默认 `conf\server.xml` 中可能为 `<Server port="-1" ...>`，此时 **不会监听关闭端口**，`shutdown.bat` 会失败。本地开发可将 **`Server` 的 `port` 改为 `8005`**（仅本机）后**重启 Tomcat**，再使用 `shutdown.bat`。若未启用关闭端口，可在运行 `catalina.bat run` 的窗口中 **`Ctrl+C`**，或在任务管理器中结束对应的 **`java.exe`**（注意勿误杀其他 Java 程序）。
-
-### 9) 常见问题（Windows）
-
-- **`Address already in use: bind`（8080）**：本机已有进程占用 8080（常见于已启动的 Tomcat）。先执行 `shutdown.bat` 或结束占用进程后再启动。可用 `netstat -ano | findstr :8080` 查看 PID。
-- **控制台中文乱码**：简体中文 Windows 默认控制台多为 **GBK**；若 Tomcat 控制台使用 UTF-8 输出会乱码。可在 **`conf\logging.properties`** 中将 **`java.util.logging.ConsoleHandler.encoding`** 设为 **`GBK`**，文件日志仍可保持 **`UTF-8`**。
-- **勿同时重复启动**：不要对同一 Tomcat 目录同时使用 **`startup.bat`** 与多个 **`catalina.bat run`**，否则易端口冲突。
-
-## Deploy To External Tomcat 11
+**Linux / macOS:**
 
 ```bash
-mvn clean package
-cp target/ta105.war "$(brew --prefix tomcat)/libexec/webapps/"
-"$(brew --prefix tomcat)/bin/catalina" start
+export QWEN_API_KEY=sk-your-key-here
 ```
 
-Windows 上将第三行替换为复制到外部 Tomcat 的 `webapps` 即可，例如：
+Full AI feature matrix, consent rules, and troubleshooting: **[docs/guides/ai-and-configuration.md](docs/guides/ai-and-configuration.md)**
 
-```powershell
-Copy-Item target\ta105.war -Destination "D:\path\to\apache-tomcat-11.x\webapps\ta105.war" -Force
-cd "D:\path\to\apache-tomcat-11.x\bin"
-.\catalina.bat start
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[docs/README.md](docs/README.md)** | Documentation index |
+| [docs/guides/getting-started.md](docs/guides/getting-started.md) | Extended setup & verification |
+| [docs/guides/deployment.md](docs/guides/deployment.md) | Windows & macOS Tomcat deployment |
+| [docs/guides/ai-and-configuration.md](docs/guides/ai-and-configuration.md) | AI capabilities, consent, env vars |
+| [docs/ta-recruitment-system/](docs/ta-recruitment-system/) | Sprint 1–3 database design & ER diagrams |
+| [FRONTEND_BACKEND_INTERFACE_CONTRACT.md](FRONTEND_BACKEND_INTERFACE_CONTRACT.md) | Frontend–backend contract |
+| [FRONTEND_BACKEND_INTEGRATION_CHECKLIST.md](FRONTEND_BACKEND_INTEGRATION_CHECKLIST.md) | Integration checklist |
+
+---
+
+## Project structure
+
+```text
+Software-Engineering-Group105-2026/
+├── pom.xml
+├── README.md
+├── data/                          # JSON persistence (runtime / demo)
+├── docs/
+│   ├── README.md
+│   ├── guides/
+│   └── ta-recruitment-system/     # Data layer design docs
+└── src/
+    ├── main/java/com/bupt/ta/
+    │   ├── bootstrap/               # ServletContext listener, seeding
+    │   ├── config/
+    │   ├── domain/                  # Entities, enums, value objects
+    │   ├── db/                      # JSON stores, repositories, TaDatabase
+    │   ├── service/                 # Business logic
+    │   ├── util/                    # Resume paths, uploads, labels, …
+    │   ├── i18n/
+    │   └── web/
+    │       ├── filter/
+    │       └── servlet/
+    ├── main/webapp/
+    │   ├── index.jsp                # Landing
+    │   └── portal/                  # Authenticated UI
+    └── test/java/                   # Unit & integration tests
 ```
 
+**Key HTTP routes (under `/ta105`)**
+
+| Path | Purpose |
+|------|---------|
+| `/login`, `/register` | Authentication |
+| `/vacancies`, `/vacancy` | Job list & detail |
+| `/application`, `/application/decision`, `/application/detail` | Apply & MO/TA actions |
+| `/resumes` | Resume CRUD & upload |
+| `/applications` | Application inbox |
+| `/workloads` | Admin workloads |
+| `/ai-match`, `/ai-resume-rank`, … | Optional AI endpoints |
+
+---
+
+## Development
+
+```bash
+# Run all tests
+mvn test
+
+# Package WAR
+mvn clean package -DskipTests   # or with tests
+```
+
+**Conventions**
+
+- Servlets use `DatabaseProvider.get(servletContext)` for `TaDatabase`
+- Redirects with query params should use `RedirectUrls.withQueryParam` to avoid `path&param` bugs
+- MO-only resources enforce ownership in `ApplicationService` / servlets
+
+---
+
+## Team
+
+BUPT × QMUL Software Engineering — **Group 105**
+
+| Name | QM ID | BUPT ID | GitHub email |
+|------|-------|---------|----------------|
+| Wanran Sun | 231223254 | 2023213626 | 112358wan@gmail.com |
+| Xiankun Jiang | 231223542 | 2023213655 | jp2023213655@qmul.ac.uk |
+| Siyuan Xue | 231223564 | 2023213657 | jp2023213657@qmul.ac.uk |
+| Yutong Wu | 231223575 | 2023213658 | serovia@126.com |
+| Xiaoxiao Ma | 231223715 | 2023213672 | maxiaoxiao@bupt.edu.cn |
+| Rui Ma | 231223151 | 2023213616 | 940874485@qq.com |
+
+**Teaching assistant (course):** Wang Ruijia — wang_ruijia@bupt.edu.cn
+
+---
+
+## License & academic use
+
+This repository is developed for **coursework and demonstration**. Unless otherwise agreed with the university, do not use production credentials or real personal data in shared environments.
+
+---
+
+<p align="center">
+  <sub>QM HIRE · Group 105 · BUPT / QMUL Software Engineering</sub>
+</p>

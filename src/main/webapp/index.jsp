@@ -1,10 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QM HIRE - University TA Portal</title>
+    <title>${i18n['index.pageTitle']}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -124,24 +124,9 @@
         }
 
     </style>
+    <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
-<<<<<<< Updated upstream
-<body class="bg-background-light font-display text-slate-900 overflow-x-hidden">
-    <div class="snap-y-container relative">
-        <nav class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-6 pointer-events-none">
-            <div class="flex items-center gap-3 bg-white/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-200 pointer-events-auto shadow-sm">
-                <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white">
-                    <span class="material-symbols-outlined text-xl">work</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <span class="font-black text-lg tracking-tighter text-primary">QM</span>
-                    <span class="font-light text-lg tracking-tight text-slate-500">HIRE</span>
-                </div>
-            </div>
-        </nav>
-=======
 <body class="bg-background-light font-display text-slate-900 overflow-hidden" data-theme="${appearance}">
->>>>>>> Stashed changes
 
     <!-- Left Header: Brand Badge -->
     <div class="fixed top-6 left-6 lg:top-8 lg:left-12 z-50">
@@ -167,28 +152,11 @@
             <!-- Right side background blend -->
             <div class="absolute inset-y-0 right-0 w-1/2 overflow-hidden pointer-events-none">
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent z-10 w-32 left-0"></div>
-                <!-- 静态资源放在 /images/ 下，与 AuthFilter 白名单一致；可改为同目录下的 bg.jpg -->
-                <img src="${pageContext.request.contextPath}/images/bd.jpg"
-                     alt=""
-                     role="presentation"
-                     class="w-full h-full object-cover object-left opacity-30 mix-blend-multiply flex transition-transform duration-[2s]"
+                <img src="${pageContext.request.contextPath}/images/bg.jpg" 
+                     alt="Classroom Setup" 
+                     class="w-full h-full object-cover object-left opacity-30 mix-blend-multiply flex transition-transform duration-[2s]" 
                 />
             </div>
-<<<<<<< Updated upstream
-            <div class="mx-auto max-w-4xl text-center relative z-10">
-                <span class="inline-block px-4 py-1.5 rounded-full bg-primary/5 text-primary text-xs font-black uppercase tracking-widest mb-6">Phase 01 / Introduction</span>
-                <h1 class="text-6xl md:text-8xl font-black text-slate-900 leading-[0.9] mb-8">
-                    Your Impact <br/><span class="text-accent">Starts Here.</span>
-                </h1>
-                <p class="text-xl text-slate-600 max-w-2xl mx-auto mb-12">
-                    Join our academic excellence. The University TA Recruitment System is your gateway to shaping the next generation of scholars.
-                </p>
-                <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="${pageContext.request.contextPath}/login" class="px-10 py-5 bg-accent text-white font-black text-lg rounded-xl shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-                        LOGIN TO PORTAL
-                        <span class="material-symbols-outlined">arrow_forward</span>
-                    </a>
-=======
             
             <div class="container mx-auto px-6 lg:px-24 relative z-20">
                 <div class="max-w-2xl translate-y-4 opacity-0 animate-content-in">
@@ -214,7 +182,7 @@
             
             <!-- Optional subtle bottom text -->
             <div class="absolute bottom-8 left-6 lg:left-12 text-[#94a3b8] text-[10px] text-xs font-semibold tracking-wider">
-                &copy; 2026 UNIVERSITY RECRUITMENT OFFICE
+                &copy; 2026 QM HIRE GROUP 105
             </div>
         </section>
 
@@ -268,7 +236,6 @@
                         </div>
                     </div>
 
->>>>>>> Stashed changes
                 </div>
             </div>
         </section>
@@ -300,14 +267,14 @@
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-10 h-10 rounded-full bg-[#e11d48] text-white flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">1</div>
                         </div>
                         <div class="pl-12">
-                            <span class="px-3 py-1 bg-pink-100 text-[#e11d48] font-bold text-sm tracking-widest rounded">AUG 15</span>
+                            <span class="px-3 py-1 bg-pink-100 text-[#e11d48] font-bold text-sm tracking-widest rounded">MARCH 15</span>
                         </div>
                     </div>
 
                     <!-- Node 2 -->
                     <div class="grid grid-cols-2 gap-8 items-center group">
                         <div class="text-right pr-12">
-                            <span class="px-3 py-1 bg-slate-200 text-[#0f172a] font-bold text-sm tracking-widest rounded">SEP 05</span>
+                            <span class="px-3 py-1 bg-slate-200 text-[#0f172a] font-bold text-sm tracking-widest rounded">APR 05</span>
                         </div>
                         <div class="pl-12 relative">
                             <h3 class="text-2xl font-bold text-[#0f172a] mb-1">Submission Cut-off</h3>
@@ -326,7 +293,7 @@
                             <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-lg shadow border border-slate-300 group-hover:scale-110 transition-transform">3</div>
                         </div>
                         <div class="pl-12">
-                            <span class="px-3 py-1 bg-slate-200 text-slate-500 font-bold text-sm tracking-widest rounded">SEP 20</span>
+                            <span class="px-3 py-1 bg-slate-200 text-slate-500 font-bold text-sm tracking-widest rounded">APR 20</span>
                         </div>
                     </div>
 
@@ -335,34 +302,32 @@
         </section>
 
         <!-- Phase 4: Final Step -->
-        <section id="phase-4" class="phase-section h-screen w-full snap-start relative flex items-center bg-[#071324] py-12 lg:py-0"> <!-- Deep Navy overflow protection -->
+        <section id="phase-4" class="phase-section min-h-screen w-full snap-start relative flex items-center bg-[#071324] py-24 lg:py-0"> <!-- Deep Navy overflow protection -->
             <div class="container mx-auto px-6 lg:px-24">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
                     
                     <!-- Left Copy -->
                     <div class="max-w-xl">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-6 text-[#f43f5e] text-[10px] font-black uppercase tracking-widest">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-4 lg:mb-6 text-[#f43f5e] text-[10px] font-black uppercase tracking-widest">
                             PHASE 04 / FINAL STEP
                         </div>
                         
-                        <h2 class="text-4xl md:text-5xl lg:text-7xl font-black text-white leading-tight mb-4 lg:mb-6">
+                        <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-3 lg:mb-4">
                             Ready to Begin<br/>Your Journey?
                         </h2>
                         
-                        <p class="text-base lg:text-lg text-slate-300 font-light leading-relaxed mb-8">
+                        <p class="text-sm lg:text-base text-slate-300 font-light leading-relaxed mb-6">
                             You have reviewed the requirements, checked the dates, and understood the impact. The portal is now ready for your application.
                         </p>
                         
-                        <div class="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-8">
-                            <a href="${pageContext.request.contextPath}/login" class="px-6 lg:px-8 py-3 lg:py-4 bg-[#e11d48] text-white font-bold rounded-xl hover:bg-[#be185d] transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] min-w-[200px]">
+                        <div class="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6">
+                            <a href="${pageContext.request.contextPath}/login" class="px-5 lg:px-8 py-3 bg-[#e11d48] text-white font-bold rounded-xl hover:bg-[#be185d] transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.3)] min-w-[200px]">
                                 LOGIN TO PORTAL <span class="material-symbols-outlined">arrow_forward</span>
                             </a>
-                            <button class="px-6 lg:px-8 py-3 lg:py-4 bg-white/5 text-white font-medium rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-                                View Vacancies
-                            </button>
+        
                         </div>
                         
-                        <div class="flex items-center gap-4 border-t border-white/10 pt-6">
+                        <div class="flex items-center gap-4 border-t border-white/10 pt-4">
                             <div class="w-10 h-10 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#e11d48]">
                                 <span class="material-symbols-outlined text-sm">support_agent</span>
                             </div>

@@ -3,8 +3,8 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <c:set var="contextPath" value="${pageContext.request.contextPath}" />
 <c:set var="currentPath" value="${pageContext.request.requestURI}" />
-<c:set var="headerDisplayName" value="Student User" />
-<c:set var="headerSecondaryLabel" value="TA Applicant" />
+<c:set var="headerDisplayName" value="${i18n['common.studentUser']}" />
+<c:set var="headerSecondaryLabel" value="${i18n['common.taApplicant']}" />
 <c:choose>
     <c:when test="${not empty userProfile.firstName and not empty userProfile.lastName}">
         <c:set var="headerDisplayName" value="${userProfile.firstName} ${userProfile.lastName}" />
@@ -35,6 +35,12 @@
 <c:set var="vacanciesActive" value="${fn:contains(currentPath, 'vacancies') or fn:contains(currentPath, 'vacancy')}" />
 <c:set var="messagesActive" value="${fn:contains(currentPath, 'messages')}" />
 <c:set var="settingsActive" value="${fn:contains(currentPath, 'settings')}" />
+<c:set var="workloadsActive" value="${fn:contains(currentPath, 'workloads')}" />
+<c:set var="skillsActive" value="${fn:contains(currentPath, 'admin/skills')}" />
+<c:set var="showTaLinks" value="${userRole == 'TA'}" />
+<c:set var="showMoLinks" value="${userRole == 'MO'}" />
+<c:set var="showAdminLinks" value="${userRole == 'ADMIN'}" />
+<c:set var="showVacancySearch" value="${showTaLinks or showMoLinks}" />
 <header class="sticky top-0 z-50 border-b border-primary/10 bg-white/95 backdrop-blur">
     <div class="flex items-center justify-between gap-4 px-6 py-3 lg:px-10">
         <div class="flex items-center gap-6">
@@ -47,26 +53,28 @@
                     <span class="font-light text-lg tracking-tight text-slate-500">HIRE</span>
                 </div>
             </a>
-            <form action="${contextPath}/vacancies" method="GET" class="hidden md:flex min-w-72">
-                <label class="flex w-full items-center rounded-xl border border-primary/10 bg-slate-50 px-4 py-2.5 focus-within:border-primary/20">
-                    <span class="material-symbols-outlined text-xl text-slate-400">search</span>
-                    <input
-                        type="text"
-                        name="keyword"
-                        value="${param.keyword}"
-                        class="w-full border-none bg-transparent pl-3 text-sm text-slate-900 outline-none focus:ring-0"
-                        placeholder="Search vacancies..."
-                    />
-                </label>
-            </form>
+            <c:if test="${showVacancySearch}">
+                <form action="${contextPath}/vacancies" method="GET" class="hidden md:flex min-w-72">
+                    <label class="flex w-full items-center rounded-xl border border-primary/10 bg-slate-50 px-4 py-2.5 focus-within:border-primary/20">
+                        <span class="material-symbols-outlined text-xl text-slate-400">search</span>
+                        <input
+                            type="text"
+                            name="keyword"
+                            value="${param.keyword}"
+                            class="w-full border-none bg-transparent pl-3 text-sm text-slate-900 outline-none focus:ring-0"
+                            placeholder="${i18n['common.searchVacancies']}"
+                        />
+                    </label>
+                </form>
+            </c:if>
         </div>
 
         <div class="flex items-center gap-4">
             <div class="hidden items-center gap-2 sm:flex">
-                <button type="button" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="Notifications">
+                <button type="button" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="${i18n['common.notifications']}">
                     <span class="material-symbols-outlined">notifications</span>
                 </button>
-                <a href="${contextPath}/settings" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="Settings">
+                <a href="${contextPath}/settings" class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-50 text-slate-600 transition-colors hover:bg-primary/10" aria-label="${i18n['common.settings']}">
                     <span class="material-symbols-outlined">settings</span>
                 </a>
             </div>
@@ -92,12 +100,22 @@
 
     <nav class="border-t border-slate-100 px-4 py-3 lg:hidden">
         <div class="flex gap-2 overflow-x-auto">
-            <a href="${contextPath}/dashboard" style="${dashboardActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Dashboard</a>
-            <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Applications</a>
-            <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Resumes</a>
-            <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Vacancies</a>
-            <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Messages</a>
-            <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">Settings</a>
+            <a href="${contextPath}/dashboard" style="${dashboardActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.dashboard']}</a>
+            <c:if test="${showTaLinks or showMoLinks}">
+                <a href="${contextPath}/applications" style="${applicationsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.applications']}</a>
+            </c:if>
+            <c:if test="${showTaLinks}">
+                <a href="${contextPath}/resumes" style="${resumesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.resumes']}</a>
+            </c:if>
+            <c:if test="${showTaLinks or showMoLinks}">
+                <a href="${contextPath}/vacancies" style="${vacanciesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.vacancies']}</a>
+            </c:if>
+            <c:if test="${showAdminLinks}">
+                <a href="${contextPath}/workloads" style="${workloadsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.workloads']}</a>
+                <a href="${contextPath}/admin/skills" style="${skillsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.skills']}</a>
+            </c:if>
+            <a href="${contextPath}/messages" style="${messagesActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.messages']}</a>
+            <a href="${contextPath}/settings" style="${settingsActive ? 'background:#0f172a;color:#fff;' : ''}" class="whitespace-nowrap rounded-full px-3 py-2 text-xs font-bold transition-colors bg-slate-100 text-slate-600">${i18n['common.settings']}</a>
         </div>
     </nav>
 </header>

@@ -2,11 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TA Workloads - QM HIRE</title>
+    <title>${language == 'zh' ? '助教工作量 - QM HIRE' : 'TA Workloads - QM HIRE'}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -26,7 +26,7 @@
     </script>
     <jsp:include page="/WEB-INF/jsp/components/portal_theme.jsp" />
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
 <div class="relative flex min-h-screen w-full flex-col">
     <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
 
@@ -35,52 +35,54 @@
 
         <main class="flex-1 overflow-y-auto bg-background-light p-6 lg:p-10">
             <div class="portal-page">
+                <c:set var="workloadsState" value="${empty pageState ? 'normal' : pageState}" />
+                <c:set var="workloadsActiveFilters" value="${not empty param.keyword or not empty param.department}" />
+
+                <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
+                    <jsp:param name="containerClass" value="mb-6" />
+                </jsp:include>
+
                 <div class="portal-page-header mb-6">
                     <div>
-<<<<<<< Updated upstream
-                        <h2 class="portal-page-title">TA Workloads</h2>
-                        <p class="portal-page-copy">Monitor Teaching Assistant assignments and hours across all departments.</p>
-                    </div>
-                </div>
-
-                <div class="portal-panel overflow-hidden">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 border-b border-slate-100 text-slate-500">
-                            <tr>
-                                <th class="px-6 py-4 font-semibold">TA Name</th>
-                                <th class="px-6 py-4 font-semibold">Department</th>
-                                <th class="px-6 py-4 font-semibold">Active Jobs</th>
-                                <th class="px-6 py-4 font-semibold">Total Hours/Week</th>
-                                <th class="px-6 py-4 font-semibold">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <c:forEach items="${workloads}" var="wl">
-                                <tr class="hover:bg-slate-50 transition-colors">
-                                    <td class="px-6 py-4 font-medium text-slate-900"><c:out value="${wl.taName}"/></td>
-                                    <td class="px-6 py-4 text-slate-600"><c:out value="${wl.department}"/></td>
-                                    <td class="px-6 py-4 text-slate-600"><c:out value="${wl.activeJobsCount}"/></td>
-                                    <td class="px-6 py-4 text-slate-600"><c:out value="${wl.totalHoursPerWeek}"/> hrs</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                            <c:out value="${wl.status}"/>
-                                        </span>
-                                    </td>
-                                </tr>
-                            </c:forEach>
-                            <c:if test="${empty workloads}">
-                                <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">No workload data available.</td>
-                                </tr>
-                            </c:if>
-                        </tbody>
-                    </table>
-                </div>
-=======
                         <h2 class="portal-page-title">${language == 'zh' ? '助教工作量' : 'TA Workloads'}</h2>
                         <p class="portal-page-copy">${language == 'zh' ? '查看各院系助教岗位分配和工时情况。' : 'Monitor TA assignments, hours, and estimated income across all departments.'}</p>
                     </div>
                 </div>
+
+                <c:if test="${workloadsState != 'loadError'}">
+                    <form action="${pageContext.request.contextPath}/workloads" method="GET" class="portal-filter-bar mb-6">
+                        <div class="flex flex-col lg:flex-row gap-4">
+                            <div class="flex-1">
+                                <label class="flex flex-col w-full">
+                                    <div class="flex w-full items-center rounded-lg bg-slate-100 px-4 h-11 border border-transparent focus-within:border-primary/30 transition-all">
+                                        <span class="material-symbols-outlined text-slate-400">search</span>
+                                        <input type="text" name="keyword" value="${param.keyword}" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm font-medium pl-3 outline-none" placeholder="${language == 'zh' ? '按助教姓名或学号搜索...' : 'Search by TA name or student ID...'}" />
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <div class="relative">
+                                    <select name="department" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors appearance-none pr-8 min-w-[10rem]">
+                                        <option value="">${language == 'zh' ? '院系：全部' : 'Department: All'}</option>
+                                        <c:forEach items="${departmentOptions}" var="dept">
+                                            <option value="${dept}" ${param.department == dept ? 'selected' : ''}><c:out value="${dept}"/></option>
+                                        </c:forEach>
+                                    </select>
+                                    <span class="material-symbols-outlined text-lg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">expand_more</span>
+                                </div>
+                                <button type="submit" class="flex h-11 items-center gap-2 rounded-lg bg-slate-100 px-4 text-sm font-bold text-slate-500 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">filter_list</span>
+                                    ${language == 'zh' ? '筛选' : 'Filter'}
+                                </button>
+                                <c:if test="${workloadsActiveFilters}">
+                                    <a href="${pageContext.request.contextPath}/workloads" class="flex h-11 items-center gap-2 rounded-lg bg-white border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:text-primary transition-colors">
+                                        ${language == 'zh' ? '清除' : 'Clear'}
+                                    </a>
+                                </c:if>
+                            </div>
+                        </div>
+                    </form>
+                </c:if>
 
                 <c:choose>
                     <c:when test="${workloadsState == 'loadError'}">
@@ -93,13 +95,23 @@
                             <jsp:param name="actionLabel" value="${language == 'zh' ? '重试' : 'Try Again'}" />
                         </jsp:include>
                     </c:when>
-                    <c:when test="${empty workloads}">
+                    <c:when test="${workloadsState == 'empty'}">
                         <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
                             <jsp:param name="icon" value="group" />
                             <jsp:param name="title" value="${language == 'zh' ? '暂无可统计的数据' : 'No aggregate data available'}" />
                             <jsp:param name="message" value="${language == 'zh' ? '当前没有任何被录用的申请记录，无法生成工作量报表。' : 'There are currently no accepted applications to generate workload statistics.'}" />
                             <jsp:param name="actionHref" value="${pageContext.request.contextPath}/dashboard" />
                             <jsp:param name="actionLabel" value="${language == 'zh' ? '返回仪表盘' : 'Back to Dashboard'}" />
+                            <jsp:param name="actionStyle" value="secondary" />
+                        </jsp:include>
+                    </c:when>
+                    <c:when test="${workloadsState == 'noSearchResults'}">
+                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                            <jsp:param name="icon" value="filter_alt_off" />
+                            <jsp:param name="title" value="${language == 'zh' ? '没有符合筛选条件的助教' : 'No TAs match your filters'}" />
+                            <jsp:param name="message" value="${language == 'zh' ? '请尝试清除筛选条件或调整搜索关键词。' : 'Try clearing filters or adjusting your search to see more results.'}" />
+                            <jsp:param name="actionHref" value="${pageContext.request.contextPath}/workloads" />
+                            <jsp:param name="actionLabel" value="${language == 'zh' ? '清除筛选' : 'Clear filters'}" />
                             <jsp:param name="actionStyle" value="secondary" />
                         </jsp:include>
                     </c:when>
@@ -145,6 +157,9 @@
                                             <td class="px-6 py-4">
                                                 <div class="font-medium text-slate-900"><c:out value="${empty wl.taName ? 'Unknown TA' : wl.taName}"/></div>
                                                 <div class="text-xs text-slate-500 mt-0.5"><c:out value="${empty wl.studentId ? wl.taEmail : wl.studentId}"/></div>
+                                                <c:if test="${not empty wl.department}">
+                                                    <div class="text-xs text-slate-400 mt-0.5"><c:out value="${wl.department}"/></div>
+                                                </c:if>
                                             </td>
                                             <td class="px-6 py-4 font-medium text-slate-700">${wl.acceptedVacancyCount}</td>
                                             <td class="px-6 py-4 text-slate-600">${wl.totalWeeklyHours} hrs</td>
@@ -207,7 +222,6 @@
                         </div>
                     </c:otherwise>
                 </c:choose>
->>>>>>> Stashed changes
             </div>
         </main>
     </div>

@@ -2,11 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="${langTag}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - QM HIRE</title>
+    <title>${i18n['settings.pageTitle']}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -47,7 +47,7 @@
         textarea.settings-input { resize: vertical; min-height: 80px; }
     </style>
 </head>
-<body class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
+<body data-theme="${appearance}" class="bg-background-light font-sans text-slate-900 overflow-x-hidden">
 <div class="relative flex min-h-screen w-full flex-col">
     <jsp:include page="/WEB-INF/jsp/components/header.jsp" />
     <div class="flex flex-1 overflow-hidden">
@@ -57,46 +57,39 @@
             <div class="portal-page portal-page--compact">
 
                 <%-- ── Derived display values ─────────────────────────────────── --%>
-                <c:set var="displayName" value="${empty userProfile.fullName ? 'Student User' : userProfile.fullName}" />
+                <c:set var="displayName" value="${empty userProfile.fullName ? i18n['common.studentUser'] : userProfile.fullName}" />
                 <c:set var="initial"     value="${fn:toUpperCase(fn:substring(displayName, 0, 1))}" />
-                <c:set var="deptLabel"   value="${empty userProfile.department or userProfile.department == 'None' ? 'Department not set' : userProfile.department}" />
+                <c:set var="deptLabel"   value="${empty userProfile.department or userProfile.department == 'None' ? i18n['common.departmentNotSet'] : userProfile.department}" />
                 <c:set var="state"       value="${empty pageState ? 'normal' : pageState}" />
                 <c:set var="notifOn"     value="${userProfile.notificationsEnabled == true}" />
+                <c:set var="departmentValue" value="${userProfile.department == 'None' ? '' : userProfile.department}" />
+                <c:set var="preferredLanguage" value="${empty userProfile.preferredLanguage ? 'en' : userProfile.preferredLanguage}" />
+                <c:set var="preferredAppearance" value="${empty userProfile.preferredAppearance ? 'light' : userProfile.preferredAppearance}" />
 
                 <%-- ── Page header ──────────────────────────────────────────────── --%>
                 <div class="portal-page-header mb-6">
                     <div>
-                        <h2 class="portal-page-title">Settings</h2>
-                        <p class="portal-page-copy">Manage your profile, security settings, and communication preferences.</p>
+                        <h2 class="portal-page-title">${i18n['settings.title']}</h2>
+                        <p class="portal-page-copy">${i18n['settings.copy']}</p>
                     </div>
                 </div>
 
-                <%-- ── Toast banners ─────────────────────────────────────────────── --%>
-                <c:if test="${state == 'updateSuccess'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-emerald-600">check_circle</span>
-                        <p class="text-sm font-semibold text-emerald-800"><c:out value="${successMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'updateFailure'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-red-500">error</span>
-                        <p class="text-sm font-semibold text-red-700"><c:out value="${errorMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'pwdSuccess'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-emerald-600">lock_open</span>
-                        <p class="text-sm font-semibold text-emerald-800"><c:out value="${successMessage}"/></p>
-                    </div>
-                </c:if>
-                <c:if test="${state == 'pwdFailure'}">
-                    <div class="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-                        <span class="material-symbols-outlined text-red-500">lock</span>
-                        <p class="text-sm font-semibold text-red-700"><c:out value="${errorMessage}"/></p>
-                    </div>
-                </c:if>
+                <jsp:include page="/WEB-INF/jsp/components/flash_messages.jsp">
+                    <jsp:param name="containerClass" value="mb-6" />
+                </jsp:include>
 
+                <c:choose>
+                    <c:when test="${state == 'loadError'}">
+                        <jsp:include page="/WEB-INF/jsp/components/state_card.jsp">
+                            <jsp:param name="variant" value="error" />
+                            <jsp:param name="icon" value="settings_alert" />
+                            <jsp:param name="title" value="${i18n['settings.loadErrorTitle']}" />
+                            <jsp:param name="message" value="${i18n['settings.loadErrorMessage']}" />
+                            <jsp:param name="actionHref" value="${pageContext.request.contextPath}/settings" />
+                            <jsp:param name="actionLabel" value="${i18n['common.tryAgain']}" />
+                        </jsp:include>
+                    </c:when>
+                    <c:otherwise>
                 <div class="grid grid-cols-1 gap-8 lg:grid-cols-[1.3fr_0.7fr]">
 
                     <%-- ════════════ LEFT COLUMN ════════════ --%>
@@ -117,41 +110,41 @@
                                         <p class="mt-0.5 truncate text-sm text-slate-500"><c:out value="${deptLabel}"/></p>
                                         <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
                                             <span class="material-symbols-outlined text-[14px]">verified</span>
-                                            Active account
+                                            ${i18n['common.activeAccount']}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2">
                                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <p class="settings-label">Email</p>
+                                    <p class="settings-label">${i18n['common.email']}</p>
                                     <p class="text-sm font-semibold text-slate-900 break-all"><c:out value="${userProfile.email}"/></p>
                                 </div>
                                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <p class="settings-label">Phone</p>
+                                    <p class="settings-label">${i18n['common.phone']}</p>
                                     <p class="text-sm font-semibold text-slate-900">
                                         <c:choose>
                                             <c:when test="${not empty userProfile.phone}"><c:out value="${userProfile.phone}"/></c:when>
-                                            <c:otherwise><span class="text-slate-400 font-normal">Not provided</span></c:otherwise>
+                                            <c:otherwise><span class="text-slate-400 font-normal">${i18n['common.notProvided']}</span></c:otherwise>
                                         </c:choose>
                                     </p>
                                 </div>
                                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <p class="settings-label">Student ID</p>
+                                    <p class="settings-label">${i18n['common.studentId']}</p>
                                     <p class="text-sm font-semibold text-slate-900">
                                         <c:choose>
                                             <c:when test="${not empty userProfile.studentId}"><c:out value="${userProfile.studentId}"/></c:when>
-                                            <c:otherwise><span class="text-slate-400 font-normal">Not provided</span></c:otherwise>
+                                            <c:otherwise><span class="text-slate-400 font-normal">${i18n['common.notProvided']}</span></c:otherwise>
                                         </c:choose>
                                     </p>
                                 </div>
                                 <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <p class="settings-label">Department</p>
+                                    <p class="settings-label">${i18n['common.department']}</p>
                                     <p class="text-sm font-semibold text-slate-900"><c:out value="${deptLabel}"/></p>
                                 </div>
                                 <c:if test="${not empty userProfile.bio}">
                                     <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:col-span-2">
-                                        <p class="settings-label">Bio</p>
+                                        <p class="settings-label">${i18n['common.bio']}</p>
                                         <p class="text-sm leading-relaxed text-slate-700"><c:out value="${userProfile.bio}"/></p>
                                     </div>
                                 </c:if>
@@ -165,8 +158,8 @@
                                     <span class="material-symbols-outlined">edit</span>
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-slate-900">Edit Profile</h3>
-                                    <p class="text-xs text-slate-500">All changes are saved permanently to your account.</p>
+                                    <h3 class="font-bold text-slate-900">${i18n['settings.editProfileTitle']}</h3>
+                                    <p class="text-xs text-slate-500">${i18n['settings.editProfileCopy']}</p>
                                 </div>
                             </div>
 
@@ -175,38 +168,38 @@
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="settings-label">Full Name <span class="text-red-400">*</span></label>
+                                        <label class="settings-label">${i18n['common.fullName']} <span class="text-red-400">*</span></label>
                                         <input type="text" name="fullName"
                                                value="<c:out value='${userProfile.fullName}'/>"
                                                class="settings-input" required />
                                     </div>
                                     <div>
-                                        <label class="settings-label">Phone</label>
+                                        <label class="settings-label">${i18n['common.phone']}</label>
                                         <input type="text" name="phone"
                                                value="<c:out value='${userProfile.phone}'/>"
-                                               class="settings-input" placeholder="+44 7700 900000" />
+                                               class="settings-input" placeholder="${i18n['settings.phonePlaceholder']}" />
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label class="settings-label">Department</label>
+                                        <label class="settings-label">${i18n['common.department']}</label>
                                         <input type="text" name="department"
-                                               value="${userProfile.department == 'None' ? '' : userProfile.department}"
-                                               class="settings-input" placeholder="e.g. Computer Science" />
+                                               value="<c:out value='${departmentValue}'/>"
+                                               class="settings-input" placeholder="${i18n['settings.departmentPlaceholder']}" />
                                     </div>
                                     <div>
-                                        <label class="settings-label">Student ID</label>
+                                        <label class="settings-label">${i18n['common.studentId']}</label>
                                         <input type="text" name="studentId"
                                                value="<c:out value='${userProfile.studentId}'/>"
-                                               class="settings-input" placeholder="e.g. 220012345" />
+                                               class="settings-input" placeholder="${i18n['settings.studentIdPlaceholder']}" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label class="settings-label">Bio</label>
+                                    <label class="settings-label">${i18n['common.bio']}</label>
                                     <textarea name="bio" rows="3" class="settings-input"
-                                              placeholder="Tell us a little about yourself, your background, and teaching interests..."><c:out value="${userProfile.bio}"/></textarea>
+                                              placeholder="${i18n['settings.bioPlaceholder']}"><c:out value="${userProfile.bio}"/></textarea>
                                 </div>
 
                                 <label class="flex items-center gap-3 cursor-pointer rounded-xl border border-slate-200 bg-slate-50/60 p-3 hover:bg-slate-50 transition-colors">
@@ -214,14 +207,14 @@
                                            class="h-4 w-4 rounded border-slate-300 accent-slate-900"
                                            <c:if test="${notifOn}">checked</c:if> />
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-800">Enable notifications</p>
-                                        <p class="text-xs text-slate-500">Recruiter replies, application updates, and reminders.</p>
+                                        <p class="text-sm font-semibold text-slate-800">${i18n['settings.enableNotifications']}</p>
+                                        <p class="text-xs text-slate-500">${i18n['settings.notificationsCopy']}</p>
                                     </div>
                                 </label>
 
                                 <button type="submit" class="portal-btn portal-btn-primary w-full justify-center">
                                     <span class="material-symbols-outlined text-sm">save</span>
-                                    Save Profile
+                                    ${i18n['settings.saveProfile']}
                                 </button>
                             </form>
                         </section>
@@ -237,38 +230,60 @@
                                     <span class="material-symbols-outlined">notifications</span>
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-slate-900">Preferences</h3>
-                                    <p class="text-xs text-slate-500">Current account settings.</p>
+                                    <h3 class="font-bold text-slate-900">${i18n['settings.preferencesTitle']}</h3>
+                                    <p class="text-xs text-slate-500">${i18n['settings.preferencesCopy']}</p>
                                 </div>
                             </div>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900">Notifications</p>
-                                        <p class="text-xs text-slate-500">Updates &amp; reminders</p>
+                                        <p class="text-sm font-semibold text-slate-900">${i18n['common.notifications']}</p>
+                                        <p class="text-xs text-slate-500">${i18n['settings.notificationsCopyShort']}</p>
                                     </div>
                                     <c:choose>
                                         <c:when test="${notifOn}">
                                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-                                                <span class="material-symbols-outlined text-[13px]">check</span>On
+                                                <span class="material-symbols-outlined text-[13px]">check</span>${i18n['common.on']}
                                             </span>
                                         </c:when>
                                         <c:otherwise>
-                                            <span class="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">Off</span>
+                                            <span class="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">${i18n['common.off']}</span>
                                         </c:otherwise>
                                     </c:choose>
                                 </div>
+                                <form action="${pageContext.request.contextPath}/settings" method="POST" class="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-4 space-y-3">
+                                    <input type="hidden" name="action" value="updatePreferences">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">${i18n['common.language']}</p>
+                                        <p class="text-xs text-slate-500">${i18n['settings.languageCopy']}</p>
+                                    </div>
+                                    <select name="preferredLanguage" class="settings-input">
+                                        <option value="en" ${preferredLanguage == 'en' ? 'selected' : ''}>${i18n['common.english']}</option>
+                                        <option value="zh" ${preferredLanguage == 'zh' ? 'selected' : ''}>${i18n['common.chinese']}</option>
+                                    </select>
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">${i18n['common.appearance']}</p>
+                                        <p class="text-xs text-slate-500">${i18n['settings.appearanceCopy']}</p>
+                                    </div>
+                                    <select name="preferredAppearance" class="settings-input">
+                                        <option value="light" ${preferredAppearance == 'light' ? 'selected' : ''}>${i18n['common.light']}</option>
+                                        <option value="dark" ${preferredAppearance == 'dark' ? 'selected' : ''}>${i18n['common.dark']}</option>
+                                    </select>
+                                    <button type="submit" class="portal-btn portal-btn-secondary w-full justify-center">
+                                        <span class="material-symbols-outlined text-sm">palette</span>
+                                        ${i18n['settings.savePreferences']}
+                                    </button>
+                                </form>
                                 <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900">Language</p>
+                                        <p class="text-sm font-semibold text-slate-900">${i18n['common.appearance']}</p>
                                     </div>
-                                    <span class="rounded-full bg-white ring-1 ring-slate-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-700">English</span>
-                                </div>
-                                <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
-                                    <div>
-                                        <p class="text-sm font-semibold text-slate-900">Appearance</p>
-                                    </div>
-                                    <span class="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">Light</span>
+                                    <span class="rounded-full bg-slate-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                        <c:choose>
+                                            <c:when test="${preferredAppearance == 'dark'}">${i18n['common.dark']}</c:when>
+                                            <c:otherwise>${i18n['common.light']}</c:otherwise>
+                                        </c:choose>
+                                    </span>
                                 </div>
                             </div>
                         </section>
@@ -280,8 +295,8 @@
                                     <span class="material-symbols-outlined">lock</span>
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-slate-900">Change Password</h3>
-                                    <p class="text-xs text-slate-500">Minimum 8 characters required.</p>
+                                    <h3 class="font-bold text-slate-900">${i18n['settings.changePasswordTitle']}</h3>
+                                    <p class="text-xs text-slate-500">${i18n['settings.changePasswordCopy']}</p>
                                 </div>
                             </div>
 
@@ -290,28 +305,28 @@
                                 <input type="hidden" name="action" value="changePassword">
 
                                 <div>
-                                    <label class="settings-label">Current Password</label>
+                                    <label class="settings-label">${i18n['common.currentPassword']}</label>
                                     <input type="password" name="currentPassword" autocomplete="current-password"
                                            class="settings-input" placeholder="••••••••" required />
                                 </div>
                                 <div>
-                                    <label class="settings-label">New Password</label>
+                                    <label class="settings-label">${i18n['common.newPassword']}</label>
                                     <input type="password" name="newPassword" id="newPwd" autocomplete="new-password"
-                                           class="settings-input" placeholder="••••••••" required minlength="8" />
+                                           class="settings-input ta-pw-min8" placeholder="••••••••" required minlength="8" />
                                 </div>
                                 <div>
-                                    <label class="settings-label">Confirm New Password</label>
+                                    <label class="settings-label">${i18n['common.confirmNewPassword']}</label>
                                     <input type="password" name="confirmPassword" id="confirmPwd" autocomplete="new-password"
-                                           class="settings-input" placeholder="••••••••" required minlength="8" />
+                                           class="settings-input ta-pw-min8" placeholder="••••••••" required minlength="8" />
                                 </div>
                                 <p id="pwdMismatch" class="hidden text-xs font-semibold text-red-500">
-                                    Passwords do not match.
+                                    ${i18n['settings.passwordMismatch']}
                                 </p>
 
                                 <button type="submit" class="portal-btn portal-btn-secondary w-full justify-center mt-1"
                                         id="pwdSubmitBtn">
                                     <span class="material-symbols-outlined text-sm">key</span>
-                                    Update Password
+                                    ${i18n['settings.updatePassword']}
                                 </button>
                             </form>
                         </section>
@@ -323,54 +338,59 @@
                                     <span class="material-symbols-outlined">logout</span>
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-red-600">Sign Out</h3>
-                                    <p class="text-xs text-slate-500">End your current session securely.</p>
+                                    <h3 class="font-bold text-red-600">${i18n['settings.signOutTitle']}</h3>
+                                    <p class="text-xs text-slate-500">${i18n['settings.signOutCopy']}</p>
                                 </div>
                             </div>
                             <form action="${pageContext.request.contextPath}/logout" method="POST">
                                 <button type="submit" class="portal-btn portal-btn-danger w-full justify-center">
                                     <span class="material-symbols-outlined text-sm">logout</span>
-                                    Logout
+                                    ${i18n['common.logout']}
                                 </button>
                             </form>
                         </section>
 
                         <p class="text-center text-xs text-slate-400">
-                            QM HIRE v1.2 &nbsp;·&nbsp; © 2026 Queen Mary University
+                            ${i18n['settings.footer']}
                         </p>
                     </div>
                 </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </main>
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/js/password-minlength-en.js"></script>
 <script>
-    // Client-side confirm-password match check
-    const newPwd     = document.getElementById('newPwd');
+    const newPwd = document.getElementById('newPwd');
     const confirmPwd = document.getElementById('confirmPwd');
-    const mismatch   = document.getElementById('pwdMismatch');
-    const submitBtn  = document.getElementById('pwdSubmitBtn');
+    const mismatch = document.getElementById('pwdMismatch');
+    const submitBtn = document.getElementById('pwdSubmitBtn');
+    const passwordForm = document.getElementById('pwdForm');
 
-    function checkMatch() {
-        if (confirmPwd.value && newPwd.value !== confirmPwd.value) {
-            mismatch.classList.remove('hidden');
-            submitBtn.disabled = true;
-        } else {
-            mismatch.classList.add('hidden');
-            submitBtn.disabled = false;
+    if (newPwd && confirmPwd && mismatch && submitBtn && passwordForm) {
+        function checkMatch() {
+            if (confirmPwd.value && newPwd.value !== confirmPwd.value) {
+                mismatch.classList.remove('hidden');
+                submitBtn.disabled = true;
+            } else {
+                mismatch.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
         }
+
+        newPwd.addEventListener('input', checkMatch);
+        confirmPwd.addEventListener('input', checkMatch);
+
+        passwordForm.addEventListener('submit', function(e) {
+            if (newPwd.value !== confirmPwd.value) {
+                e.preventDefault();
+                mismatch.classList.remove('hidden');
+            }
+        });
     }
-
-    newPwd.addEventListener('input', checkMatch);
-    confirmPwd.addEventListener('input', checkMatch);
-
-    document.getElementById('pwdForm').addEventListener('submit', function(e) {
-        if (newPwd.value !== confirmPwd.value) {
-            e.preventDefault();
-            mismatch.classList.remove('hidden');
-        }
-    });
 </script>
 </body>
 </html>

@@ -1,12 +1,17 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.JobType;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.Skill;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
+import com.bupt.ta.util.ResumeFilePaths;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -37,7 +42,7 @@ public class VacancyDetailServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
-        this.resumeService = new ResumeService(database.resumes());
+        this.resumeService = new ResumeService(database);
     }
 
     @Override
@@ -46,12 +51,14 @@ public class VacancyDetailServlet extends HttpServlet {
             UUID vacancyId = parseVacancyId(req.getParameter("vacancyId"));
             if (vacancyId == null) {
                 req.setAttribute("pageState", "normal");
+                copyFlashFromQuery(req);
+                attachQwenConfigured(req);
                 req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
                 return;
             }
 
             Map<UUID, User> userById = database.users()
-                    .listAll()
+                    .findAll()
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 
@@ -67,18 +74,34 @@ public class VacancyDetailServlet extends HttpServlet {
                     .stream()
                     .map(resume -> new ResumeSelectionView(
                             resume.getId().toString(),
-                            safe(resume.getTitle(), "Untitled Resume")
+                            safe(resume.getTitle(), "Untitled Resume"),
+                            safe(resume.getOriginalFileName(), ""),
+                            ResumeFilePaths.isAvailable(resume)
                     ))
                     .toList();
 
             req.setAttribute("resumeList", resumeViews);
             req.setAttribute("pageState", "normal");
-        } catch (RuntimeException ex) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", "Failed to load vacancy details. Please try again.");
+            copyFlashFromQuery(req);
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load vacancy detail", ex);
+            applyLoadError(req);
         }
 
+        attachQwenConfigured(req);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyDetailLoadFailed"));
+        req.removeAttribute("vacancy");
+        req.setAttribute("resumeList", List.of());
+        req.setAttribute("successMessage", null);
+    }
+
+    private static void attachQwenConfigured(HttpServletRequest req) {
+        req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
     }
 
     private VacancyDetailView toView(Job job, Map<UUID, User> userById, User currentUser) {
@@ -96,6 +119,8 @@ public class VacancyDetailServlet extends HttpServlet {
             moduleOwner = safe(userById.get(job.getPostedBy()).getFullName(), moduleOwner);
         }
         boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
+        boolean saved = currentUser != null && currentUser.getSavedJobIds().contains(job.getId());
+        List<String> labels = job.getLabels();
 
         List<String> requirements = buildRequirements(job);
         return new VacancyDetailView(
@@ -109,11 +134,30 @@ public class VacancyDetailServlet extends HttpServlet {
                 deadline,
                 moduleOwner,
                 requirements,
-                isOwner
+                isOwner,
+                labels,
+                saved
         );
     }
 
+    private void copyFlashFromQuery(HttpServletRequest req) {
+        String s = req.getParameter("successMessage");
+        if (s != null && !s.isBlank()) {
+            req.setAttribute("successMessage", s);
+        }
+        String e = req.getParameter("errorMessage");
+        if (e != null && !e.isBlank()) {
+            req.setAttribute("errorMessage", e);
+        }
+    }
+
     private List<String> buildRequirements(Job job) {
+        List<String> structuredRequirements = database.jobRequirements().listByJobId(job.getId()).stream()
+                .map(requirement -> toRequirementLabel(requirement))
+                .toList();
+        if (!structuredRequirements.isEmpty()) {
+            return structuredRequirements;
+        }
         if (job.getType() == JobType.INVIGILATION) {
             return List.of(
                     "Strong attention to detail during invigilation sessions.",
@@ -133,6 +177,15 @@ public class VacancyDetailServlet extends HttpServlet {
                 "Professional communication and teamwork skills.",
                 "Ability to meet deadlines and follow role responsibilities."
         );
+    }
+
+    private String toRequirementLabel(JobRequirement requirement) {
+        String skillName = database.skills().findById(requirement.getSkillId())
+                .map(Skill::getName)
+                .orElse("Unknown skill");
+        String prefix = requirement.isRequired() ? "Required" : "Preferred";
+        String level = requirement.getMinProficiency() == null ? "" : " (" + requirement.getMinProficiency() + "+)";
+        return prefix + ": " + skillName + level;
     }
 
     private UUID parseVacancyId(String rawVacancyId) {
@@ -181,6 +234,8 @@ public class VacancyDetailServlet extends HttpServlet {
         private final String moduleOwner;
         private final List<String> requirements;
         private final boolean isOwner;
+        private final List<String> labels;
+        private final boolean saved;
 
         public VacancyDetailView(String vacancyId,
                                  String courseCode,
@@ -192,7 +247,9 @@ public class VacancyDetailServlet extends HttpServlet {
                                  String deadline,
                                  String moduleOwner,
                                  List<String> requirements,
-                                 boolean isOwner) {
+                                 boolean isOwner,
+                                 List<String> labels,
+                                 boolean saved) {
             this.vacancyId = vacancyId;
             this.courseCode = courseCode;
             this.title = title;
@@ -204,6 +261,8 @@ public class VacancyDetailServlet extends HttpServlet {
             this.moduleOwner = moduleOwner;
             this.requirements = requirements;
             this.isOwner = isOwner;
+            this.labels = labels;
+            this.saved = saved;
         }
 
         public String getVacancyId() {
@@ -249,15 +308,27 @@ public class VacancyDetailServlet extends HttpServlet {
         public boolean isOwner() {
             return isOwner;
         }
+
+        public List<String> getLabels() {
+            return labels;
+        }
+
+        public boolean isSaved() {
+            return saved;
+        }
     }
 
     public static final class ResumeSelectionView {
         private final String resumeId;
         private final String resumeName;
+        private final String originalFileName;
+        private final boolean fileAvailable;
 
-        public ResumeSelectionView(String resumeId, String resumeName) {
+        public ResumeSelectionView(String resumeId, String resumeName, String originalFileName, boolean fileAvailable) {
             this.resumeId = resumeId;
             this.resumeName = resumeName;
+            this.originalFileName = originalFileName;
+            this.fileAvailable = fileAvailable;
         }
 
         public String getResumeId() {
@@ -266,6 +337,14 @@ public class VacancyDetailServlet extends HttpServlet {
 
         public String getResumeName() {
             return resumeName;
+        }
+
+        public String getOriginalFileName() {
+            return originalFileName;
+        }
+
+        public boolean isFileAvailable() {
+            return fileAvailable;
         }
     }
 }

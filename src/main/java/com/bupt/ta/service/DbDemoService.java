@@ -1,231 +1,551 @@
 package com.bupt.ta.service;
 
-import com.bupt.ta.model.Application;
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.UserRole;
-import com.bupt.ta.persistence.TaDatabase;
-import com.bupt.ta.repository.ApplicationRepository;
-import com.bupt.ta.repository.JobRepository;
-import com.bupt.ta.repository.ResumeRepository;
-import com.bupt.ta.repository.UserRepository;
+import com.bupt.ta.db.core.ConstraintViolationException;
+import com.bupt.ta.db.core.JsonMapperFactory;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Application;
+import com.bupt.ta.domain.entity.AuditLog;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.MatchScore;
+import com.bupt.ta.domain.entity.Notification;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.ResumeSkill;
+import com.bupt.ta.domain.entity.Skill;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.entity.WorkloadRecord;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.SkillCategory;
+import com.bupt.ta.domain.enums.UserRole;
+import com.bupt.ta.domain.value.AvailabilitySlot;
+import com.bupt.ta.util.PasswordUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.LocalDate;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 public class DbDemoService {
-    private final UserRepository userRepository;
-    private final ResumeRepository resumeRepository;
-    private final JobRepository jobRepository;
-    private final ApplicationRepository applicationRepository;
+    private static final TypeReference<List<AvailabilitySlot>> AVAILABILITY_TYPE = new TypeReference<>() { };
 
-    public DbDemoService(UserRepository userRepository,
-                         ResumeRepository resumeRepository,
-                         JobRepository jobRepository,
-                         ApplicationRepository applicationRepository) {
-        this.userRepository = Objects.requireNonNull(userRepository, "userRepository must not be null");
-        this.resumeRepository = Objects.requireNonNull(resumeRepository, "resumeRepository must not be null");
-        this.jobRepository = Objects.requireNonNull(jobRepository, "jobRepository must not be null");
-        this.applicationRepository = Objects.requireNonNull(applicationRepository, "applicationRepository must not be null");
-    }
+    private final TaDatabase db;
+    private final ResumeService resumeService;
+    private final JobService jobService;
+    private final ApplicationService applicationService;
+    private final MatchingService matchingService;
+    private final ObjectMapper mapper;
 
-    public static DbDemoService from(TaDatabase database) {
-        return new DbDemoService(
-                database.users(),
-                database.resumes(),
-                database.jobs(),
-                database.applications()
-        );
+    public DbDemoService(TaDatabase db) {
+        this.db = db;
+        this.resumeService = new ResumeService(db);
+        this.jobService = new JobService(db);
+        this.applicationService = new ApplicationService(db);
+        this.matchingService = new MatchingService(db);
+        this.mapper = JsonMapperFactory.create();
     }
 
     public List<User> listUsers() {
-        return userRepository.listAll();
+        return db.users().findAll().stream()
+                .sorted(Comparator.comparing(User::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public List<User> listRecruiters() {
+        return listUsers().stream()
+                .filter(user -> user.getRole() == UserRole.MO || user.getRole() == UserRole.ADMIN)
+                .toList();
     }
 
     public List<Resume> listResumes() {
-        return resumeRepository.listAll();
+        return db.resumes().findAll().stream()
+                .sorted(Comparator.comparing(Resume::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
     public List<Job> listJobs() {
-        return jobRepository.listAll();
+        return db.jobs().findAll().stream()
+                .sorted(Comparator.comparing(Job::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
     public List<Application> listApplications() {
-        return applicationRepository.listAll();
+        return db.applications().findAll().stream()
+                .sorted(Comparator.comparing(Application::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
-    public Optional<User> findUser(UUID id) {
-        return userRepository.findById(id);
+    public List<Skill> listSkills() {
+        return db.skills().findAll().stream()
+                .sorted(Comparator.comparing(Skill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
-    public Optional<Resume> findResume(UUID id) {
-        return resumeRepository.findById(id);
+    public List<ResumeSkill> listResumeSkills() {
+        return db.resumeSkills().findAll().stream()
+                .sorted(Comparator.comparing(ResumeSkill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
-    public Optional<Job> findJob(UUID id) {
-        return jobRepository.findById(id);
+    public List<JobRequirement> listJobRequirements() {
+        return db.jobRequirements().findAll().stream()
+                .sorted(Comparator.comparing(JobRequirement::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
-    public Optional<Application> findApplication(UUID id) {
-        return applicationRepository.findById(id);
+    public List<MatchScore> listMatchScores() {
+        return db.matchScores().findAll().stream()
+                .sorted(Comparator.comparing(MatchScore::getComputedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(MatchScore::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
-    public User saveUser(User user) {
-        if (user.getId() != null) {
-            requireExistingUser(user.getId(), "User not found");
+    public List<Notification> listRecentNotifications(int limit) {
+        return db.notifications().findAll().stream()
+                .sorted(Comparator.comparing(Notification::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .toList();
+    }
+
+    public List<AuditLog> listRecentAuditLogs(int limit) {
+        return db.auditLogs().findAll().stream()
+                .sorted(Comparator.comparing(AuditLog::getOperatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .toList();
+    }
+
+    public List<WorkloadRecord> listRecentWorkloadRecords(int limit) {
+        return db.workloadRecords().findAll().stream()
+                .sorted(Comparator.comparing(WorkloadRecord::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .toList();
+    }
+
+    public List<TableCount> listTableCounts() {
+        return List.of(
+                new TableCount("users", db.users().findAll().size(), "users.json"),
+                new TableCount("resumes", db.resumes().findAll().size(), "resumes.json"),
+                new TableCount("jobs", db.jobs().findAll().size(), "jobs.json"),
+                new TableCount("applications", db.applications().findAll().size(), "applications.json"),
+                new TableCount("skills", db.skills().findAll().size(), "skills.json"),
+                new TableCount("resume_skills", db.resumeSkills().findAll().size(), "resume_skills.json"),
+                new TableCount("job_requirements", db.jobRequirements().findAll().size(), "job_requirements.json"),
+                new TableCount("workload_records", db.workloadRecords().findAll().size(), "workload_records.json"),
+                new TableCount("match_scores", db.matchScores().findAll().size(), "match_scores.json"),
+                new TableCount("notifications", db.notifications().findAll().size(), "notifications.json"),
+                new TableCount("audit_logs", db.auditLogs().findAll().size(), "audit_logs.json")
+        );
+    }
+
+    public Optional<User> findUser(UUID userId) {
+        return db.users().findById(userId);
+    }
+
+    public Optional<Resume> findResume(UUID resumeId) {
+        return db.resumes().findById(resumeId);
+    }
+
+    public Optional<Job> findJob(UUID jobId) {
+        return db.jobs().findById(jobId);
+    }
+
+    public Optional<Application> findApplication(UUID applicationId) {
+        return db.applications().findById(applicationId);
+    }
+
+    public Optional<Skill> findSkill(UUID skillId) {
+        return db.skills().findById(skillId);
+    }
+
+    public Optional<ResumeSkill> findResumeSkill(UUID resumeSkillId) {
+        return db.resumeSkills().findById(resumeSkillId);
+    }
+
+    public Optional<JobRequirement> findJobRequirement(UUID requirementId) {
+        return db.jobRequirements().findById(requirementId);
+    }
+
+    public User saveUser(User submitted, String plainPassword) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("User submission is required");
         }
-        requireNonBlank(user.getEmail(), "User email must not be blank");
-        requireNonBlank(user.getPasswordHash(), "User password must not be blank");
-        requireNonBlank(user.getFullName(), "User fullName must not be blank");
-        requireNonNull(user.getRole(), "User role must not be null");
-
-        user.setEmail(user.getEmail().trim());
-        user.setPasswordHash(user.getPasswordHash().trim());
-        user.setFullName(user.getFullName().trim());
-        if (user.getPhone() != null) {
-            user.setPhone(user.getPhone().trim());
-        }
-        return userRepository.save(user);
-    }
-
-    public boolean deactivateUser(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
-        if (!user.isActive()) {
-            throw new IllegalArgumentException("User is already inactive");
-        }
-        return userRepository.setActive(id, false);
-    }
-
-    public boolean activateUser(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
-        if (user.isActive()) {
-            throw new IllegalArgumentException("User is already active");
-        }
-        return userRepository.setActive(id, true);
-    }
-
-    public Resume saveResume(Resume resume) {
-        if (resume.getId() != null) {
-            requireExistingResume(resume.getId(), "Resume not found");
-        }
-        requireNonNull(resume.getUserId(), "Resume userId must not be null");
-        requireNonBlank(resume.getTitle(), "Resume title must not be blank");
-        requireNonNull(resume.getDegreeLevel(), "Resume degreeLevel must not be null");
-        requireExistingUser(resume.getUserId(), "Resume owner does not exist");
-
-        resume.setTitle(resume.getTitle().trim());
-        resume.setDepartment(trimToNull(resume.getDepartment()));
-        resume.setBio(trimToNull(resume.getBio()));
-        resume.setAvailabilityJson(trimToNull(resume.getAvailabilityJson()));
-        return resumeRepository.save(resume);
-    }
-
-    public boolean deleteResume(UUID id) {
-        requireExistingResume(id, "Resume not found");
-        boolean hasApplications = applicationRepository.listByResumeId(id).stream().findAny().isPresent();
-        if (hasApplications) {
-            throw new IllegalArgumentException("Cannot delete a resume that is already referenced by applications");
-        }
-        return resumeRepository.delete(id);
-    }
-
-    public Job saveJob(Job job) {
-        if (job.getId() != null) {
-            requireExistingJob(job.getId(), "Job not found");
-        }
-        requireNonNull(job.getPostedBy(), "Job postedBy must not be null");
-        requireNonBlank(job.getTitle(), "Job title must not be blank");
-        requireNonNull(job.getType(), "Job type must not be null");
-        requireNonNull(job.getStatus(), "Job status must not be null");
-        requireNonNull(job.getDeadline(), "Job deadline must not be null");
-
-        User poster = requireExistingUser(job.getPostedBy(), "Job poster does not exist");
-        if (poster.getRole() != UserRole.MO && poster.getRole() != UserRole.ADMIN) {
-            throw new IllegalArgumentException("Job poster must be an MO or ADMIN user");
-        }
-        validateDateRange(job.getStartDate(), job.getEndDate(), "Job endDate must not be before startDate");
-
-        job.setTitle(job.getTitle().trim());
-        job.setModuleCode(trimToNull(job.getModuleCode()));
-        job.setDescription(trimToNull(job.getDescription()));
-        return jobRepository.save(job);
-    }
-
-    public boolean deleteJob(UUID id) {
-        requireExistingJob(id, "Job not found");
-        boolean hasApplications = applicationRepository.listByJobId(id).stream().findAny().isPresent();
-        if (hasApplications) {
-            throw new IllegalArgumentException("Cannot delete a job that is already referenced by applications");
-        }
-        return jobRepository.delete(id);
-    }
-
-    public Application saveApplication(Application application) {
-        if (application.getId() != null) {
-            applicationRepository.findById(application.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Application not found: " + application.getId()));
-        }
-        requireNonNull(application.getResumeId(), "Application resumeId must not be null");
-        requireNonNull(application.getJobId(), "Application jobId must not be null");
-        requireNonNull(application.getStatus(), "Application status must not be null");
-
-        requireExistingResume(application.getResumeId(), "Application resume does not exist");
-        requireExistingJob(application.getJobId(), "Application job does not exist");
-
-        if (application.getReviewedBy() != null) {
-            User reviewer = requireExistingUser(application.getReviewedBy(), "Application reviewer does not exist");
-            if (reviewer.getRole() != UserRole.MO && reviewer.getRole() != UserRole.ADMIN) {
-                throw new IllegalArgumentException("Application reviewer must be an MO or ADMIN user");
-            }
+        requireNonBlank(submitted.getEmail(), "User email must not be blank");
+        requireNonBlank(submitted.getFullName(), "User full name must not be blank");
+        if (submitted.getRole() == null) {
+            throw new ConstraintViolationException("User role must not be null");
         }
 
-        application.setCoverLetter(trimToNull(application.getCoverLetter()));
-        application.setMoNotes(trimToNull(application.getMoNotes()));
-        return applicationRepository.save(application);
+        User toSave = submitted.getId() == null
+                ? new User()
+                : db.users().findById(submitted.getId()).map(existing -> mergeUser(existing, submitted)).orElseThrow(
+                        () -> new ConstraintViolationException("User not found: " + submitted.getId()));
+
+        toSave.setEmail(submitted.getEmail().trim());
+        toSave.setFullName(submitted.getFullName().trim());
+        toSave.setRole(submitted.getRole());
+        toSave.setPhone(trimToNull(submitted.getPhone()));
+        toSave.setDepartment(trimToNull(submitted.getDepartment()));
+        toSave.setStudentId(trimToNull(submitted.getStudentId()));
+        toSave.setBio(trimToNull(submitted.getBio()));
+        toSave.setActive(submitted.isActive());
+
+        if (plainPassword != null && !plainPassword.isBlank()) {
+            toSave.setPasswordHash(PasswordUtil.hashPassword(plainPassword.trim()));
+        } else if (toSave.getPasswordHash() == null || toSave.getPasswordHash().isBlank()) {
+            throw new ConstraintViolationException("A password is required when creating a user");
+        }
+
+        return db.users().save(toSave);
     }
 
-    public boolean deleteApplication(UUID id) {
-        Application application = applicationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Application not found: " + id));
-        return applicationRepository.delete(application.getId());
+    public Resume saveResume(Resume submitted, String availabilitySlotsJson) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Resume submission is required");
+        }
+        Resume toSave = submitted.getId() == null
+                ? submitted
+                : db.resumes().findById(submitted.getId())
+                        .map(existing -> mergeResume(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + submitted.getId()));
+
+        toSave.setDepartment(trimToNull(submitted.getDepartment()));
+        toSave.setBio(trimToNull(submitted.getBio()));
+        toSave.setAvailabilitySlots(parseAvailabilitySlots(availabilitySlotsJson));
+        return resumeService.save(toSave);
     }
 
-    private User requireExistingUser(UUID id, String message) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(message + ": " + id));
+    public Job saveJob(Job submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Job submission is required");
+        }
+        Job toSave = submitted.getId() == null
+                ? submitted
+                : db.jobs().findById(submitted.getId())
+                        .map(existing -> mergeJob(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Job not found: " + submitted.getId()));
+
+        if (toSave.getStatus() == null) {
+            toSave.setStatus(JobStatus.OPEN);
+        }
+        if (toSave.getHourlyRate() == null) {
+            toSave.setHourlyRate(new BigDecimal("20.00"));
+        }
+        return jobService.save(toSave);
     }
 
-    private Resume requireExistingResume(UUID id, String message) {
-        return resumeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(message + ": " + id));
+    public Skill saveSkill(Skill submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Skill submission is required");
+        }
+        requireNonBlank(submitted.getName(), "Skill name must not be blank");
+        if (submitted.getCategory() == null) {
+            throw new ConstraintViolationException("Skill category must not be null");
+        }
+
+        Skill toSave = submitted.getId() == null
+                ? new Skill()
+                : db.skills().findById(submitted.getId())
+                        .map(existing -> mergeSkill(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Skill not found: " + submitted.getId()));
+
+        toSave.setName(submitted.getName().trim());
+        toSave.setCategory(submitted.getCategory());
+        toSave.setDescription(trimToNull(submitted.getDescription()));
+        return db.skills().save(toSave);
     }
 
-    private Job requireExistingJob(UUID id, String message) {
-        return jobRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(message + ": " + id));
+    public ResumeSkill saveResumeSkill(ResumeSkill submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Resume skill submission is required");
+        }
+        requireResume(submitted.getResumeId());
+        requireSkill(submitted.getSkillId());
+        if (submitted.getProficiency() == null) {
+            throw new ConstraintViolationException("Resume skill proficiency must not be null");
+        }
+        if (submitted.getYearsExp() < 0) {
+            throw new ConstraintViolationException("Resume skill yearsExp must not be negative");
+        }
+        ensureResumeSkillUnique(submitted);
+
+        ResumeSkill toSave = submitted.getId() == null
+                ? new ResumeSkill()
+                : db.resumeSkills().findById(submitted.getId())
+                        .map(existing -> mergeResumeSkill(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Resume skill not found: " + submitted.getId()));
+
+        toSave.setResumeId(submitted.getResumeId());
+        toSave.setSkillId(submitted.getSkillId());
+        toSave.setProficiency(submitted.getProficiency());
+        toSave.setYearsExp(submitted.getYearsExp());
+        return db.resumeSkills().save(toSave);
     }
 
-    private void validateDateRange(LocalDate startDate, LocalDate endDate, String message) {
-        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException(message);
+    public JobRequirement saveJobRequirement(JobRequirement submitted) {
+        if (submitted == null) {
+            throw new ConstraintViolationException("Job requirement submission is required");
+        }
+        requireJob(submitted.getJobId());
+        requireSkill(submitted.getSkillId());
+        if (submitted.getMinProficiency() == null) {
+            throw new ConstraintViolationException("Job requirement proficiency must not be null");
+        }
+        ensureJobRequirementUnique(submitted);
+
+        JobRequirement toSave = submitted.getId() == null
+                ? new JobRequirement()
+                : db.jobRequirements().findById(submitted.getId())
+                        .map(existing -> mergeJobRequirement(existing, submitted))
+                        .orElseThrow(() -> new ConstraintViolationException("Job requirement not found: " + submitted.getId()));
+
+        toSave.setJobId(submitted.getJobId());
+        toSave.setSkillId(submitted.getSkillId());
+        toSave.setRequired(submitted.isRequired());
+        toSave.setMinProficiency(submitted.getMinProficiency());
+        return db.jobRequirements().save(toSave);
+    }
+
+    public MatchScore refreshMatchScore(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Job job = requireJob(application.getJobId());
+        return matchingService.runAnalysis(job.getPostedBy(), applicationId);
+    }
+
+    public Application submitApplication(UUID resumeId, UUID jobId, String coverLetter) {
+        Resume resume = requireResume(resumeId);
+        requireJob(jobId);
+        return applicationService.submit(resume.getUserId(), resumeId, jobId, trimToNull(coverLetter));
+    }
+
+    public Application startReview(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Job job = requireJob(application.getJobId());
+        return applicationService.startReview(job.getPostedBy(), applicationId);
+    }
+
+    public Application sendOffer(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Job job = requireJob(application.getJobId());
+        return applicationService.sendOffer(job.getPostedBy(), applicationId);
+    }
+
+    public Application reject(UUID applicationId, String notes) {
+        Application application = requireApplication(applicationId);
+        Job job = requireJob(application.getJobId());
+        return applicationService.reject(job.getPostedBy(), applicationId, trimToNull(notes));
+    }
+
+    public Application acceptOffer(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Resume resume = requireResume(application.getResumeId());
+        return applicationService.acceptOffer(resume.getUserId(), applicationId);
+    }
+
+    public Application declineOffer(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Resume resume = requireResume(application.getResumeId());
+        return applicationService.declineOffer(resume.getUserId(), applicationId);
+    }
+
+    public Application withdraw(UUID applicationId) {
+        Application application = requireApplication(applicationId);
+        Resume resume = requireResume(application.getResumeId());
+        return applicationService.withdraw(resume.getUserId(), applicationId);
+    }
+
+    public Job cancelJob(UUID jobId) {
+        Job job = requireJob(jobId);
+        return jobService.changeStatus(job.getPostedBy(), jobId, JobStatus.CANCELLED);
+    }
+
+    public String availabilitySlotsJson(Resume resume) {
+        if (resume == null || resume.getAvailabilitySlots().isEmpty()) {
+            return "";
+        }
+        try {
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resume.getAvailabilitySlots());
+        } catch (IOException e) {
+            throw new ConstraintViolationException("Unable to render availability slots as JSON");
         }
     }
 
-    private void requireNonNull(Object value, String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
+    public Map<UUID, String> buildUserLabels() {
+        return listUsers().stream().collect(java.util.stream.Collectors.toMap(
+                User::getId,
+                user -> user.getFullName() + " (" + user.getEmail() + ")",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildResumeLabels() {
+        return listResumes().stream().collect(java.util.stream.Collectors.toMap(
+                Resume::getId,
+                resume -> resume.getTitle() + " [" + resume.getUserId() + "]",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildJobLabels() {
+        return listJobs().stream().collect(java.util.stream.Collectors.toMap(
+                Job::getId,
+                job -> job.getTitle() + " [" + job.getStatus() + "]",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildSkillLabels() {
+        return listSkills().stream().collect(java.util.stream.Collectors.toMap(
+                Skill::getId,
+                skill -> skill.getName() + " (" + skill.getCategory() + ")",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    public Map<UUID, String> buildApplicationLabels() {
+        return listApplications().stream().collect(java.util.stream.Collectors.toMap(
+                Application::getId,
+                application -> application.getId() + " [" + application.getStatus() + "]",
+                (left, right) -> left,
+                LinkedHashMap::new
+        ));
+    }
+
+    private User mergeUser(User existing, User submitted) {
+        User merged = mapper.convertValue(existing, User.class);
+        merged.setId(existing.getId());
+        merged.setEmail(submitted.getEmail());
+        merged.setFullName(submitted.getFullName());
+        merged.setRole(submitted.getRole());
+        merged.setPhone(submitted.getPhone());
+        merged.setDepartment(submitted.getDepartment());
+        merged.setStudentId(submitted.getStudentId());
+        merged.setBio(submitted.getBio());
+        merged.setActive(submitted.isActive());
+        return merged;
+    }
+
+    private Resume mergeResume(Resume existing, Resume submitted) {
+        Resume merged = mapper.convertValue(existing, Resume.class);
+        merged.setId(existing.getId());
+        merged.setUserId(submitted.getUserId());
+        merged.setTitle(submitted.getTitle());
+        merged.setDepartment(submitted.getDepartment());
+        merged.setDegreeLevel(submitted.getDegreeLevel());
+        merged.setGpa(submitted.getGpa());
+        merged.setBio(submitted.getBio());
+        merged.setMaxWeeklyHours(submitted.getMaxWeeklyHours());
+        return merged;
+    }
+
+    private Job mergeJob(Job existing, Job submitted) {
+        Job merged = mapper.convertValue(existing, Job.class);
+        merged.setId(existing.getId());
+        merged.setPostedBy(submitted.getPostedBy());
+        merged.setTitle(submitted.getTitle());
+        merged.setType(submitted.getType());
+        merged.setModuleCode(submitted.getModuleCode());
+        merged.setDescription(submitted.getDescription());
+        merged.setRequiredHours(submitted.getRequiredHours());
+        merged.setSlots(submitted.getSlots());
+        merged.setStatus(submitted.getStatus());
+        merged.setStartDate(submitted.getStartDate());
+        merged.setEndDate(submitted.getEndDate());
+        merged.setDeadline(submitted.getDeadline());
+        merged.setHourlyRate(submitted.getHourlyRate());
+        return merged;
+    }
+
+    private Skill mergeSkill(Skill existing, Skill submitted) {
+        Skill merged = mapper.convertValue(existing, Skill.class);
+        merged.setId(existing.getId());
+        merged.setName(submitted.getName());
+        merged.setCategory(submitted.getCategory());
+        merged.setDescription(submitted.getDescription());
+        return merged;
+    }
+
+    private ResumeSkill mergeResumeSkill(ResumeSkill existing, ResumeSkill submitted) {
+        ResumeSkill merged = mapper.convertValue(existing, ResumeSkill.class);
+        merged.setId(existing.getId());
+        merged.setResumeId(submitted.getResumeId());
+        merged.setSkillId(submitted.getSkillId());
+        merged.setProficiency(submitted.getProficiency());
+        merged.setYearsExp(submitted.getYearsExp());
+        return merged;
+    }
+
+    private JobRequirement mergeJobRequirement(JobRequirement existing, JobRequirement submitted) {
+        JobRequirement merged = mapper.convertValue(existing, JobRequirement.class);
+        merged.setId(existing.getId());
+        merged.setJobId(submitted.getJobId());
+        merged.setSkillId(submitted.getSkillId());
+        merged.setRequired(submitted.isRequired());
+        merged.setMinProficiency(submitted.getMinProficiency());
+        return merged;
+    }
+
+    private List<AvailabilitySlot> parseAvailabilitySlots(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
         }
+        try {
+            return mapper.readValue(value, AVAILABILITY_TYPE);
+        } catch (IOException e) {
+            throw new ConstraintViolationException("Availability slots must be a valid JSON array");
+        }
+    }
+
+    private void ensureResumeSkillUnique(ResumeSkill submitted) {
+        boolean duplicate = db.resumeSkills().listByResumeId(submitted.getResumeId()).stream()
+                .anyMatch(existing -> existing.getSkillId().equals(submitted.getSkillId())
+                        && !existing.getId().equals(submitted.getId()));
+        if (duplicate) {
+            throw new ConstraintViolationException("This resume already references the selected skill");
+        }
+    }
+
+    private void ensureJobRequirementUnique(JobRequirement submitted) {
+        boolean duplicate = db.jobRequirements().listByJobId(submitted.getJobId()).stream()
+                .anyMatch(existing -> existing.getSkillId().equals(submitted.getSkillId())
+                        && !existing.getId().equals(submitted.getId()));
+        if (duplicate) {
+            throw new ConstraintViolationException("This job already references the selected skill");
+        }
+    }
+
+    private Resume requireResume(UUID resumeId) {
+        return db.resumes().findById(resumeId)
+                .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
+    }
+
+    private Job requireJob(UUID jobId) {
+        return db.jobs().findById(jobId)
+                .orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
+    }
+
+    private Application requireApplication(UUID applicationId) {
+        return db.applications().findById(applicationId)
+                .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
+    }
+
+    private Skill requireSkill(UUID skillId) {
+        return db.skills().findById(skillId)
+                .orElseThrow(() -> new ConstraintViolationException("Skill not found: " + skillId));
     }
 
     private void requireNonBlank(String value, String message) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(message);
+            throw new ConstraintViolationException(message);
         }
     }
 
@@ -235,5 +555,29 @@ public class DbDemoService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    public static final class TableCount {
+        private final String tableName;
+        private final int rowCount;
+        private final String fileName;
+
+        public TableCount(String tableName, int rowCount, String fileName) {
+            this.tableName = tableName;
+            this.rowCount = rowCount;
+            this.fileName = fileName;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public int getRowCount() {
+            return rowCount;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
     }
 }

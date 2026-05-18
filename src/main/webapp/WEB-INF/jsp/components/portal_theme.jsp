@@ -1,4 +1,159 @@
 <style>
+    html,
+    body {
+        height: 100%;
+    }
+
+    body {
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col,
+    body > .relative.flex.min-h-screen.w-full.flex-col {
+        height: 100vh;
+        min-height: 100vh;
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col > header,
+    body > .relative.flex.min-h-screen.w-full.flex-col > header {
+        flex: 0 0 auto;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col > .flex.flex-1.overflow-hidden,
+    body > .relative.flex.min-h-screen.w-full.flex-col > .flex.flex-1.overflow-hidden {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col aside,
+    body > .relative.flex.min-h-screen.w-full.flex-col aside {
+        height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
+    }
+
+    body > .flex.min-h-screen.w-full.flex-col main,
+    body > .relative.flex.min-h-screen.w-full.flex-col main {
+        min-height: 0;
+        height: 100%;
+        overscroll-behavior: contain;
+    }
+
+    body[data-theme='dark'] {
+        background: #020617;
+        color: #e2e8f0;
+    }
+
+    body[data-theme='dark'] .bg-background-light {
+        background-color: #020617 !important;
+    }
+
+    body[data-theme='dark'] .bg-white,
+    body[data-theme='dark'] .portal-summary-card,
+    body[data-theme='dark'] .portal-panel,
+    body[data-theme='dark'] .portal-filter-bar,
+    body[data-theme='dark'] .portal-stat-card,
+    body[data-theme='dark'] .portal-upload-surface,
+    body[data-theme='dark'] .portal-modal-card {
+        background: rgba(15, 23, 42, 0.96) !important;
+        border-color: #334155 !important;
+        box-shadow: 0 12px 32px -24px rgba(2, 6, 23, 0.85) !important;
+    }
+
+    body[data-theme='dark'] .portal-panel--accent,
+    body[data-theme='dark'] .portal-callout {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98)) !important;
+        border-color: #334155 !important;
+    }
+
+    body[data-theme='dark'] .portal-panel--danger {
+        background: rgba(69, 10, 10, 0.45) !important;
+        border-color: rgba(248, 113, 113, 0.35) !important;
+    }
+
+    body[data-theme='dark'] .bg-slate-50,
+    body[data-theme='dark'] .bg-slate-50\/60,
+    body[data-theme='dark'] .bg-slate-50\/80,
+    body[data-theme='dark'] .bg-slate-100,
+    body[data-theme='dark'] .bg-slate-200 {
+        background-color: #0f172a !important;
+    }
+
+    body[data-theme='dark'] .border-slate-50,
+    body[data-theme='dark'] .border-slate-100,
+    body[data-theme='dark'] .border-slate-200,
+    body[data-theme='dark'] .border-primary\/10,
+    body[data-theme='dark'] .divide-slate-100 > *,
+    body[data-theme='dark'] .divide-primary\/5 > * {
+        border-color: #334155 !important;
+    }
+
+    body[data-theme='dark'] .text-slate-900,
+    body[data-theme='dark'] .text-slate-800,
+    body[data-theme='dark'] .text-slate-700 {
+        color: #e2e8f0 !important;
+    }
+
+    body[data-theme='dark'] .text-slate-600,
+    body[data-theme='dark'] .text-slate-500,
+    body[data-theme='dark'] .text-slate-400 {
+        color: #94a3b8 !important;
+    }
+
+    body[data-theme='dark'] .text-primary {
+        color: #e2e8f0 !important;
+    }
+
+    body[data-theme='dark'] .portal-page-title,
+    body[data-theme='dark'] .portal-section-title,
+    body[data-theme='dark'] .portal-section-link {
+        color: #f8fafc !important;
+    }
+
+    body[data-theme='dark'] .portal-btn-secondary {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    body[data-theme='dark'] .portal-btn-secondary:hover {
+        background: #1e293b !important;
+    }
+
+    body[data-theme='dark'] .settings-input {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    body[data-theme='dark'] .settings-input[readonly] {
+        background: #111827 !important;
+        color: #94a3b8 !important;
+    }
+
+    body[data-theme='dark'] .settings-label,
+    body[data-theme='dark'] .portal-kicker {
+        color: #94a3b8 !important;
+    }
+
+    body[data-theme='dark'] header,
+    body[data-theme='dark'] aside {
+        background: rgba(2, 6, 23, 0.95) !important;
+        border-color: #334155 !important;
+    }
+
+    body[data-theme='dark'] table thead,
+    body[data-theme='dark'] tr.bg-slate-50 {
+        background: #0f172a !important;
+    }
+
+    body[data-theme='dark'] input::placeholder,
+    body[data-theme='dark'] textarea::placeholder {
+        color: #64748b !important;
+    }
+
     .portal-page {
         width: 100%;
         max-width: 72rem;

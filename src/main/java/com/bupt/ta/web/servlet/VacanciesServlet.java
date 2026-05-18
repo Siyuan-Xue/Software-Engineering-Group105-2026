@@ -1,10 +1,14 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
+import com.bupt.ta.domain.entity.Skill;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.JobService;
+import com.bupt.ta.service.QwenAiService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,6 +23,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +49,7 @@ public class VacanciesServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
-        this.jobService = new JobService(database.jobs());
+        this.jobService = new JobService(database);
     }
 
     @Override
@@ -53,7 +61,7 @@ public class VacanciesServlet extends HttpServlet {
             int page          = parsePage(req.getParameter("page"));
 
             Map<UUID, User> userById = database.users()
-                    .listAll()
+                    .findAll()
                     .stream()
                     .collect(Collectors.toMap(User::getId, Function.identity()));
 
@@ -61,12 +69,15 @@ public class VacanciesServlet extends HttpServlet {
             User currentUser = session != null ? (User) session.getAttribute("currentUser") : null;
             Set<UUID> savedIds = resolveSavedIds(session);
 
+            Map<UUID, Set<String>> jobSkillNames = buildJobSkillNames();
+
             List<VacancyCardView> allCards = jobService.listOpen(Instant.now())
                     .stream()
-                    .filter(job -> matchesKeyword(job, keyword))
+                    .filter(job -> keyword == null || matchesKeyword(job, keyword) || matchesJobTags(job, keyword, jobSkillNames))
                     .filter(job -> matchesDepartment(job, department))
                     .filter(job -> matchesTerm(job, term))
                     .map(job -> toCard(job, userById, savedIds, currentUser))
+                    .sorted(Comparator.comparing(VacancyCardView::isSaved).reversed())
                     .toList();
 
             int totalCount = allCards.size();
@@ -85,12 +96,36 @@ public class VacanciesServlet extends HttpServlet {
             req.setAttribute("hasMore", page < totalPages);
             req.setAttribute("termOptions", buildTermOptions());
             req.setAttribute("pageState", "normal");
-        } catch (RuntimeException ex) {
-            req.setAttribute("pageState", "loadError");
-            req.setAttribute("errorMessage", "Failed to load vacancies. Please try again.");
+            applyFlashFromQuery(req);
+        } catch (Exception ex) {
+            getServletContext().log("Failed to load vacancies", ex);
+            applyLoadError(req);
         }
 
+        req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private void applyLoadError(HttpServletRequest req) {
+        req.setAttribute("pageState", "loadError");
+        req.setAttribute("errorMessage", I18n.message(req, "msg.vacancyLoadFailed"));
+        req.setAttribute("vacancies", List.of());
+        req.setAttribute("totalCount", 0);
+        req.setAttribute("currentPage", 1);
+        req.setAttribute("totalPages", 1);
+        req.setAttribute("hasMore", false);
+        req.setAttribute("termOptions", List.of());
+    }
+
+    private void applyFlashFromQuery(HttpServletRequest req) {
+        String s = req.getParameter("successMessage");
+        if (s != null && !s.isBlank()) {
+            req.setAttribute("successMessage", s);
+        }
+        String e = req.getParameter("errorMessage");
+        if (e != null && !e.isBlank()) {
+            req.setAttribute("errorMessage", e);
+        }
     }
 
     // ── View mapping ─────────────────────────────────────────────────────────
@@ -108,6 +143,7 @@ public class VacanciesServlet extends HttpServlet {
         }
         boolean saved = savedIds.contains(job.getId());
         boolean isOwner = currentUser != null && currentUser.getId().equals(job.getPostedBy());
+        List<String> labels = job.getLabels();
 
         return new VacancyCardView(
                 job.getId().toString(),
@@ -120,7 +156,8 @@ public class VacanciesServlet extends HttpServlet {
                 deadline,
                 moduleOwner,
                 saved,
-                isOwner
+                isOwner,
+                labels
         );
     }
 
@@ -134,10 +171,50 @@ public class VacanciesServlet extends HttpServlet {
         searchable.add(job.getModuleCode());
         searchable.add(job.getDescription());
         searchable.add(resolveDepartment(job));
+        for (String lb : job.getLabels()) {
+            searchable.add(lb);
+        }
         return searchable.stream()
                 .filter(v -> v != null && !v.isBlank())
                 .map(v -> v.toLowerCase(Locale.ROOT))
                 .anyMatch(v -> v.contains(normalized));
+    }
+
+    /**
+     * Build a map from job ID to lowercased skill-name set (one query, cached for the request).
+     */
+    private Map<UUID, Set<String>> buildJobSkillNames() {
+        Map<UUID, String> skillNames = database.skills().findAll().stream()
+                .collect(Collectors.toMap(Skill::getId, s -> s.getName().toLowerCase(Locale.ROOT)));
+
+        Map<UUID, Set<String>> result = new HashMap<>();
+        for (JobRequirement req : database.jobRequirements().findAll()) {
+            String name = skillNames.get(req.getSkillId());
+            if (name != null) {
+                result.computeIfAbsent(req.getJobId(), k -> new HashSet<>()).add(name);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Split keyword by whitespace into tokens. A job matches only when
+     * <em>every</em> token is a substring of some skill name linked to the job
+     * (case-insensitive AND logic).
+     */
+    private boolean matchesJobTags(Job job, String keyword, Map<UUID, Set<String>> jobSkillNames) {
+        if (keyword == null || keyword.isBlank()) return false;
+        String[] tokens = keyword.trim().split("\\s+");
+        if (tokens.length == 0) return false;
+
+        Set<String> skillSet = jobSkillNames.getOrDefault(job.getId(), Set.of());
+        if (skillSet.isEmpty()) return false;
+
+        return Arrays.stream(tokens)
+                .allMatch(token -> {
+                    String lower = token.toLowerCase(Locale.ROOT);
+                    return skillSet.stream().anyMatch(s -> s.toLowerCase(Locale.ROOT).contains(lower));
+                });
     }
 
     private boolean matchesDepartment(Job job, String department) {
@@ -244,11 +321,12 @@ public class VacanciesServlet extends HttpServlet {
         private final String moduleOwner;
         private final boolean saved;
         private final boolean isOwner;
+        private final List<String> labels;
 
         public VacancyCardView(String vacancyId, String courseCode, String title,
                                String description, String department, int hoursPerWeek,
                                String hourlyRate, String deadline, String moduleOwner,
-                               boolean saved, boolean isOwner) {
+                               boolean saved, boolean isOwner, List<String> labels) {
             this.vacancyId   = vacancyId;
             this.courseCode  = courseCode;
             this.title       = title;
@@ -260,6 +338,7 @@ public class VacanciesServlet extends HttpServlet {
             this.moduleOwner = moduleOwner;
             this.saved       = saved;
             this.isOwner     = isOwner;
+            this.labels      = labels == null ? List.of() : List.copyOf(labels);
         }
 
         public String getVacancyId()    { return vacancyId; }
@@ -273,5 +352,6 @@ public class VacanciesServlet extends HttpServlet {
         public String getModuleOwner()  { return moduleOwner; }
         public boolean isSaved()        { return saved; }
         public boolean isOwner()        { return isOwner; }
+        public List<String> getLabels() { return labels; }
     }
 }

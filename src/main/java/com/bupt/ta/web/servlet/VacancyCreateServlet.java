@@ -1,12 +1,14 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.User;
-import com.bupt.ta.model.enums.JobStatus;
-import com.bupt.ta.model.enums.JobType;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.i18n.I18n;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.service.JobService;
+import com.bupt.ta.util.Labels;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,6 +18,8 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,7 +34,7 @@ public class VacancyCreateServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
-        this.jobService = new JobService(database.jobs());
+        this.jobService = new JobService(database);
     }
 
     @Override
@@ -52,7 +56,8 @@ public class VacancyCreateServlet extends HttpServlet {
         String term = req.getParameter("term");
 
         if (title == null || title.trim().isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage=Title is required");
+            resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage="
+                    + URLEncoder.encode(I18n.message(req, "msg.vacancyTitleRequired"), StandardCharsets.UTF_8));
             return;
         }
 
@@ -89,7 +94,8 @@ public class VacancyCreateServlet extends HttpServlet {
         } catch (DateTimeParseException ignored) {}
 
         if (job.getDeadline() == null) {
-            resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage=Invalid or missing deadline");
+            resp.sendRedirect(req.getContextPath() + "/vacancies?errorMessage="
+                    + URLEncoder.encode(I18n.message(req, "msg.vacancyDeadlineInvalid"), StandardCharsets.UTF_8));
             return;
         }
 
@@ -107,8 +113,11 @@ public class VacancyCreateServlet extends HttpServlet {
             }
         }
 
+        job.setLabels(Labels.parseList(req.getParameter("labels"), 24));
+
         jobService.save(job);
 
-        resp.sendRedirect(req.getContextPath() + "/vacancies?successMessage=Vacancy created successfully");
+        resp.sendRedirect(req.getContextPath() + "/vacancies?successMessage="
+                + URLEncoder.encode(I18n.message(req, "msg.vacancyCreated"), StandardCharsets.UTF_8));
     }
 }

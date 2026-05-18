@@ -1,30 +1,52 @@
 package com.bupt.ta.service;
 
-import com.bupt.ta.model.Application;
-import com.bupt.ta.repository.ApplicationRepository;
+import com.bupt.ta.db.core.ConstraintViolationException;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Application;
+import com.bupt.ta.domain.entity.AuditLog;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.Notification;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.entity.WorkloadRecord;
+import com.bupt.ta.domain.enums.ApplicationStatus;
+import com.bupt.ta.domain.enums.AuditAction;
+import com.bupt.ta.domain.enums.EntityType;
+import com.bupt.ta.domain.enums.JobStatus;
+import com.bupt.ta.domain.enums.NotificationType;
+import com.bupt.ta.domain.enums.DegreeLevel;
+import com.bupt.ta.domain.enums.WorkloadStatus;
+import com.bupt.ta.db.core.JsonMapperFactory;
+import com.bupt.ta.util.ApplicationSubmissionFiles;
+import com.bupt.ta.util.ResumeFilePaths;
+import com.bupt.ta.util.ResumeFileUpload;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ApplicationService {
-    private final ApplicationRepository applicationRepository;
+    private final TaDatabase db;
+    private final ObjectMapper mapper = JsonMapperFactory.create();
 
-    public ApplicationService(ApplicationRepository applicationRepository) {
-        this.applicationRepository = applicationRepository;
+    public ApplicationService(TaDatabase db) {
+        this.db = db;
     }
 
     public List<Application> listByJobId(UUID jobId) {
-        return applicationRepository.listByJobId(jobId);
+        return db.applications().listByJobId(jobId);
     }
 
     public List<Application> listByResumeId(UUID resumeId) {
-        return applicationRepository.listByResumeId(resumeId);
+        return db.applications().listByResumeId(resumeId);
     }
 
     public Application save(Application application) {
-<<<<<<< Updated upstream
-        return applicationRepository.save(application);
-=======
         validateBaseApplication(application);
         return db.applications().save(application);
     }
@@ -154,45 +176,6 @@ public class ApplicationService {
             throw new ConstraintViolationException("This application can no longer be rejected");
         }
         return transition(moUserId, applicationId, ApplicationStatus.REJECTED, notes);
-    }
-
-    public Application moDirectAccept(UUID moUserId, UUID applicationId) {
-        Application current = requireApplication(applicationId);
-        assertMoOwnsApplication(moUserId, current);
-        ApplicationStatus status = current.getStatus();
-        if (isTerminalStatus(status)) {
-            throw new ConstraintViolationException("This application can no longer be accepted");
-        }
-        Job job = requireJob(current.getJobId());
-        assertVacancyHasOfferCapacity(job, applicationId);
-
-        Application updated = mapper.convertValue(current, Application.class);
-        updated.setStatus(ApplicationStatus.ACCEPTED);
-        updated.setReviewedBy(moUserId);
-        updated.setReviewedAt(Instant.now());
-
-        Resume resume = requireResume(current.getResumeId());
-
-        WorkloadRecord record = db.workloadRecords().findByApplicationId(applicationId)
-                .orElseGet(WorkloadRecord::new);
-        record.setApplicationId(applicationId);
-        record.setTaId(resume.getUserId());
-        record.setJobId(job.getId());
-        record.setSemester(resolveSemester(job));
-        record.setAssignedHours(job.getRequiredHours());
-        record.setStatus(WorkloadStatus.ACTIVE);
-
-        db.executeAtomically(() -> {
-            db.applications().save(updated);
-            db.workloadRecords().save(record);
-            notifyUser(resume.getUserId(), NotificationType.APPLICATION_STATUS,
-                    "Application Accepted",
-                    "Your application for " + safeJobTitle(job) + " was accepted by the module organiser.",
-                    EntityType.APPLICATION, applicationId);
-            appendAudit(moUserId, AuditAction.STATUS_CHANGE, applicationId, current, updated);
-            closeCompetingApplications(job, applicationId);
-        });
-        return db.applications().findById(applicationId).orElseThrow();
     }
 
     public Application acceptOffer(UUID taUserId, UUID applicationId) {
@@ -437,6 +420,5 @@ public class ApplicationService {
             month = today.getMonthValue();
         }
         return (month >= 8 ? "Fall " : "Spring ") + year;
->>>>>>> Stashed changes
     }
 }

@@ -31,6 +31,8 @@ target/
 .DS_Store
 
 /.idea/
+/.codex/
+/.github/
 /target
 /docs
 # Local startup script (not for repo)
@@ -42,3 +44,6 @@ init.txt
 
 API-KEY
 data/resumes/uploads/
+
+数据库使用指南.md
+编译指令.txt

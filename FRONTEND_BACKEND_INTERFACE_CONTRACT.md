@@ -2,6 +2,13 @@
 
 This document outlines the standardized interface contract between the frontend JSP pages and the backend Java Servlets.
 
+**设计意图（为何需要这份契约）**  
+前后端并行开发时，若各自约定 route、HTTP method、request parameter / attribute 名称，联调阶段会出现「Servlet 读了 A 字段、JSP 写了 B 字段」这类隐性 bug。统一命名与入口，可以让接口讨论集中在契约文档上，而不是散落在聊天记录里。  
+`errorMessage` / `successMessage` 作为唯一反馈通道，是为了让 JSP 里已有的一套 flash / 提示组件可复用：后端无论 forward 还是 redirect，只要写入这两个 attribute（或按约定带 query），前端展示路径一致，避免每种操作各发明一种提示字段。  
+注入 `userRole` 是为了在 **view 层** 做轻量条件渲染（导航、按钮显隐）：真正的权限校验仍必须在 Servlet / Service；JSP 只根据角色决定「给用户看什么」，不替代鉴权。  
+区分 **TA / MO / ADMIN** 是因为业务职责不同：助教侧重申请与简历，模块负责人侧重发布与维护岗位，管理员侧重全局工作量视图；三类角色在同一套页面骨架上走不同入口，契约里写清楚可减少误用接口。  
+每条能力拆成 **Route URL**（浏览器与表单 action）、**JSP View File**（实际渲染文件）、**Servlet**（处理类）三列，是因为一次用户操作往往「URL → Filter → Servlet → forward 到 JSP」链路较长；拆开写便于查映射、也方便新人对照 `web.xml` / `@WebServlet`。**Supported Page States** 列出页面在数据为空、加载失败、资源不存在等下的 UI 分支名，便于与 JSP 里 `pageState` / 条件标签对齐，减少「状态名口头约定」的歧义。
+
 ## Global Rules
 
 ### A. Global Naming Rules
@@ -21,13 +28,13 @@ This document outlines the standardized interface contract between the frontend 
 - `successMessage`: Standard attribute for success feedback
 
 ### B. Global Message Passing Rules
-- 所有页面统一使用 `errorMessage` 和 `successMessage` 作为 Request Attributes 传递反馈信息。
+- 所有页面统一使用 `errorMessage` 和 `successMessage` 作为 Request Attributes 传递反馈信息（与 § 开头说明一致：统一通道便于 JSP 组件化展示与联调排查）。
 - `errorMessage` (String): 用于显示错误警告（例如：“Invalid credentials”、“Failed to load data”）。
 - `successMessage` (String): 用于显示成功提示（例如：“Application submitted successfully”、“Profile updated”）。
 - JSP 页面中已内置对应的 UI 组件，当这些 attribute 不为空时会自动显示。
 
 ### C. Global Authentication & Authorization Rules
-- **Authentication**: 除 Login 页面外的所有页面（Dashboard, Vacancies, Applications, Resumes, Messages, Settings）均需要用户登录。未登录时建议后端 Servlet 拦截未认证的请求，并重定向（Redirect）到 `/login` 页面，可附带 `errorMessage` 提示“Please log in to access this page”。
+- **Authentication**: 除 **登录与账户自助入口**（`/login`、`/register`、`/forgot-password`）及文档另有说明的页面外，其余业务页面均需要用户登录。未登录时由 `AuthFilter` 重定向到 `/login`，可附带 `errorMessage`。
 - **Authorization (RBAC)**: 系统包含三种角色：`TA` (Teaching Assistant), `MO` (Module Organiser), `ADMIN` (Administrator)。
   - **TA**: 可以浏览职位、提交申请、管理简历。
   - **MO**: 可以发布职位 (Vacancy)、修改职位详情。
@@ -35,7 +42,7 @@ This document outlines the standardized interface contract between the frontend 
 - 所有需要登录的页面，后端都应在 Request Attributes 中注入 `userRole` (String)，以便前端根据角色渲染不同的导航栏或操作按钮。
 
 ### D. Global Page State Rules
-- 状态命名统一风格：使用 camelCase 命名状态（如 `normal`, `empty`, `notFound`）。
+- 状态命名统一风格：使用 camelCase 命名状态（如 `normal`, `empty`, `notFound`）。在契约中列出 **Supported Page States** 是为了让后端设置 `pageState`（或等价 attribute）时与 JSP 分支一一对应，避免「口头约定」导致空状态/错误态串线。
 - JSP 页面如何基于状态和 attribute 展示不同内容：JSP 页面主要通过 JSTL 的 `<c:choose>`, `<c:when>`, `<c:if>` 标签，根据 Request Attributes 的值（如列表是否为空、对象是否为 null）来决定渲染哪个状态的 UI。
 
 ---
@@ -93,6 +100,32 @@ This document outlines the standardized interface contract between the frontend 
 12. **Failure Behavior:** N/A
 13. **Supported Page States:** N/A
 14. **Main Functionalities:** 清除 Session 数据并登出用户。
+
+### 1.4. TA self-service registration (TA role only)
+1. **Page Name:** Register Page
+2. **Route URL:** `/register`
+3. **JSP View File:** `/register.jsp`
+4. **Servlet:** `RegisterServlet`
+5. **Authentication Required:** No
+6. **Method:** `GET` (form) / `POST` (submit)
+7. **Description:** 助教申请者自助注册；服务端强制 `UserRole.TA`，不接受表单传入角色。
+8. **Request Parameters (POST):** `email`, `password`, `confirmPassword`, `fullName` (required); `phone`, `department`, `studentId` (optional).
+9. **Request Attributes (error forward):** `errorMessage`; optional repopulation: `email`, `fullName`, `phone`, `department`, `studentId`.
+10. **Success Behavior:** Redirect to `/login?successMessage=...`
+11. **Failure Behavior:** Forward to `/register.jsp` with `errorMessage`.
+
+### 1.5. TA self-service forgot password (scheme B: email + new password, TA only)
+1. **Page Name:** Forgot Password Page
+2. **Route URL:** `/forgot-password`
+3. **JSP View File:** `/forgot-password.jsp`
+4. **Servlet:** `ForgotPasswordServlet`
+5. **Authentication Required:** No
+6. **Method:** `GET` (form) / `POST` (submit)
+7. **Description:** 若邮箱对应已存在且角色为 TA 的账号，则更新密码；否则不修改任何数据并提示失败（演示向流程，非邮件验证）。
+8. **Request Parameters (POST):** `email`, `newPassword`, `confirmPassword`.
+9. **Request Attributes (error forward):** `errorMessage`, `email` (optional repopulation).
+10. **Success Behavior:** Redirect to `/login?successMessage=...`
+11. **Failure Behavior:** Forward to `/forgot-password.jsp` with `errorMessage`.
 
 ---
 
@@ -392,7 +425,7 @@ This document outlines the standardized interface contract between the frontend 
    - `activeConversation` (Conversation): 当前激活的会话详情（包含消息）
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** None
+10. **Form Submission:** 页面底部发送消息表单会提交到 `POST /messages`
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
 13. **Supported Page States:** `normal`, `empty`, `noActiveConversation`, `loadError`
@@ -412,6 +445,25 @@ This document outlines the standardized interface contract between the frontend 
       - `content` (String)
       - `timestamp` (String)
       - `isMine` (Boolean)
+      - `isSystemMessage` (Boolean, optional)
+
+### 6.2. Send Message Action
+1. **Page Name:** Messages Send Action
+2. **Route URL:** `/messages`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `MessagesServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 在当前会话中发送一条消息，并回到对应消息页。
+8. **Request Parameters:**
+   - `conversationId` (String, required): 当前回复的会话 ID
+   - `messageContent` (String, required): 发送的消息内容
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /messages?conversationId=...&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /messages?conversationId=...&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §6.1
+14. **Main Functionalities:** 校验会话访问权限，提交消息并刷新当前线程视图。
 
 ---
 
@@ -425,25 +477,98 @@ This document outlines the standardized interface contract between the frontend 
 5. **Authentication Required:** Yes
 6. **Method:** `GET`
 7. **Description:** 渲染用户设置页面。
-8. **Request Parameters:** None
+8. **Request Parameters:**
+   - `state` (String, optional): 由 `POST /settings` redirect 回来时携带，用于标识反馈状态
+   - `successMessage` (String, optional): 成功反馈文案
+   - `errorMessage` (String, optional): 失败反馈文案
 9. **Request Attributes:**
    - `userProfile` (UserProfile): 用户个人资料
+   - `pageState` (String, optional): 页面状态，支持 `normal`、`updateSuccess`、`updateFailure`、`pwdSuccess`、`pwdFailure`、`prefSuccess`、`prefFailure`、`loadError`
    - `errorMessage` (String, optional)
    - `successMessage` (String, optional)
-10. **Form Submission:** None
+10. **Form Submission:** 页面包含资料更新、偏好更新、密码更新三个表单，均提交到 `POST /settings`
 11. **Success Behavior:** N/A
 12. **Failure Behavior:** N/A
-13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `loadError`
-14. **Main Functionalities:** 查看和更新个人资料及偏好设置。
+13. **Supported Page States:** `normal`, `updateSuccess`, `updateFailure`, `pwdSuccess`, `pwdFailure`, `prefSuccess`, `prefFailure`, `loadError`
+14. **Main Functionalities:** 查看和更新个人资料、密码及界面偏好设置。
 15. **Object Structure:**
     - **`UserProfile`**
       - `firstName` (String)
       - `lastName` (String)
+      - `fullName` (String)
       - `email` (String)
+      - `phone` (String)
       - `studentId` (String)
       - `department` (String)
       - `bio` (String)
       - `notificationsEnabled` (Boolean)
+      - `preferredLanguage` (String): `en` / `zh`
+      - `preferredAppearance` (String): `light` / `dark`
+16. **Rendering Notes:**
+    - `loadError` 会渲染独立的错误状态卡片。
+    - 其余成功/失败状态仍渲染正常页面布局，并通过共享 `flash_messages` 组件展示 `errorMessage` / `successMessage`。
+
+### 7.2. Update Profile Action
+1. **Page Name:** Settings Update Profile Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 更新用户的基本资料和通知偏好。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `updateProfile`
+   - `fullName` (String, required)
+   - `phone` (String, optional)
+   - `department` (String, optional)
+   - `studentId` (String, optional)
+   - `bio` (String, optional)
+   - `notificationsEnabled` (String, optional): 选中时传 `on`
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=updateSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=updateFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 更新资料卡片和 Preferences 所依赖的用户信息。
+
+### 7.3. Change Password Action
+1. **Page Name:** Settings Change Password Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 校验当前密码并更新用户密码。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `changePassword`
+   - `currentPassword` (String, required)
+   - `newPassword` (String, required)
+   - `confirmPassword` (String, required)
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=pwdSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=pwdFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 校验密码并在成功后刷新当前会话用户数据。
+
+### 7.4. Update Preferences Action
+1. **Page Name:** Settings Update Preferences Action
+2. **Route URL:** `/settings`
+3. **JSP View File:** None（处理完成后 Redirect）
+4. **Servlet:** `SettingsServlet`
+5. **Authentication Required:** Yes
+6. **Method:** `POST`
+7. **Description:** 更新用户的界面语言和外观模式偏好。
+8. **Request Parameters:**
+   - `action` (String, required): 固定为 `updatePreferences`
+   - `preferredLanguage` (String, required): `en` 或 `zh`
+   - `preferredAppearance` (String, required): `light` 或 `dark`
+9. **Request Attributes:** None（反馈信息通过 redirect query 传递）
+10. **Form Submission:** Yes
+11. **Success Behavior:** Redirect 到 `GET /settings?state=prefSuccess&successMessage=...`
+12. **Failure Behavior:** Redirect 到 `GET /settings?state=prefFailure&errorMessage=...`
+13. **Supported Page States:** N/A（动作本身）；目标页见 §7.1
+14. **Main Functionalities:** 保存用户的国际化与主题偏好，并刷新当前会话中的语言/外观设置。
 
 ---
 
@@ -478,4 +603,3 @@ This document outlines the standardized interface contract between the frontend 
       - `activeJobsCount` (Integer)
       - `totalHoursPerWeek` (Integer)
       - `status` (String): e.g., 'Normal', 'Overloaded'
-

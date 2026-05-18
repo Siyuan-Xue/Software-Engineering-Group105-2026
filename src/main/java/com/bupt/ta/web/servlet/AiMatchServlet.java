@@ -1,10 +1,10 @@
 package com.bupt.ta.web.servlet;
 
-import com.bupt.ta.model.Job;
-import com.bupt.ta.model.Resume;
-import com.bupt.ta.model.User;
-import com.bupt.ta.persistence.DatabaseProvider;
-import com.bupt.ta.persistence.TaDatabase;
+import com.bupt.ta.db.facade.DatabaseProvider;
+import com.bupt.ta.db.facade.TaDatabase;
+import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.QwenAiService.JobInfo;
 import com.bupt.ta.service.ResumeService;
@@ -49,7 +49,7 @@ public class AiMatchServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
-        this.resumeService = new ResumeService(database.resumes());
+        this.resumeService = new ResumeService(database);
         this.mapper        = new ObjectMapper();
     }
 
