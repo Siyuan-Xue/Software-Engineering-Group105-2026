@@ -108,11 +108,11 @@
                                         </form>
                                     </c:if>
                                     <c:if test="${applicationStatus == 'Submitted' || applicationStatus == 'Under Review'}">
-                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirm('${language == 'zh' ? '确定发送录用通知？' : 'Send an offer to this applicant?'}');">
+                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirm('${language == 'zh' ? '确定直接录用该申请人？' : 'Accept this applicant?'}');">
                                             <input type="hidden" name="applicationId" value="${applicationId}"/>
-                                            <input type="hidden" name="action" value="offer"/>
+                                            <input type="hidden" name="action" value="mo_accept"/>
                                             <input type="hidden" name="returnTo" value="detail"/>
-                                            <button type="submit" class="portal-btn portal-btn-primary text-sm">${language == 'zh' ? '发送录用' : 'Send offer'}</button>
+                                            <button type="submit" class="portal-btn portal-btn-primary text-sm">${language == 'zh' ? '录用' : 'Accept'}</button>
                                         </form>
                                     </c:if>
                                     <form action="${pageContext.request.contextPath}/application/decision" method="POST" onsubmit="return confirmReject(this, '${language == 'zh' ? 'zh' : 'en'}');">

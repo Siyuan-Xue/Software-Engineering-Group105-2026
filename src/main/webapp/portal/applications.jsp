@@ -315,10 +315,10 @@
                                                                         </form>
                                                                     </c:if>
                                                                     <c:if test="${app.status == 'Submitted' || app.status == 'Under Review'}">
-                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定向该申请人发送录用通知？' : 'Send an offer to this applicant?'}');">
+                                                                        <form action="${pageContext.request.contextPath}/application/decision" method="POST" class="inline" onsubmit="return confirm('${language == 'zh' ? '确定直接录用该申请人？' : 'Accept this applicant?'}');">
                                                                             <input type="hidden" name="applicationId" value="${app.applicationId}"/>
-                                                                            <input type="hidden" name="action" value="offer"/>
-                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '发送录用' : 'Send offer'}</button>
+                                                                            <input type="hidden" name="action" value="mo_accept"/>
+                                                                            <button type="submit" class="text-xs font-bold text-emerald-700 hover:underline">${language == 'zh' ? '录用' : 'Accept'}</button>
                                                                         </form>
                                                                     </c:if>
                                                                     <c:if test="${app.status != 'Offer Pending'}">

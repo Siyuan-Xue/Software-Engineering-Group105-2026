@@ -178,6 +178,45 @@ public class ApplicationService {
         return transition(moUserId, applicationId, ApplicationStatus.REJECTED, notes);
     }
 
+    public Application moDirectAccept(UUID moUserId, UUID applicationId) {
+        Application current = requireApplication(applicationId);
+        assertMoOwnsApplication(moUserId, current);
+        ApplicationStatus status = current.getStatus();
+        if (isTerminalStatus(status)) {
+            throw new ConstraintViolationException("This application can no longer be accepted");
+        }
+        Job job = requireJob(current.getJobId());
+        assertVacancyHasOfferCapacity(job, applicationId);
+
+        Application updated = mapper.convertValue(current, Application.class);
+        updated.setStatus(ApplicationStatus.ACCEPTED);
+        updated.setReviewedBy(moUserId);
+        updated.setReviewedAt(Instant.now());
+
+        Resume resume = requireResume(current.getResumeId());
+
+        WorkloadRecord record = db.workloadRecords().findByApplicationId(applicationId)
+                .orElseGet(WorkloadRecord::new);
+        record.setApplicationId(applicationId);
+        record.setTaId(resume.getUserId());
+        record.setJobId(job.getId());
+        record.setSemester(resolveSemester(job));
+        record.setAssignedHours(job.getRequiredHours());
+        record.setStatus(WorkloadStatus.ACTIVE);
+
+        db.executeAtomically(() -> {
+            db.applications().save(updated);
+            db.workloadRecords().save(record);
+            notifyUser(resume.getUserId(), NotificationType.APPLICATION_STATUS,
+                    "Application Accepted",
+                    "Your application for " + safeJobTitle(job) + " was accepted by the module organiser.",
+                    EntityType.APPLICATION, applicationId);
+            appendAudit(moUserId, AuditAction.STATUS_CHANGE, applicationId, current, updated);
+            closeCompetingApplications(job, applicationId);
+        });
+        return db.applications().findById(applicationId).orElseThrow();
+    }
+
     public Application acceptOffer(UUID taUserId, UUID applicationId) {
         Application current = requireApplication(applicationId);
         if (current.getStatus() != ApplicationStatus.OFFER_PENDING) {
