@@ -120,6 +120,110 @@ class ApplicationServiceTest {
         assertThrows(ConstraintViolationException.class, () -> resumeService.delete(resume.getId()));
     }
 
+    @Test
+    void submitShouldRejectWrongResumeOwnerClosedAndExpiredJobs() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        ApplicationService service = new ApplicationService(db);
+
+        User ta = db.users().save(user("submit-ta-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Submit TA"));
+        User otherTa = db.users().save(user("submit-other-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Other TA"));
+        User mo = db.users().save(user("submit-mo-" + java.util.UUID.randomUUID() + "@example.com", UserRole.MO, "Submit MO"));
+        Resume otherResume = db.resumes().save(resume(otherTa.getId()));
+        Job openJob = db.jobs().save(job(mo.getId(), "Open Submit Job"));
+
+        assertThrows(ConstraintViolationException.class,
+                () -> service.submit(ta.getId(), otherResume.getId(), openJob.getId(), "Wrong owner"));
+        assertThrows(ConstraintViolationException.class,
+                () -> service.submit(ta.getId(), null, openJob.getId(), "No resume"));
+
+        Resume ownResume = db.resumes().save(resume(ta.getId()));
+        Job expired = job(mo.getId(), "Expired Submit Job");
+        expired.setDeadline(Instant.now().minusSeconds(1));
+        expired = db.jobs().save(expired);
+        Job closed = job(mo.getId(), "Closed Submit Job");
+        closed.setStatus(JobStatus.CLOSED);
+        closed = db.jobs().save(closed);
+
+        Job finalExpired = expired;
+        assertThrows(ConstraintViolationException.class,
+                () -> service.submit(ta.getId(), ownResume.getId(), finalExpired.getId(), "Expired"));
+        Job finalClosed = closed;
+        assertThrows(ConstraintViolationException.class,
+                () -> service.submit(ta.getId(), ownResume.getId(), finalClosed.getId(), "Closed"));
+    }
+
+    @Test
+    void reviewRejectAndWithdrawShouldEnforceRolesOwnershipAndStates() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        ApplicationService service = new ApplicationService(db);
+
+        User ta = db.users().save(user("review-ta-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Review TA"));
+        User ownerMo = db.users().save(user("review-mo-" + java.util.UUID.randomUUID() + "@example.com", UserRole.MO, "Owner MO"));
+        User otherMo = db.users().save(user("review-other-mo-" + java.util.UUID.randomUUID() + "@example.com", UserRole.MO, "Other MO"));
+        Resume resume = db.resumes().save(resume(ta.getId()));
+        Job job = db.jobs().save(job(ownerMo.getId(), "Review Job"));
+        Application application = service.submit(ta.getId(), resume.getId(), job.getId(), "Review me");
+
+        assertThrows(ConstraintViolationException.class,
+                () -> service.startReview(otherMo.getId(), application.getId()));
+
+        Application reviewing = service.startReview(ownerMo.getId(), application.getId());
+        assertEquals(ApplicationStatus.REVIEWING, reviewing.getStatus());
+        assertEquals(ownerMo.getId(), reviewing.getReviewedBy());
+
+        Application rejected = service.reject(ownerMo.getId(), application.getId(), "Missing skill");
+        assertEquals(ApplicationStatus.REJECTED, rejected.getStatus());
+        assertEquals("Missing skill", rejected.getMoNotes());
+        assertThrows(ConstraintViolationException.class,
+                () -> service.withdraw(ta.getId(), application.getId()));
+    }
+
+    @Test
+    void sendOfferShouldRespectVacancyCapacityIncludingPendingOffers() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        ApplicationService service = new ApplicationService(db);
+
+        User ta1 = db.users().save(user("offer-ta1-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Offer TA 1"));
+        User ta2 = db.users().save(user("offer-ta2-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Offer TA 2"));
+        User mo = db.users().save(user("offer-mo-" + java.util.UUID.randomUUID() + "@example.com", UserRole.MO, "Offer MO"));
+        Resume resume1 = db.resumes().save(resume(ta1.getId()));
+        Resume resume2 = db.resumes().save(resume(ta2.getId()));
+        Job job = job(mo.getId(), "Single Slot Job");
+        job.setSlots(1);
+        job = db.jobs().save(job);
+
+        Application app1 = service.submit(ta1.getId(), resume1.getId(), job.getId(), null);
+        Application app2 = service.submit(ta2.getId(), resume2.getId(), job.getId(), null);
+
+        service.sendOffer(mo.getId(), app1.getId());
+        assertThrows(ConstraintViolationException.class, () -> service.sendOffer(mo.getId(), app2.getId()));
+    }
+
+    @Test
+    void acceptingOfferShouldCloseCompetingApplicationsWhenVacancyIsFull() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        ApplicationService service = new ApplicationService(db);
+
+        User ta1 = db.users().save(user("accept-ta1-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Accept TA 1"));
+        User ta2 = db.users().save(user("accept-ta2-" + java.util.UUID.randomUUID() + "@example.com", UserRole.TA, "Accept TA 2"));
+        User mo = db.users().save(user("accept-mo-" + java.util.UUID.randomUUID() + "@example.com", UserRole.MO, "Accept MO"));
+        Resume resume1 = db.resumes().save(resume(ta1.getId()));
+        Resume resume2 = db.resumes().save(resume(ta2.getId()));
+        Job job = job(mo.getId(), "Filled Job");
+        job.setSlots(1);
+        job = db.jobs().save(job);
+
+        Application winner = service.submit(ta1.getId(), resume1.getId(), job.getId(), null);
+        Application competitor = service.submit(ta2.getId(), resume2.getId(), job.getId(), null);
+
+        service.sendOffer(mo.getId(), winner.getId());
+        service.acceptOffer(ta1.getId(), winner.getId());
+
+        Application closedCompetitor = db.applications().findById(competitor.getId()).orElseThrow();
+        assertEquals(ApplicationStatus.REJECTED, closedCompetitor.getStatus());
+        assertEquals("Vacancy filled", closedCompetitor.getMoNotes());
+    }
+
     private User user(String email, UserRole role, String name) {
         User user = new User();
         user.setEmail(email);

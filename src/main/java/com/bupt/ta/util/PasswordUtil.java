@@ -18,12 +18,12 @@ public class PasswordUtil {
      * Verifies a plaintext password against a stored BCrypt hash.
      */
     public static boolean checkPassword(String plainPassword, String hashedPassword) {
-        if (plainPassword == null || hashedPassword == null) {
+        if (plainPassword == null || hashedPassword == null || hashedPassword.isBlank()) {
             return false;
         }
         try {
             return BCrypt.checkpw(plainPassword, hashedPassword);
-        } catch (IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             return false;
         }
     }

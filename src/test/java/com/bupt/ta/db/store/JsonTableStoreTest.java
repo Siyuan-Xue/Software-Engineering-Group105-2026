@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,6 +84,49 @@ class JsonTableStoreTest {
 
         assertThrows(DatabaseException.class, () -> failingStore.save(saved));
         assertEquals("baseline", healthyStore.findById(saved.getId()).orElseThrow().getName());
+    }
+
+    @Test
+    void rowsWithoutIdsShouldBeRejectedAsCorruptData() throws IOException {
+        Files.writeString(tempDir.resolve("missing-id.json"), """
+                {"version":1,"rows":[{"name":"orphan","score":1}]}
+                """);
+
+        JsonTableStore<TestEntity> store = store("missing-id.json");
+
+        assertThrows(DatabaseCorruptionException.class, store::list);
+    }
+
+    @Test
+    void returnedRowsShouldBeDefensiveCopiesAndExistingCreatedAtShouldBePreserved() {
+        JsonTableStore<TestEntity> store = store("copies.json");
+        TestEntity original = entity("copy");
+        original.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        TestEntity saved = store.save(original);
+        Instant createdAt = saved.getCreatedAt();
+
+        saved.setName("mutated outside store");
+        assertEquals("copy", store.findById(saved.getId()).orElseThrow().getName());
+
+        TestEntity update = store.findById(saved.getId()).orElseThrow();
+        update.setName("updated");
+        TestEntity updated = store.save(update);
+
+        assertEquals(createdAt, updated.getCreatedAt());
+        assertEquals("updated", store.findById(saved.getId()).orElseThrow().getName());
+    }
+
+    @Test
+    void replaceAllShouldAssignIdsAndTimestampsForNewRows() {
+        JsonTableStore<TestEntity> store = store("replace.json");
+        TestEntity row = entity("replacement");
+
+        store.replaceAll(List.of(row));
+
+        TestEntity stored = store.list().get(0);
+        assertNotNull(stored.getId());
+        assertNotNull(stored.getCreatedAt());
+        assertNotNull(stored.getUpdatedAt());
     }
 
     private JsonTableStore<TestEntity> store(String fileName) {

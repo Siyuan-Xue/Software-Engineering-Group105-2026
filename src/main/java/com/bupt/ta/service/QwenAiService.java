@@ -63,14 +63,19 @@ public class QwenAiService {
     private final String vlModel;
     private final String textModel;
     private final ObjectMapper mapper = new ObjectMapper();
-    private final HttpClient http = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .build();
+    private final URI apiUri;
+    private final ChatTransport transport;
 
     public QwenAiService(String apiKey, String vlModel, String textModel) {
+        this(apiKey, vlModel, textModel, URI.create(API_URL), defaultTransport());
+    }
+
+    QwenAiService(String apiKey, String vlModel, String textModel, URI apiUri, ChatTransport transport) {
         this.apiKey     = apiKey;
         this.vlModel    = (vlModel    != null && !vlModel.isBlank())    ? vlModel    : DEFAULT_VL_MODEL;
         this.textModel  = (textModel  != null && !textModel.isBlank())  ? textModel  : DEFAULT_TEXT_MODEL;
+        this.apiUri = apiUri;
+        this.transport = transport;
     }
 
     public static String resolveApiKey() {
@@ -555,15 +560,16 @@ public class QwenAiService {
             body.put("enable_thinking", false);
         }
 
+        String requestBody = mapper.writeValueAsString(body);
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(API_URL))
+                .uri(apiUri)
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body)))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .timeout(Duration.ofSeconds(90))
                 .build();
 
-        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> resp = transport.send(req, requestBody);
 
         if (resp.statusCode() != 200) {
             String errBody = resp.body();
@@ -591,5 +597,17 @@ public class QwenAiService {
 
     private static String nvl(String s) {
         return (s == null || s.isBlank()) ? "N/A" : s;
+    }
+
+    private static ChatTransport defaultTransport() {
+        HttpClient http = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
+        return (request, body) -> http.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    @FunctionalInterface
+    interface ChatTransport {
+        HttpResponse<String> send(HttpRequest request, String requestBody) throws Exception;
     }
 }

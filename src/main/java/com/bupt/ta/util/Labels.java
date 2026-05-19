@@ -14,7 +14,7 @@ public final class Labels {
     }
 
     public static List<String> parseList(String raw, int max) {
-        if (raw == null || raw.isBlank()) {
+        if (raw == null || raw.isBlank() || max <= 0) {
             return List.of();
         }
         Set<String> seen = new LinkedHashSet<>();

@@ -1,18 +1,24 @@
 package com.bupt.ta.service;
 
 import com.bupt.ta.config.AppConfig;
+import com.bupt.ta.db.core.ConstraintViolationException;
 import com.bupt.ta.db.core.JsonStoreConfig;
 import com.bupt.ta.db.facade.FileTaDatabase;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.Job;
+import com.bupt.ta.domain.entity.JobRequirement;
 import com.bupt.ta.domain.entity.Resume;
+import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.entity.WorkloadRecord;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.DegreeLevel;
 import com.bupt.ta.domain.enums.JobStatus;
 import com.bupt.ta.domain.enums.JobType;
+import com.bupt.ta.domain.enums.NotificationType;
+import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.SkillCategory;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.domain.enums.WorkloadStatus;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JobServiceTest {
@@ -135,6 +142,76 @@ class JobServiceTest {
         assertEquals(ownJob.getId(), visibleJobs.get(0).getId());
     }
 
+    @Test
+    void createDraftShouldDefaultStatusValidatePosterAndNotifyActiveTasWhenOpen() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        JobService service = new JobService(db);
+        User mo = db.users().save(user("create-mo-" + UUID.randomUUID() + "@example.com", UserRole.MO, "Create MO"));
+        User activeTa = db.users().save(user("active-ta-" + UUID.randomUUID() + "@example.com", UserRole.TA, "Active TA"));
+        User inactiveTa = user("inactive-ta-" + UUID.randomUUID() + "@example.com", UserRole.TA, "Inactive TA");
+        inactiveTa.setActive(false);
+        inactiveTa = db.users().save(inactiveTa);
+
+        Job draft = job(mo.getId(), "  Drafted Vacancy  ");
+        draft.setStatus(null);
+        Job savedDraft = service.createDraft(draft);
+        assertEquals(JobStatus.DRAFT, savedDraft.getStatus());
+        assertEquals("Drafted Vacancy", savedDraft.getTitle());
+
+        Job open = job(mo.getId(), "Open Vacancy Notification");
+        open.setStatus(JobStatus.OPEN);
+        Job savedOpen = service.createDraft(open);
+
+        assertTrue(db.notifications().findAll().stream()
+                .anyMatch(notification -> activeTa.getId().equals(notification.getUserId())
+                        && notification.getNotifType() == NotificationType.NEW_JOB
+                        && savedOpen.getId().equals(notification.getEntityId())));
+        User finalInactiveTa = inactiveTa;
+        assertTrue(db.notifications().findAll().stream()
+                .noneMatch(notification -> finalInactiveTa.getId().equals(notification.getUserId())
+                        && savedOpen.getId().equals(notification.getEntityId())));
+
+        User taPoster = db.users().save(user("bad-poster-" + UUID.randomUUID() + "@example.com", UserRole.TA, "Bad Poster"));
+        assertThrows(ConstraintViolationException.class, () -> service.createDraft(job(taPoster.getId(), "Bad Poster Job")));
+    }
+
+    @Test
+    void updateShouldRejectInvalidDatesAndMissingOwnership() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        JobService service = new JobService(db);
+        User mo = db.users().save(user("update-mo-" + UUID.randomUUID() + "@example.com", UserRole.MO, "Update MO"));
+        Job job = db.jobs().save(job(mo.getId(), "Update Job"));
+
+        Job invalidDates = job(mo.getId(), "Invalid Dates");
+        invalidDates.setId(job.getId());
+        invalidDates.setStartDate(java.time.LocalDate.of(2026, 5, 1));
+        invalidDates.setEndDate(java.time.LocalDate.of(2026, 4, 1));
+        assertThrows(ConstraintViolationException.class, () -> service.update(mo.getId(), invalidDates));
+
+        Job missing = job(mo.getId(), "Missing Job");
+        missing.setId(UUID.randomUUID());
+        assertThrows(ConstraintViolationException.class, () -> service.update(mo.getId(), missing));
+    }
+
+    @Test
+    void replaceRequirementsShouldAtomicallyReplaceExistingRowsAndBindJobId() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        JobService service = new JobService(db);
+        User mo = db.users().save(user("requirements-mo-" + UUID.randomUUID() + "@example.com", UserRole.MO, "Requirements MO"));
+        Job job = db.jobs().save(job(mo.getId(), "Requirements Job"));
+        Skill oldSkill = db.skills().save(skill("Old Requirement " + UUID.randomUUID()));
+        Skill newSkill = db.skills().save(skill("New Requirement " + UUID.randomUUID()));
+        db.jobRequirements().save(requirement(job.getId(), oldSkill.getId()));
+
+        JobRequirement replacement = requirement(UUID.randomUUID(), newSkill.getId());
+        service.replaceRequirements(mo.getId(), job.getId(), java.util.List.of(replacement));
+
+        var rows = db.jobRequirements().listByJobId(job.getId());
+        assertEquals(1, rows.size());
+        assertEquals(newSkill.getId(), rows.get(0).getSkillId());
+        assertEquals(job.getId(), rows.get(0).getJobId());
+    }
+
     private User user(String email, UserRole role, String name) {
         User user = new User();
         user.setEmail(email);
@@ -153,5 +230,21 @@ class JobServiceTest {
         job.setRequiredHours(8);
         job.setDeadline(Instant.now().plusSeconds(3600));
         return job;
+    }
+
+    private Skill skill(String name) {
+        Skill skill = new Skill();
+        skill.setName(name);
+        skill.setCategory(SkillCategory.PROGRAMMING);
+        return skill;
+    }
+
+    private JobRequirement requirement(UUID jobId, UUID skillId) {
+        JobRequirement requirement = new JobRequirement();
+        requirement.setJobId(jobId);
+        requirement.setSkillId(skillId);
+        requirement.setRequired(true);
+        requirement.setMinProficiency(ProficiencyLevel.INTERMEDIATE);
+        return requirement;
     }
 }
