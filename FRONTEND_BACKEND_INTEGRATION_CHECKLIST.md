@@ -22,7 +22,7 @@
 
 以下几项当前需要按“代码现实”理解，而不是只按升级说明文档理解：
 
-- `/db-demo` 当前仍然存在，`DbDemoServlet` 和 `DbDemoService` 也仍在仓库中；它更像数据库能力演示入口，不应被当作正式业务联调基线。
+- `/admin/database` 当前仍然存在，`DbDemoServlet` 和 `DbDemoService` 也仍在仓库中；它是管理员专用数据库能力演示入口，不应被当作正式业务联调基线。
 - `messages` 已经有后端 servlet；联调时应以当前 `MessagesServlet` / `MessageService` 输出的 canonical 字段为准。
 - `settings` 已经进一步扩展到资料更新、改密码、语言/外观偏好，范围比早期 checklist 和部分口头说明更大。
 
@@ -55,6 +55,7 @@
 | Settings page | `GET` | `/settings` | 已实现 |
 | Settings action | `POST` | `/settings` | 已实现 |
 | Workloads | `GET` | `/workloads` | 已实现 |
+| Admin database demo | `GET/POST` | `/admin/database` | 已实现，Admin-only |
 
 ### 2.2 全局提示信息
 
@@ -78,9 +79,10 @@
 
 前端假设：
 
-- 除 `/login`、`/register`、`/forgot-password` 及落地页、`/logout`、`/db-demo`、静态资源外，portal 等业务路由必须登录后访问
+- 除 `/login`、`/register`、`/forgot-password` 及落地页、`/logout`、静态资源外，portal 等业务路由必须登录后访问；`/admin/database` 需要管理员登录
 - 未登录用户访问 portal 路由时，后端应重定向到 `/login`
 - 可附带 `errorMessage=Please log in to access this page`
+- 所有 POST/PUT/PATCH/DELETE 请求必须携带 `_csrf` 参数或 `X-CSRF-Token` 请求头
 
 当前状态：
 
@@ -333,7 +335,7 @@ Sidebar 会读取：
 联调建议：
 
 - 后端按 `POST` 实现即可
-- 不建议再保留 `GET /logout` 作为主流程
+- `GET /logout` 已禁用，退出登录只走 `POST /logout`
 
 ## 8. 联调前 Done Checklist
 

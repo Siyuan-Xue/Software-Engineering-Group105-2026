@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,15 +56,15 @@ class TaAccountServiceTest {
     }
 
     @Test
-    void resetPasswordForTaShouldUpdateTaOnly() {
+    void registerUserShouldAlwaysCreateTaForSelfService() {
         TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
         TaAccountService svc = new TaAccountService(db);
+        String email = "self-service-mo-" + UUID.randomUUID() + "@example.com";
 
-        assertTrue(svc.resetPasswordForTa(DatabaseSeeder.DEFAULT_TA_EMAIL, "newpass99", "newpass99"));
-        User ta = db.users().findByEmail(DatabaseSeeder.DEFAULT_TA_EMAIL).orElseThrow();
-        assertTrue(PasswordUtil.checkPassword("newpass99", ta.getPasswordHash()));
+        svc.registerUser(email, "password12", "password12", "Role Coercion", null, null, null, UserRole.MO);
 
-        assertFalse(svc.resetPasswordForTa(DatabaseSeeder.DEFAULT_MO_EMAIL, "newpass99", "newpass99"));
-        assertFalse(svc.resetPasswordForTa("nobody-" + UUID.randomUUID() + "@example.com", "newpass99", "newpass99"));
+        User saved = db.users().findByEmail(email).orElseThrow();
+        assertEquals(UserRole.TA, saved.getRole());
+        assertTrue(PasswordUtil.checkPassword("password12", saved.getPasswordHash()));
     }
 }

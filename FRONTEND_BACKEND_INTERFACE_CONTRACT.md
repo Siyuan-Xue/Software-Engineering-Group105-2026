@@ -40,6 +40,7 @@ This document outlines the standardized interface contract between the frontend 
   - **MO**: 可以发布职位 (Vacancy)、修改职位详情。
   - **ADMIN**: 可以查看 TA 的整体工作负载 (Overall Workload)。
 - 所有需要登录的页面，后端都应在 Request Attributes 中注入 `userRole` (String)，以便前端根据角色渲染不同的导航栏或操作按钮。
+- **CSRF**: 所有会改变状态的请求必须携带 `CsrfFilter` 注入的 `_csrf` 参数或 `X-CSRF-Token` 请求头；共享页面脚本会自动为 POST 表单和同源 `fetch` 注入 token。
 
 ### D. Global Page State Rules
 - 状态命名统一风格：使用 camelCase 命名状态（如 `normal`, `empty`, `notFound`）。在契约中列出 **Supported Page States** 是为了让后端设置 `pageState`（或等价 attribute）时与 JSP 分支一一对应，避免「口头约定」导致空状态/错误态串线。
@@ -91,7 +92,7 @@ This document outlines the standardized interface contract between the frontend 
 3. **JSP View File:** None (Redirects)
 4. **Servlet:** `LogoutServlet`
 5. **Authentication Required:** Yes
-6. **Method:** `POST` or `GET`
+6. **Method:** `POST`
 7. **Description:** 结束当前用户会话。
 8. **Request Parameters:** None
 9. **Request Attributes:** None
@@ -114,18 +115,18 @@ This document outlines the standardized interface contract between the frontend 
 10. **Success Behavior:** Redirect to `/login?successMessage=...`
 11. **Failure Behavior:** Forward to `/register.jsp` with `errorMessage`.
 
-### 1.5. TA self-service forgot password (scheme B: email + new password, TA only)
+### 1.5. Password reset help request
 1. **Page Name:** Forgot Password Page
 2. **Route URL:** `/forgot-password`
 3. **JSP View File:** `/forgot-password.jsp`
 4. **Servlet:** `ForgotPasswordServlet`
 5. **Authentication Required:** No
 6. **Method:** `GET` (form) / `POST` (submit)
-7. **Description:** 若邮箱对应已存在且角色为 TA 的账号，则更新密码；否则不修改任何数据并提示失败（演示向流程，非邮件验证）。
-8. **Request Parameters (POST):** `email`, `newPassword`, `confirmPassword`.
-9. **Request Attributes (error forward):** `errorMessage`, `email` (optional repopulation).
-10. **Success Behavior:** Redirect to `/login?successMessage=...`
-11. **Failure Behavior:** Forward to `/forgot-password.jsp` with `errorMessage`.
+7. **Description:** 公开页面只接收密码帮助请求，不直接修改密码；实际密码重置由管理员在 `/admin/users` 中完成。
+8. **Request Parameters (POST):** `email`.
+9. **Request Attributes:** `successMessage`, `email` (optional repopulation).
+10. **Success Behavior:** Forward to `/forgot-password.jsp` with generic `successMessage`; does not reveal whether an account exists.
+11. **Failure Behavior:** CSRF failure returns 403; otherwise no account-enumerating failure is exposed.
 
 ---
 
@@ -603,3 +604,17 @@ This document outlines the standardized interface contract between the frontend 
       - `activeJobsCount` (Integer)
       - `totalHoursPerWeek` (Integer)
       - `status` (String): e.g., 'Normal', 'Overloaded'
+
+### 8.2. Admin Database Demo
+1. **Page Name:** Admin Database Demo
+2. **Route URL:** `/admin/database`
+3. **JSP View File:** `/WEB-INF/jsp/db-demo.jsp`
+4. **Servlet:** `DbDemoServlet`
+5. **Authentication Required:** Yes (ADMIN Role)
+6. **Method:** `GET` / `POST`
+7. **Description:** 管理员专用数据库能力演示与诊断页面，不作为正式业务联调基线。
+8. **Request Parameters:** `operation`, `section`, and operation-specific entity fields.
+9. **Request Attributes:** database table views, edit selection, `successMessage`, `errorMessage`.
+10. **Form Submission:** POST forms protected by CSRF token.
+11. **Success Behavior:** Redirect back to `/admin/database` with section anchor and `successMessage`.
+12. **Failure Behavior:** 401-style login redirect for unauthenticated users; 403 for non-admin users; form forward with `errorMessage` for operation errors.

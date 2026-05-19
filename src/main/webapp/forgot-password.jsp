@@ -58,25 +58,6 @@
                            placeholder="${i18n['login.emailPlaceholder']}" autocomplete="email" required />
                 </div>
             </div>
-            <div>
-                <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${i18n['common.newPassword']}</label>
-                <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
-                    <input type="password" name="newPassword" minlength="8"
-                           class="ta-pw-min8 w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                           placeholder="••••••••" autocomplete="new-password" required />
-                </div>
-                <p class="text-xs text-slate-400 mt-1">${i18n['settings.changePasswordCopy']}</p>
-            </div>
-            <div>
-                <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${i18n['common.confirmNewPassword']}</label>
-                <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">lock</span>
-                    <input type="password" name="confirmPassword" minlength="8"
-                           class="ta-pw-min8 w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
-                           placeholder="••••••••" autocomplete="new-password" required />
-                </div>
-            </div>
 
             <button type="submit" class="w-full bg-primary text-white font-black py-4 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
                 ${i18n['forgot.submit']}

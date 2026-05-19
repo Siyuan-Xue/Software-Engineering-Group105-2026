@@ -727,6 +727,7 @@
             // which servlets without @MultipartConfig can read via getParameterValues()
             const params = new URLSearchParams();
             ids.forEach(id => params.append('ids[]', id));
+            params.append('aiConsent', 'true');
 
             const res  = await fetch(CTX + '/ai-match', {
                 method: 'POST',

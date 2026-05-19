@@ -71,7 +71,7 @@
                                 </div>
                                 <div>
                                     <label class="admin-label">${language == 'zh' ? '初始密码' : 'Initial Password'} *</label>
-                                    <input class="admin-input" type="password" name="password" minlength="6" required />
+                                    <input class="admin-input" type="password" name="password" minlength="8" required />
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -154,7 +154,7 @@
                                                         </div>
                                                         <div>
                                                             <label class="admin-label">${language == 'zh' ? '新密码' : 'New Password'}</label>
-                                                            <input class="admin-input" type="password" name="password" minlength="6" placeholder="${language == 'zh' ? '留空不修改' : 'Leave blank to keep'}" />
+                                                            <input class="admin-input" type="password" name="password" minlength="8" placeholder="${language == 'zh' ? '留空不修改' : 'Leave blank to keep'}" />
                                                         </div>
                                                         <div>
                                                             <label class="admin-label">${language == 'zh' ? '院系' : 'Department'}</label>

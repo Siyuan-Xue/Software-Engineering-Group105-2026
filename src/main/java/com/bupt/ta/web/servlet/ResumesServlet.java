@@ -16,6 +16,8 @@ import com.bupt.ta.domain.value.JobQuery;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.ResumeService;
 import com.bupt.ta.util.Labels;
+import com.bupt.ta.util.ResumeFileUpload;
+import com.bupt.ta.web.security.AiRequestGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.ServletException;
@@ -28,14 +30,12 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -196,23 +196,19 @@ public class ResumesServlet extends HttpServlet {
             }
 
             String originalName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-            String ext = originalName.contains(".")
-                    ? originalName.substring(originalName.lastIndexOf('.')).toLowerCase() : "";
-
-            if (!ext.matches("\\.(pdf|doc|docx|jpg|jpeg|png|txt)$")) {
+            if (!ResumeFileUpload.isAllowedFileName(originalName)) {
                 json.put("ok", false);
                 json.put("error", I18n.message(req, "msg.resumeUnsupportedType"));
                 objectMapper.writeValue(resp.getWriter(), json);
                 return;
             }
 
-            // Use absolute path so Files.copy() (not Part.write) goes to the right place
-            String savedName  = user.getId() + "_" + UUID.randomUUID() + ext;
-            Path   uploadPath = uploadDir.resolve(savedName);
-
-            try (InputStream is = filePart.getInputStream()) {
-                Files.copy(is, uploadPath, StandardCopyOption.REPLACE_EXISTING);
-            }
+            ResumeFileUpload.SavedResumeFile savedFile = ResumeFileUpload.save(
+                    uploadDir,
+                    user.getId(),
+                    originalName,
+                    filePart.getContentType(),
+                    filePart.getInputStream());
 
             Resume resume = new Resume();
             resume.setUserId(user.getId());
@@ -222,7 +218,7 @@ public class ResumesServlet extends HttpServlet {
             resume.setGpa(new BigDecimal("0.00"));
             resume.setMaxWeeklyHours(15);
             resume.setBio("");
-            resume.setUploadedFilePath(uploadPath.toString());
+            resume.setUploadedFilePath(savedFile.path().toString());
             resume.setOriginalFileName(originalName);
             resume.setLabels(Labels.parseList(req.getParameter("labels"), 24));
 
@@ -263,6 +259,10 @@ public class ResumesServlet extends HttpServlet {
 
         resp.setContentType("application/json;charset=UTF-8");
         ObjectNode json = objectMapper.createObjectNode();
+
+        if (!AiRequestGuard.requireConsent(req, resp, objectMapper)) {
+            return;
+        }
 
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
@@ -308,6 +308,7 @@ public class ResumesServlet extends HttpServlet {
 
             QwenAiService ai = new QwenAiService(apiKey, QwenAiService.resolveVlModel(), QwenAiService.resolveTextModel());
 
+            AiRequestGuard.appendAudit(database, user, "ta-resume-review", chosen != null ? chosen.getId() : user.getId());
             String analysis = ai.analyzeResumeForOptimization(
                     chosen != null ? chosen.getTitle()      : null,
                     chosen != null ? chosen.getDepartment() : null,

@@ -924,6 +924,7 @@
     function callAIReview() {
         var fd = new FormData();
         fd.append('action', 'aiReview');
+        fd.append('aiConsent', 'true');
         if (_currentReviewResumeId) {
             fd.append('resumeId', _currentReviewResumeId);
         }

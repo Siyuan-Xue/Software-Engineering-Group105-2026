@@ -484,3 +484,82 @@
         background: rgba(248, 250, 252, 0.96);
     }
 </style>
+<meta name="csrf-token" content="${csrfToken}" />
+<meta name="csrf-param" content="${csrfParameterName}" />
+<meta name="csrf-header" content="${csrfHeaderName}" />
+<script>
+    (function () {
+        var token = '${csrfToken}';
+        var paramName = '${csrfParameterName}';
+        var headerName = '${csrfHeaderName}';
+        if (!token || !paramName || !headerName) return;
+
+        function isUnsafe(method) {
+            return ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(String(method || 'GET').toUpperCase()) >= 0;
+        }
+
+        function sameOrigin(input) {
+            try {
+                var url = typeof input === 'string' ? input : input && input.url;
+                return !url || new URL(url, window.location.href).origin === window.location.origin;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function injectFormToken(form) {
+            if (!form || !isUnsafe(form.method)) return;
+            if (form.querySelector('input[name="' + paramName + '"]')) return;
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = paramName;
+            input.value = token;
+            form.appendChild(input);
+            if (String(form.enctype || '').toLowerCase() === 'multipart/form-data') {
+                appendTokenToAction(form);
+            }
+        }
+
+        function appendTokenToAction(form) {
+            try {
+                var url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+                if (!url.searchParams.has(paramName)) {
+                    url.searchParams.set(paramName, token);
+                    form.action = url.pathname + url.search + url.hash;
+                }
+            } catch (e) {
+                // Hidden input still protects regular form submissions.
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('form').forEach(injectFormToken);
+        });
+        document.addEventListener('submit', function (event) {
+            injectFormToken(event.target);
+        }, true);
+        if (window.HTMLFormElement && HTMLFormElement.prototype.submit) {
+            var nativeSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function () {
+                injectFormToken(this);
+                return nativeSubmit.call(this);
+            };
+        }
+
+        if (window.fetch) {
+            var nativeFetch = window.fetch;
+            window.fetch = function (input, init) {
+                init = init ? Object.assign({}, init) : {};
+                var method = init.method || (input && input.method) || 'GET';
+                if (isUnsafe(method) && sameOrigin(input)) {
+                    var headers = new Headers(init.headers || (input && input.headers) || {});
+                    if (!headers.has(headerName)) {
+                        headers.set(headerName, token);
+                    }
+                    init.headers = headers;
+                }
+                return nativeFetch(input, init);
+            };
+        }
+    })();
+</script>

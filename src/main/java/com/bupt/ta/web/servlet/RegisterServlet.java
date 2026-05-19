@@ -19,7 +19,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Self-registration endpoint for TA and MO accounts.
+ * Self-registration endpoint for TA applicant accounts.
  */
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
@@ -70,8 +70,8 @@ public class RegisterServlet extends HttpServlet {
             return UserRole.TA;
         }
         try {
-            UserRole role = UserRole.valueOf(raw.trim().toUpperCase());
-            return role == UserRole.MO ? UserRole.MO : UserRole.TA;
+            UserRole.valueOf(raw.trim().toUpperCase());
+            return UserRole.TA;
         } catch (IllegalArgumentException ex) {
             return UserRole.TA;
         }

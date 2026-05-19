@@ -258,7 +258,7 @@ List<AuditLog> logs = db.auditLogs().search(query);
 - 不要在 Servlet 里 `new Json*Repository`
 - 不要在跨表写场景里只改一张表
 - 不要把 AI 调用放进 `executeAtomically(...)`
-- 不要把 `/db-demo` 当作正式业务联调基线；当前仓库虽仍保留该 demo 路由，但它只是数据库能力演示入口
+- 不要把 `/admin/database` 当作正式业务联调基线；当前仓库虽仍保留该 demo 路由，但它只是数据库能力演示入口
 
 ## 9. 当前兼容保留项
 

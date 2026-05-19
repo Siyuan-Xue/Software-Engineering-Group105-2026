@@ -617,6 +617,7 @@
             openAppsAiResult('${language == 'zh' ? 'AI 申请者排序' : 'AI applicant ranking'}');
             var params = new URLSearchParams();
             params.append('jobId', sel.value);
+            params.append('aiConsent', 'true');
             fetch(CTX + '/ai-mo-applicants-rank', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -664,6 +665,7 @@
             openAppsAiResult('${language == 'zh' ? 'AI 决策建议' : 'AI decision hints'}');
             var params = new URLSearchParams();
             params.append('applicationId', _pendingMoApplicationId);
+            params.append('aiConsent', 'true');
             fetch(CTX + '/ai-mo-application-advice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -694,6 +696,7 @@
             var params = new URLSearchParams();
             params.append('vacancyId', _pendingTaVacancyId);
             params.append('resumeId', _pendingTaResumeId);
+            params.append('aiConsent', 'true');
             fetch(CTX + '/ai-ta-cover-letter', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

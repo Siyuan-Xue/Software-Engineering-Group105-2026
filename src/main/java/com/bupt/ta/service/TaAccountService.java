@@ -6,10 +6,9 @@ import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.util.PasswordUtil;
 
-import java.util.Optional;
-
 /**
- * TA-only self-service registration and password reset (no email/token infrastructure).
+ * TA-only self-service registration. Password recovery is intentionally handled
+ * by administrators because this application has no email token infrastructure.
  */
 public final class TaAccountService {
     public static final String ERR_EMAIL_REQUIRED = "TA_EMAIL_REQUIRED";
@@ -53,7 +52,7 @@ public final class TaAccountService {
         User user = new User();
         user.setEmail(email.trim());
         user.setFullName(fullName.trim());
-        user.setRole(role == null || role == UserRole.ADMIN ? UserRole.TA : role);
+        user.setRole(UserRole.TA);
         user.setActive(true);
         user.setPhone(trimToNull(phone));
         user.setDepartment(trimToNull(department));
@@ -61,30 +60,6 @@ public final class TaAccountService {
         user.setPasswordHash(PasswordUtil.hashPassword(plainPassword.trim()));
 
         db.users().save(user);
-    }
-
-    /**
-     * Scheme B: if an account exists for {@code email} and its role is TA, update password and return true.
-     */
-    public boolean resetPasswordForTa(String email, String newPassword, String confirmPassword) {
-        requireNonBlank(email, ERR_EMAIL_REQUIRED);
-        requireNonBlank(newPassword, ERR_PASSWORD_REQUIRED);
-        requireNonBlank(confirmPassword, ERR_CONFIRM_REQUIRED);
-        if (!newPassword.equals(confirmPassword)) {
-            throw new ConstraintViolationException(ERR_PASSWORD_MISMATCH);
-        }
-        if (newPassword.length() < MIN_PASSWORD_LENGTH) {
-            throw new ConstraintViolationException(ERR_PASSWORD_TOO_SHORT);
-        }
-
-        Optional<User> found = db.users().findByEmail(email.trim());
-        if (found.isEmpty() || found.get().getRole() != UserRole.TA) {
-            return false;
-        }
-        User user = found.get();
-        user.setPasswordHash(PasswordUtil.hashPassword(newPassword.trim()));
-        db.users().save(user);
-        return true;
     }
 
     private static void requireNonBlank(String value, String errorCode) {

@@ -31,6 +31,7 @@ import java.util.UUID;
 @WebServlet("/admin/users")
 public class AdminUsersServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/admin_users.jsp";
+    private static final int MIN_PASSWORD_LENGTH = 8;
 
     private TaDatabase database;
     private final ObjectMapper mapper = JsonMapperFactory.create();
@@ -82,8 +83,8 @@ public class AdminUsersServlet extends HttpServlet {
     private void createUser(HttpServletRequest req, User operator) {
         String password = require(req.getParameter("password"),
                 message(req, "Initial password is required.", "初始密码不能为空。"));
-        if (password.length() < 6) {
-            throw new IllegalArgumentException(message(req, "Password must be at least 6 characters.", "密码至少需要 6 位。"));
+        if (password.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException(message(req, "Password must be at least 8 characters.", "密码至少需要 8 位。"));
         }
 
         User user = new User();
@@ -103,8 +104,8 @@ public class AdminUsersServlet extends HttpServlet {
         applyEditableFields(req, updated, !operator.getId().equals(userId));
         String password = normalize(req.getParameter("password"));
         if (password != null) {
-            if (password.length() < 6) {
-                throw new IllegalArgumentException(message(req, "Password must be at least 6 characters.", "密码至少需要 6 位。"));
+            if (password.length() < MIN_PASSWORD_LENGTH) {
+                throw new IllegalArgumentException(message(req, "Password must be at least 8 characters.", "密码至少需要 8 位。"));
             }
             updated.setPasswordHash(PasswordUtil.hashPassword(password));
         }

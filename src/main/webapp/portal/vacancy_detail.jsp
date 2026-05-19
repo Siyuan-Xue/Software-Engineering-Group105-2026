@@ -564,6 +564,7 @@
 
                                     var params = new URLSearchParams();
                                     params.append('jobId', JOB_ID);
+                                    params.append('aiConsent', 'true');
 
                                     fetch(CTX + '/ai-resume-rank', {
                                         method: 'POST',

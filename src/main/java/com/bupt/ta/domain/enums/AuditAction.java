@@ -9,5 +9,6 @@ public enum AuditAction {
     DELETE,
     STATUS_CHANGE,
     LOGIN,
-    EXPORT
+    EXPORT,
+    AI_REQUEST
 }

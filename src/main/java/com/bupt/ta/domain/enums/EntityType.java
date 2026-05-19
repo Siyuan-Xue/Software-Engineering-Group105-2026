@@ -14,5 +14,6 @@ public enum EntityType {
     WORKLOAD_RECORD,
     MATCH_SCORE,
     NOTIFICATION,
-    AUDIT_LOG
+    AUDIT_LOG,
+    AI_REQUEST
 }

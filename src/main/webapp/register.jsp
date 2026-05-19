@@ -55,15 +55,10 @@
                        class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
                        placeholder="${i18n['common.fullName']}" autocomplete="name" required />
             </div>
-            <div>
-                <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${language == 'zh' ? '账号角色' : 'Account Role'}</label>
-                <select name="role"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all">
-                    <option value="TA" ${role == 'TA' || empty role ? 'selected' : ''}>${language == 'zh' ? 'TA / 学生申请者' : 'TA / Student applicant'}</option>
-                    <option value="MO" ${role == 'MO' ? 'selected' : ''}>${language == 'zh' ? 'MO / 课程负责人' : 'MO / Module organiser'}</option>
-                </select>
-                <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '管理员账号请由 Admin 在系统内创建。' : 'Admin accounts are created by an existing admin inside the system.'}</p>
-            </div>
+            <input type="hidden" name="role" value="TA" />
+            <p class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-700">
+                ${language == 'zh' ? '自助注册仅创建 TA / 学生申请者账号；MO 和 Admin 账号请由管理员在系统内创建。' : 'Self-registration creates TA / student applicant accounts only. MO and Admin accounts are created by an administrator inside the system.'}
+            </p>
             <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">${i18n['login.emailLabel']}</label>
                 <div class="relative">

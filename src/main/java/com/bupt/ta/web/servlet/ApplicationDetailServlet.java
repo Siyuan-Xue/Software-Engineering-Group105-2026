@@ -184,8 +184,15 @@ public class ApplicationDetailServlet extends HttpServlet {
                     : filePath.getFileName().toString();
         }
         resp.setContentType(contentTypeFor(fileName));
-        resp.setHeader("Content-Disposition", "inline; filename=\"" + fileName.replace("\"", "") + "\"");
+        resp.setHeader("X-Content-Type-Options", "nosniff");
+        resp.setHeader("Content-Disposition", contentDispositionAttachment(fileName));
         Files.copy(filePath, resp.getOutputStream());
+    }
+
+    private static String contentDispositionAttachment(String fileName) {
+        String fallback = fileName == null ? "resume" : fileName.replace("\"", "").replace("\\", "");
+        String encoded = URLEncoder.encode(fallback, StandardCharsets.UTF_8).replace("+", "%20");
+        return "attachment; filename=\"" + fallback + "\"; filename*=UTF-8''" + encoded;
     }
 
     private static String contentTypeFor(String fileName) {

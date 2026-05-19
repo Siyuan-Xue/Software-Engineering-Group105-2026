@@ -93,6 +93,7 @@ public class ApplicationSubmitServlet extends HttpServlet {
                         uploadDir,
                         currentUser.getId(),
                         originalName,
+                        filePart.getContentType(),
                         filePart.getInputStream());
             }
         } catch (Exception ex) {

@@ -103,7 +103,7 @@ flowchart TB
 
 - **No ORM** — repositories over JSON files; suitable for coursework and single-JVM demos
 - **Application resume snapshots** — each submission stores a file copy so MOs see what was submitted, even if the TA edits their resume later
-- **AI gated by UI** — disclaimer modals + explicit “Agree and …” actions before server-side model calls
+- **AI gated end to end** — disclaimer modals, explicit “Agree and …” actions, server-side consent checks, and audit entries before model calls
 
 ---
 

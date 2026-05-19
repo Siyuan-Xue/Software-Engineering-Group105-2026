@@ -67,6 +67,7 @@ public class LoginServlet extends HttpServlet {
             User realUser = userOpt.get();
             appendLoginAudit(realUser, true);
             HttpSession session = req.getSession(true);
+            req.changeSessionId();
             session.setAttribute("currentUser", realUser);
             session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, I18n.normalizeLanguage(realUser.getPreferredLanguage()));
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(realUser.getPreferredAppearance()));

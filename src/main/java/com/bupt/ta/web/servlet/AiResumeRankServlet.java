@@ -8,6 +8,7 @@ import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.service.QwenAiService;
 import com.bupt.ta.service.QwenAiService.ResumeInfo;
 import com.bupt.ta.service.ResumeService;
+import com.bupt.ta.web.security.AiRequestGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -75,6 +76,9 @@ public class AiResumeRankServlet extends HttpServlet {
             mapper.writeValue(resp.getWriter(), json);
             return;
         }
+        if (!AiRequestGuard.requireConsent(req, resp, mapper)) {
+            return;
+        }
 
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
@@ -133,6 +137,7 @@ public class AiResumeRankServlet extends HttpServlet {
         }
 
         try {
+            AiRequestGuard.appendAudit(database, user, "ta-resume-rank", job.getId());
             QwenAiService ai = new QwenAiService(
                     apiKey,
                     QwenAiService.resolveVlModel(),

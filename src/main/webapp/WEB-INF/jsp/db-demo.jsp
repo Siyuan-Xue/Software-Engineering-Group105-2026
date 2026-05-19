@@ -50,7 +50,7 @@
                     <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                         <div class="max-w-3xl">
                             <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Unified Database Demo</p>
-                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900">/db-demo now covers all 11 JSON tables</h1>
+                            <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-900">/admin/database now covers all 11 JSON tables</h1>
                             <p class="mt-3 text-sm leading-6 text-slate-600">
                                 This page exercises the full frontend -> servlet -> service -> <code>TaDatabase</code> -> JSON file flow.
                                 It never reads or writes <code>data/*.json</code> directly. Every write goes through
@@ -101,11 +101,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Create or update a user through <code>db.users().save(...)</code>. The first run already seeds TA, MO, and Admin defaults.</p>
                             </div>
                             <c:if test="${editEntity == 'user'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#users-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#users-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#users-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#users-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="user-save" />
                             <input type="hidden" name="section" value="users-section" />
                             <input type="hidden" name="id" value="${editingUser.id}" />
@@ -188,7 +188,7 @@
                                             <p>Department: <c:out value="${empty user.department ? '—' : user.department}"/></p>
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=user&editId=${user.id}#users-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                            <a href="${pageContext.request.contextPath}/admin/database?editEntity=user&editId=${user.id}#users-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -206,11 +206,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Create or update canonical skills through <code>db.skills().save(...)</code>. Fresh databases already start with a baseline skill set.</p>
                             </div>
                             <c:if test="${editEntity == 'skill'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#skills-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#skills-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="skill-save" />
                             <input type="hidden" name="section" value="skills-section" />
                             <input type="hidden" name="id" value="${editingSkill.id}" />
@@ -263,7 +263,7 @@
                                         <td class="px-6 py-4 text-xs text-slate-600"><c:out value="${skill.category}"/></td>
                                         <td class="px-6 py-4 text-xs text-slate-500"><c:out value="${empty skill.description ? '—' : skill.description}"/></td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=skill&editId=${skill.id}#skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                            <a href="${pageContext.request.contextPath}/admin/database?editEntity=skill&editId=${skill.id}#skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -281,11 +281,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Writes through <code>ResumeService</code> and stores availability as structured JSON.</p>
                             </div>
                             <c:if test="${editEntity == 'resume'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#resumes-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#resumes-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#resumes-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#resumes-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="resume-save" />
                             <input type="hidden" name="section" value="resumes-section" />
                             <input type="hidden" name="id" value="${editingResume.id}" />
@@ -371,7 +371,7 @@
                                         <td class="px-6 py-4 text-xs text-slate-600"><c:out value="${userLabelsById[resume.userId]}"/></td>
                                         <td class="px-6 py-4 text-xs text-slate-500"><c:out value="${resume.availabilitySlots.size()}"/> slot(s)</td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=resume&editId=${resume.id}#resumes-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                            <a href="${pageContext.request.contextPath}/admin/database?editEntity=resume&editId=${resume.id}#resumes-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -389,11 +389,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Bind a skill to a resume through <code>db.resumeSkills().save(...)</code>. This is the left half of the match model.</p>
                             </div>
                             <c:if test="${editEntity == 'resumeSkill'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#resume-skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#resume-skills-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#resume-skills-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#resume-skills-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="resume-skill-save" />
                             <input type="hidden" name="section" value="resume-skills-section" />
                             <input type="hidden" name="id" value="${editingResumeSkill.id}" />
@@ -469,7 +469,7 @@
                                             <p class="mt-1"><c:out value="${resumeSkill.yearsExp}"/> year(s)</p>
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=resumeSkill&editId=${resumeSkill.id}#resume-skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                            <a href="${pageContext.request.contextPath}/admin/database?editEntity=resumeSkill&editId=${resumeSkill.id}#resume-skills-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -487,11 +487,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Writes through <code>JobService</code> and keeps the current status model.</p>
                             </div>
                             <c:if test="${editEntity == 'job'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#jobs-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#jobs-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#jobs-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#jobs-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="job-save" />
                             <input type="hidden" name="section" value="jobs-section" />
                             <input type="hidden" name="id" value="${editingJob.id}" />
@@ -605,9 +605,9 @@
                                         </td>
                                         <td class="px-6 py-4">
                                             <div class="flex justify-end gap-2">
-                                                <a href="${pageContext.request.contextPath}/db-demo?editEntity=job&editId=${job.id}#jobs-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                                <a href="${pageContext.request.contextPath}/admin/database?editEntity=job&editId=${job.id}#jobs-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                                 <c:if test="${job.status != 'CANCELLED'}">
-                                                    <form action="${pageContext.request.contextPath}/db-demo#jobs-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#jobs-section" method="post">
                                                         <input type="hidden" name="operation" value="job-cancel"/>
                                                         <input type="hidden" name="section" value="jobs-section"/>
                                                         <input type="hidden" name="jobId" value="${job.id}"/>
@@ -632,11 +632,11 @@
                                 <p class="mt-1 text-sm text-slate-500">Attach required or optional skills to a job through <code>db.jobRequirements().save(...)</code>. This is the right half of the match model.</p>
                             </div>
                             <c:if test="${editEntity == 'jobRequirement'}">
-                                <a href="${pageContext.request.contextPath}/db-demo#job-requirements-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
+                                <a href="${pageContext.request.contextPath}/admin/database#job-requirements-section" class="text-sm font-bold text-primary hover:underline">Cancel</a>
                             </c:if>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#job-requirements-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#job-requirements-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="job-requirement-save" />
                             <input type="hidden" name="section" value="job-requirements-section" />
                             <input type="hidden" name="id" value="${editingJobRequirement.id}" />
@@ -712,7 +712,7 @@
                                             <p class="mt-1"><c:out value="${requirement.minProficiency}"/></p>
                                         </td>
                                         <td class="px-6 py-4 text-right">
-                                            <a href="${pageContext.request.contextPath}/db-demo?editEntity=jobRequirement&editId=${requirement.id}#job-requirements-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
+                                            <a href="${pageContext.request.contextPath}/admin/database?editEntity=jobRequirement&editId=${requirement.id}#job-requirements-section" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Edit</a>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -729,7 +729,7 @@
                             <p class="mt-1 text-sm text-slate-500">Submit an application, then use the action buttons to drive status changes and watch linked tables update.</p>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="application-submit" />
                             <input type="hidden" name="section" value="applications-section" />
 
@@ -795,13 +795,13 @@
                                         <td class="px-6 py-4">
                                             <div class="flex flex-wrap justify-end gap-2">
                                                 <c:if test="${application.status == 'PENDING'}">
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post">
                                                         <input type="hidden" name="operation" value="application-review"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
                                                         <button type="submit" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Start Review</button>
                                                     </form>
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post">
                                                         <input type="hidden" name="operation" value="application-withdraw"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
@@ -809,13 +809,13 @@
                                                     </form>
                                                 </c:if>
                                                 <c:if test="${application.status == 'REVIEWING'}">
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post">
                                                         <input type="hidden" name="operation" value="application-offer"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
                                                         <button type="submit" class="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Send Offer</button>
                                                     </form>
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post" class="flex items-center gap-2">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post" class="flex items-center gap-2">
                                                         <input type="hidden" name="operation" value="application-reject"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
@@ -824,13 +824,13 @@
                                                     </form>
                                                 </c:if>
                                                 <c:if test="${application.status == 'OFFER_PENDING'}">
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post">
                                                         <input type="hidden" name="operation" value="application-accept"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
                                                         <button type="submit" class="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Accept</button>
                                                     </form>
-                                                    <form action="${pageContext.request.contextPath}/db-demo#applications-section" method="post">
+                                                    <form action="${pageContext.request.contextPath}/admin/database#applications-section" method="post">
                                                         <input type="hidden" name="operation" value="application-decline"/>
                                                         <input type="hidden" name="section" value="applications-section"/>
                                                         <input type="hidden" name="applicationId" value="${application.id}"/>
@@ -854,7 +854,7 @@
                             <p class="mt-1 text-sm text-slate-500">Runs <code>MatchingService.runAnalysis(...)</code> and writes to <code>match_scores</code>, <code>notifications</code>, and <code>audit_logs</code>.</p>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/db-demo#match-scores-section" method="post" class="mt-6 space-y-4">
+                        <form action="${pageContext.request.contextPath}/admin/database#match-scores-section" method="post" class="mt-6 space-y-4">
                             <input type="hidden" name="operation" value="match-score-refresh" />
                             <input type="hidden" name="section" value="match-scores-section" />
 

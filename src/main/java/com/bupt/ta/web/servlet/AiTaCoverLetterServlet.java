@@ -7,6 +7,7 @@ import com.bupt.ta.domain.entity.Resume;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.service.QwenAiService;
+import com.bupt.ta.web.security.AiRequestGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.ServletException;
@@ -54,6 +55,9 @@ public class AiTaCoverLetterServlet extends HttpServlet {
             json.put("ok", false);
             json.put("error", "Only teaching assistants can use this feature.");
             mapper.writeValue(resp.getWriter(), json);
+            return;
+        }
+        if (!AiRequestGuard.requireConsent(req, resp, mapper)) {
             return;
         }
 
@@ -111,6 +115,7 @@ public class AiTaCoverLetterServlet extends HttpServlet {
         String gpa = resume.getGpa() != null ? resume.getGpa().toPlainString() : "";
 
         try {
+            AiRequestGuard.appendAudit(database, user, "ta-cover-letter", vacancyId);
             QwenAiService ai = new QwenAiService(
                     apiKey,
                     QwenAiService.resolveVlModel(),

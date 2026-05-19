@@ -103,16 +103,15 @@ public final class I18n {
             Map.entry("register.backToLogin", "Back to sign in"),
 
             Map.entry("forgot.pageTitle", "Forgot password - QM HIRE"),
-            Map.entry("forgot.title", "Reset password"),
-            Map.entry("forgot.copy", "TA applicant accounts only. Enter your university email and a new password."),
-            Map.entry("forgot.submit", "Update password"),
+            Map.entry("forgot.title", "Request password help"),
+            Map.entry("forgot.copy", "For account safety, public password reset is disabled. Submit your university email, then ask an administrator to reset it from Admin > Users."),
+            Map.entry("forgot.submit", "Request reset help"),
             Map.entry("forgot.backToLogin", "Back to sign in"),
 
             Map.entry("auth.registerSuccess", "Account created. You can sign in now."),
             Map.entry("auth.registerEmailTaken", "This email is already registered."),
             Map.entry("auth.registerEmailRequired", "Email is required."),
-            Map.entry("auth.taResetSuccess", "Password updated. You can sign in now."),
-            Map.entry("auth.taResetFailed", "We could not reset the password. Use the email for your TA applicant account."),
+            Map.entry("auth.passwordResetRequestReceived", "If this account exists, an administrator must reset the password from Admin > Users. Your password was not changed by this public form."),
 
             Map.entry("index.pageTitle", "QM HIRE - University TA Portal"),
             Map.entry("index.badge", "Phase 01 / Introduction"),
@@ -275,16 +274,15 @@ public final class I18n {
             Map.entry("register.backToLogin", "返回登录"),
 
             Map.entry("forgot.pageTitle", "忘记密码 - QM HIRE"),
-            Map.entry("forgot.title", "重置密码"),
-            Map.entry("forgot.copy", "仅限 TA 申请账号。请输入学校邮箱和新密码。"),
-            Map.entry("forgot.submit", "更新密码"),
+            Map.entry("forgot.title", "申请密码帮助"),
+            Map.entry("forgot.copy", "为保护账号安全，公开页面不直接修改密码。提交学校邮箱后，请联系管理员在 Admin > Users 中重置。"),
+            Map.entry("forgot.submit", "申请重置帮助"),
             Map.entry("forgot.backToLogin", "返回登录"),
 
             Map.entry("auth.registerSuccess", "账号已创建，请登录。"),
             Map.entry("auth.registerEmailTaken", "该邮箱已被注册。"),
             Map.entry("auth.registerEmailRequired", "请填写邮箱。"),
-            Map.entry("auth.taResetSuccess", "密码已更新，请登录。"),
-            Map.entry("auth.taResetFailed", "无法重置密码。请确认使用 TA 申请账号的邮箱。"),
+            Map.entry("auth.passwordResetRequestReceived", "如果该账号存在，必须由管理员在 Admin > Users 中重置密码；此公开表单不会修改你的密码。"),
 
             Map.entry("index.pageTitle", "QM HIRE - 大学助教门户"),
             Map.entry("index.badge", "阶段 01 / 介绍"),

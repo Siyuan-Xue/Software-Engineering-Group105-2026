@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 public class LogoutServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doPost(req, resp);
+        resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Use POST to sign out.");
     }
 
     @Override

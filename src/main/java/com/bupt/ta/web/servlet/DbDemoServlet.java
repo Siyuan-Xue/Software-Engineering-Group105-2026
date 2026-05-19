@@ -22,6 +22,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -36,9 +37,9 @@ import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
 /**
- * Public demonstration endpoint for inspecting seeded JSON database workflows.
+ * Administrator-only demonstration endpoint for inspecting seeded JSON database workflows.
  */
-@WebServlet("/db-demo")
+@WebServlet("/admin/database")
 public class DbDemoServlet extends HttpServlet {
     private static final String VIEW_PATH = "/WEB-INF/jsp/db-demo.jsp";
     private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
@@ -53,6 +54,9 @@ public class DbDemoServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!requireAdmin(req, resp)) {
+            return;
+        }
         applyFlashMessages(req);
         safelyApplyEditSelection(req);
         populatePageData(req);
@@ -61,6 +65,9 @@ public class DbDemoServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!requireAdmin(req, resp)) {
+            return;
+        }
         String operation = normalize(req.getParameter("operation"));
         String section = normalize(req.getParameter("section"));
         String targetSection = section == null ? "overview-section" : section;
@@ -74,6 +81,29 @@ public class DbDemoServlet extends HttpServlet {
             populatePageData(req);
             req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
         }
+    }
+
+    private boolean requireAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        User currentUser = currentUser(req);
+        if (currentUser == null) {
+            resp.sendRedirect(req.getContextPath() + "/login?errorMessage="
+                    + URLEncoder.encode("Please log in as an administrator to access DB Demo.", StandardCharsets.UTF_8));
+            return false;
+        }
+        if (currentUser.getRole() != UserRole.ADMIN) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "DB Demo is restricted to administrators.");
+            return false;
+        }
+        return true;
+    }
+
+    private User currentUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute("currentUser");
+        return value instanceof User user ? user : null;
     }
 
     private String handleOperation(String operation, HttpServletRequest req) {
@@ -454,6 +484,6 @@ public class DbDemoServlet extends HttpServlet {
 
     private String buildRedirectUrl(HttpServletRequest req, String section, String key, String value) {
         String encodedValue = URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
-        return req.getContextPath() + "/db-demo?" + key + "=" + encodedValue + "#" + section;
+        return req.getContextPath() + "/admin/database?" + key + "=" + encodedValue + "#" + section;
     }
 }
