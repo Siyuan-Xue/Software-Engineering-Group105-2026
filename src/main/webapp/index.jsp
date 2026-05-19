@@ -175,9 +175,11 @@
                 </div>
             </div>
 
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 text-center animate-bounce">
-                <div class="text-[10px] uppercase font-black tracking-widest text-[#94a3b8] mb-2">Scroll to explore the journey</div>
-                <span class="material-symbols-outlined text-[#cbd5e1]">keyboard_arrow_down</span>
+            <div class="absolute bottom-10 left-0 right-0 z-30 flex flex-col items-center pointer-events-none">
+                <div class="flex flex-col items-center animate-bounce">
+                    <div class="text-[10px] uppercase font-black tracking-widest text-[#94a3b8] mb-2 whitespace-nowrap">Scroll to explore the journey</div>
+                    <span class="material-symbols-outlined text-[#cbd5e1]">keyboard_arrow_down</span>
+                </div>
             </div>
             
             <!-- Optional subtle bottom text -->
@@ -205,30 +207,30 @@
                     </div>
 
                     <!-- Right: Cards -->
-                    <div class="col-span-1 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 relative">
+                    <div class="col-span-1 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-8">
                         <!-- Card 1 -->
-                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300">
+                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 sm:col-start-1 sm:row-start-1">
                             <span class="material-symbols-outlined text-[#e11d48] text-3xl mb-4">hub</span>
                             <h3 class="text-xl font-bold text-slate-900 mb-2">Centralized Hub</h3>
                             <p class="text-slate-500 text-sm leading-relaxed">Apply to multiple departments with a single profile.</p>
                         </div>
                         
                         <!-- Card 2 -->
-                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 sm:translate-y-6">
+                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 sm:col-start-2 sm:row-start-1 sm:mt-8">
                             <span class="material-symbols-outlined text-[#e11d48] text-3xl mb-4">monitoring</span>
                             <h3 class="text-xl font-bold text-slate-900 mb-2">Merit-Based</h3>
                             <p class="text-slate-500 text-sm leading-relaxed">Transparent evaluation based on your academic record.</p>
                         </div>
                         
                         <!-- Card 3 -->
-                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300">
+                        <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 sm:col-start-1 sm:row-start-2">
                             <span class="material-symbols-outlined text-[#e11d48] text-3xl mb-4">update</span>
                             <h3 class="text-xl font-bold text-slate-900 mb-2">Real-time Tracking</h3>
                             <p class="text-slate-500 text-sm leading-relaxed">Stay informed about your application status 24/7.</p>
                         </div>
                         
                         <!-- Card 4 (Highlighted) -->
-                        <div class="bg-[#0f172a] p-8 rounded-3xl shadow-xl hover:-translate-y-1 transition-all duration-300 sm:translate-y-6 relative overflow-hidden">
+                        <div class="bg-[#0f172a] p-8 rounded-3xl shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden sm:col-start-2 sm:row-start-2 sm:mt-8">
                             <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/20 blur-2xl rounded-full"></div>
                             <span class="material-symbols-outlined text-[#38bdf8] text-3xl mb-4 relative z-10">verified</span>
                             <h3 class="text-xl font-bold text-white mb-2 relative z-10">Faculty Review</h3>
