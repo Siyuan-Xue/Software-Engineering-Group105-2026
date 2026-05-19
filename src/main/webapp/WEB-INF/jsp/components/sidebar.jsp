@@ -13,7 +13,7 @@
 <c:set var="adminUsersActive" value="${fn:contains(currentPath, 'admin/users')}" />
 <c:set var="auditActive" value="${fn:contains(currentPath, 'admin/audit')}" />
 <c:set var="profileCompletion" value="${empty profileCompletionPercentage ? 0 : profileCompletionPercentage}" />
-<aside class="hidden w-64 shrink-0 flex-col border-r border-slate-100 bg-white p-4 lg:flex">
+<aside class="portal-sidebar hidden w-64 shrink-0 flex-col border-r border-slate-100 bg-white p-4 lg:flex">
     <nav class="flex flex-col gap-1">
         <a href="${contextPath}/dashboard" style="${dashboardActive ? 'background:#0f172a;color:#fff;' : ''}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900 ${dashboardActive ? 'shadow-sm' : ''}">
             <span class="material-symbols-outlined text-[20px]">dashboard</span>

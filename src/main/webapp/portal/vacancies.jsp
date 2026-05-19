@@ -46,6 +46,20 @@
             width: 100%; overflow: hidden;
             animation: modalPop .28s cubic-bezier(.34,1.4,.64,1) both;
         }
+        #createVacancyModal .qm-modal-box {
+            max-width: min(72rem, calc(100vw - 2rem));
+            max-height: calc(100vh - 2rem);
+        }
+        #createVacancyModal form {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 2rem);
+        }
+        #createVacancyModal .vacancy-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+        }
         @keyframes modalPop {
             from { transform: scale(0.92) translateY(16px); opacity:0; }
             to   { transform: scale(1)    translateY(0);    opacity:1; }
@@ -106,8 +120,18 @@
                 <!-- Page Header -->
                 <div class="portal-page-header mb-2">
                     <div>
-                        <h2 class="portal-page-title">${language == 'zh' ? '可申请岗位' : 'Available Vacancies'}</h2>
-                        <p class="portal-page-copy">${language == 'zh' ? '浏览并申请各院系开放的助教岗位。' : 'Browse and apply for open Teaching Assistant positions across departments.'}</p>
+                        <h2 class="portal-page-title">
+                            <c:choose>
+                                <c:when test="${userRole == 'MO'}">${language == 'zh' ? '我的岗位' : 'My Vacancies'}</c:when>
+                                <c:otherwise>${language == 'zh' ? '可申请岗位' : 'Available Vacancies'}</c:otherwise>
+                            </c:choose>
+                        </h2>
+                        <p class="portal-page-copy">
+                            <c:choose>
+                                <c:when test="${userRole == 'MO'}">${language == 'zh' ? '查看和管理你自己发布的助教岗位。' : 'Review and manage the TA vacancies posted by your account.'}</c:when>
+                                <c:otherwise>${language == 'zh' ? '浏览并申请各院系开放的助教岗位。' : 'Browse and apply for open Teaching Assistant positions across departments.'}</c:otherwise>
+                            </c:choose>
+                        </p>
                     </div>
                     <div class="flex gap-3">
                         <%-- MO：发布入口；TA：列表增强能力。仅展示层区分角色，权限以服务端为准。 --%>
@@ -272,6 +296,11 @@
                                                         <span class="shrink-0 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase rounded-md tracking-wider">
                                                             <c:out value="${vacancy.type}"/>
                                                         </span>
+                                                        <c:if test="${userRole == 'MO' && not empty vacancy.status}">
+                                                            <span class="shrink-0 px-2.5 py-1 bg-slate-50 text-slate-500 text-xs font-bold uppercase rounded-md tracking-wider border border-slate-200">
+                                                                <c:out value="${vacancy.status}"/>
+                                                            </span>
+                                                        </c:if>
                                                         <c:if test="${vacancy.applied}">
                                                             <span class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase rounded-md tracking-wider">
                                                                 <span class="material-symbols-outlined text-[14px]">task_alt</span>
@@ -479,12 +508,12 @@
 <c:if test="${userRole == 'MO'}">
 <div id="createVacancyModal" class="qm-modal-overlay"
      onclick="if(event.target===this) closeCreateVacancyModal()">
-    <div class="qm-modal-box max-w-2xl">
+    <div class="qm-modal-box">
         <form action="${pageContext.request.contextPath}/vacancy/create" method="POST">
-            <div class="px-7 pt-7 pb-5">
-                <div class="flex items-start gap-4 mb-5">
-                    <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-2xl text-blue-600"
+            <div class="vacancy-modal-body px-6 pt-5 pb-4">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-xl text-blue-600"
                               style="font-variation-settings:'FILL' 1">add_circle</span>
                     </div>
                     <div>
@@ -493,12 +522,12 @@
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标题' : 'Title'} <span class="text-red-500">*</span></label>
-                        <input type="text" name="title" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java 导论助教' : 'e.g. Teaching Assistant for Intro to Java'}">
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 lg:grid-cols-[1.4fr_0.8fr_0.8fr] gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标题' : 'Title'} <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java 导论助教' : 'e.g. Teaching Assistant for Intro to Java'}">
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '课程代码' : 'Course Code'}</label>
                             <input type="text" name="courseCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：ECS414U' : 'e.g. ECS414U'}">
@@ -512,7 +541,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '岗位类型' : 'Type'}</label>
                             <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
@@ -533,16 +562,18 @@
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
-                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '简要描述岗位内容...' : 'Brief description of the role...'}"></textarea>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '描述' : 'Description'}</label>
+                            <textarea name="description" rows="2" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '简要描述岗位内容...' : 'Brief description of the role...'}"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标签' : 'Labels'}</label>
+                            <input type="text" name="labels" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java, 实验课, 答疑' : 'e.g. Java, lab, coursework'}"/>
+                            <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '逗号、分号、竖线或换行；最多 24 个，每个最长 48 字符。' : 'Commas, semicolons, pipes, or newlines; up to 24 tags, 48 chars each.'}</p>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '标签' : 'Labels'}</label>
-                        <input type="text" name="labels" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="${language == 'zh' ? '例如：Java, 实验课, 答疑' : 'e.g. Java, lab, coursework'}"/>
-                        <p class="text-xs text-slate-400 mt-1">${language == 'zh' ? '逗号、分号、竖线或换行；最多 24 个，每个最长 48 字符。' : 'Commas, semicolons, pipes, or newlines; up to 24 tags, 48 chars each.'}</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                         <label class="block text-sm font-semibold text-slate-700 mb-2">${language == 'zh' ? '技能要求' : 'Skill requirements'}</label>
                         <div class="space-y-2">
                             <c:forEach begin="0" end="2" var="idx">
@@ -568,7 +599,7 @@
                             </c:forEach>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '每周工时' : 'Hours/Week'}</label>
                             <input type="number" name="hoursPerWeek" min="1" value="10" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
@@ -581,8 +612,6 @@
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '截止时间' : 'Deadline'}</label>
                             <input type="datetime-local" name="deadline" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
                         </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">${language == 'zh' ? '开始日期' : 'Start Date'}</label>
                             <input type="date" name="startDate" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
@@ -594,7 +623,7 @@
                     </div>
                 </div>
             </div>
-            <div class="px-7 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
                 <button type="button" onclick="closeCreateVacancyModal()" class="portal-btn portal-btn-secondary">
                     ${language == 'zh' ? '取消' : 'Cancel'}
                 </button>

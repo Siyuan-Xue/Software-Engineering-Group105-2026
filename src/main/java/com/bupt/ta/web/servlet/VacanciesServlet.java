@@ -10,6 +10,7 @@ import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.JobType;
 import com.bupt.ta.domain.enums.ProficiencyLevel;
+import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.service.JobService;
 import com.bupt.ta.service.QwenAiService;
 import jakarta.servlet.ServletException;
@@ -77,7 +78,7 @@ public class VacanciesServlet extends HttpServlet {
 
             Map<UUID, Set<String>> jobSkillNames = buildJobSkillNames();
 
-            List<VacancyCardView> allCards = jobService.listOpen(Instant.now())
+            List<VacancyCardView> allCards = listVisibleJobsFor(currentUser)
                     .stream()
                     .filter(job -> keyword == null || matchesKeyword(job, keyword) || matchesJobTags(job, keyword, jobSkillNames))
                     .filter(job -> matchesDepartment(job, department))
@@ -118,6 +119,13 @@ public class VacanciesServlet extends HttpServlet {
 
         req.setAttribute("qwenConfigured", QwenAiService.resolveApiKey() != null);
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private List<Job> listVisibleJobsFor(User currentUser) {
+        if (currentUser != null && currentUser.getRole() == UserRole.MO) {
+            return jobService.listByPoster(currentUser.getId());
+        }
+        return jobService.listOpen(Instant.now());
     }
 
     private void applyLoadError(HttpServletRequest req) {
@@ -182,6 +190,7 @@ public class VacanciesServlet extends HttpServlet {
                 isOwner,
                 labels,
                 job.getType() == null ? JobType.MODULE_SUPPORT.name() : job.getType().name(),
+                job.getStatus() == null ? "" : job.getStatus().name(),
                 slotsRemaining,
                 applied
         );
@@ -373,6 +382,7 @@ public class VacanciesServlet extends HttpServlet {
         private final boolean isOwner;
         private final List<String> labels;
         private final String type;
+        private final String status;
         private final int slotsRemaining;
         private final boolean applied;
 
@@ -380,7 +390,7 @@ public class VacanciesServlet extends HttpServlet {
                                String description, String department, int hoursPerWeek,
                                String hourlyRate, String deadline, String moduleOwner,
                                boolean saved, boolean isOwner, List<String> labels,
-                               String type, int slotsRemaining, boolean applied) {
+                               String type, String status, int slotsRemaining, boolean applied) {
             this.vacancyId   = vacancyId;
             this.courseCode  = courseCode;
             this.title       = title;
@@ -394,6 +404,7 @@ public class VacanciesServlet extends HttpServlet {
             this.isOwner     = isOwner;
             this.labels      = labels == null ? List.of() : List.copyOf(labels);
             this.type        = type;
+            this.status      = status;
             this.slotsRemaining = slotsRemaining;
             this.applied     = applied;
         }
@@ -411,6 +422,7 @@ public class VacanciesServlet extends HttpServlet {
         public boolean isOwner()        { return isOwner; }
         public List<String> getLabels() { return labels; }
         public String getType()         { return type; }
+        public String getStatus()       { return status; }
         public int getSlotsRemaining()  { return slotsRemaining; }
         public boolean isApplied()      { return applied; }
     }

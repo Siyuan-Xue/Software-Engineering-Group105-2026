@@ -20,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -118,6 +119,22 @@ class JobServiceTest {
                 .noneMatch(item -> ta.getId().equals(item.getTaId())));
     }
 
+    @Test
+    void listByPosterShouldReturnOnlyVacanciesPostedByThatModuleOrganiser() {
+        TaDatabase db = FileTaDatabase.open(JsonStoreConfig.of(tempDir, AppConfig.createObjectMapper()));
+        JobService service = new JobService(db);
+
+        User owner = db.users().save(user("owner-mo@example.com", UserRole.MO, "Owner MO"));
+        User otherMo = db.users().save(user("other-mo@example.com", UserRole.MO, "Other MO"));
+        Job ownJob = db.jobs().save(job(owner.getId(), "Owner Vacancy"));
+        db.jobs().save(job(otherMo.getId(), "Other Vacancy"));
+
+        var visibleJobs = service.listByPoster(owner.getId());
+
+        assertEquals(1, visibleJobs.size());
+        assertEquals(ownJob.getId(), visibleJobs.get(0).getId());
+    }
+
     private User user(String email, UserRole role, String name) {
         User user = new User();
         user.setEmail(email);
@@ -125,5 +142,16 @@ class JobServiceTest {
         user.setRole(role);
         user.setFullName(name);
         return user;
+    }
+
+    private Job job(UUID posterId, String title) {
+        Job job = new Job();
+        job.setPostedBy(posterId);
+        job.setTitle(title);
+        job.setType(JobType.MODULE_SUPPORT);
+        job.setStatus(JobStatus.OPEN);
+        job.setRequiredHours(8);
+        job.setDeadline(Instant.now().plusSeconds(3600));
+        return job;
     }
 }
