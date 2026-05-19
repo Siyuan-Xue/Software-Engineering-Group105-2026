@@ -48,6 +48,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+/**
+ * Production {@link TaDatabase} implementation backed by one JSON file per table.
+ */
 public class FileTaDatabase implements TaDatabase {
     private static final int VERSION = 1;
     private static final List<String> TABLE_FILES = List.of(

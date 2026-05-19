@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Writes JSON table files through a temporary file and atomic move.
+ */
 public class AtomicJsonFileWriter {
     public void writeAtomically(Path target, Object payload, ObjectMapper mapper) {
         Path temp = target.resolveSibling(target.getFileName() + ".tmp");

@@ -9,6 +9,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Immutable audit record describing a user action and optional before/after state.
+ */
 public class AuditLog extends AbstractEntity {
     private UUID operatorId;
     private AuditAction action;

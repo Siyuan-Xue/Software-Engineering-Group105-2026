@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Builds role-specific dashboard summaries for TA, MO, and Admin users.
+ */
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/dashboard.jsp";
@@ -115,7 +118,7 @@ public class DashboardServlet extends HttpServlet {
         clearDashboardMetrics(req);
     }
 
-    /** TA/MO/ADMIN 以外角色（如 DEMO）：显式空状态，避免误显示 normal 且数据未初始化。 */
+    /** Uses an explicit empty state for unsupported roles such as the public demo user. */
     private void applyUnsupportedRole(HttpServletRequest req) {
         req.setAttribute("pageState", "emptyActivities");
         clearDashboardMetrics(req);

@@ -6,6 +6,9 @@ import jakarta.servlet.http.HttpSession;
 
 import java.util.Map;
 
+/**
+ * In-memory internationalization catalogue and preference helpers.
+ */
 public final class I18n {
     public static final String EN = "en";
     public static final String ZH = "zh";

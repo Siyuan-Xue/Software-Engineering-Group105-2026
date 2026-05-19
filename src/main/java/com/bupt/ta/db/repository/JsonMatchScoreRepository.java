@@ -7,6 +7,9 @@ import com.bupt.ta.db.store.JsonTableStore;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * JSON-backed repository for persisted application match scores.
+ */
 public class JsonMatchScoreRepository extends BaseJsonRepository<MatchScore> implements MatchScoreRepository {
     public JsonMatchScoreRepository(JsonTableStore<MatchScore> store) {
         super(store);

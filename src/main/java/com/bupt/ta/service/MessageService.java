@@ -68,7 +68,7 @@ public class MessageService {
             conv.setConversationId(buildConversationId(currentUserId, otherUserId));
             conv.setContactName(otherUser != null ? safe(otherUser.getFullName(), zh ? "用户" : "User") : (zh ? "未知用户" : "Unknown User"));
             conv.setContactRole(otherUser != null ? formatRole(otherUser.getRole().name(), zh) : (zh ? "用户" : "User"));
-            conv.setContactAvatar(null); // No avatar system in current schema
+            conv.setContactAvatar(null);
 
             // Last message
             Notification lastMsg = messages.get(messages.size() - 1);
@@ -91,7 +91,6 @@ public class MessageService {
             return 0; // Will be sorted by insertion order which is already by last message
         });
 
-        // Better sort: re-sort using actual timestamps
         Map<String, Instant> lastTimestamps = new HashMap<>();
         for (Map.Entry<UUID, List<Notification>> entry : byOtherUser.entrySet()) {
             List<Notification> msgs = entry.getValue();
@@ -227,7 +226,6 @@ public class MessageService {
         return buildConversationId(currentUserId, otherUserId);
     }
 
-    // ── System conversation ──────────────────────────────────────────────────
 
     /**
      * Return all non-MESSAGE notifications addressed to the given user, sorted oldest-first.
@@ -320,7 +318,6 @@ public class MessageService {
         }
     }
 
-    // ── Internal helpers ─────────────────────────────────────────────────────
 
     private List<Notification> getAllMessageNotifications() {
         return db.notifications().findAll().stream()

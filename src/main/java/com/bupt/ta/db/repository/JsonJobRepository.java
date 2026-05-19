@@ -13,6 +13,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * JSON-backed vacancy repository with open-job filtering.
+ */
 public class JsonJobRepository extends BaseJsonRepository<Job> implements JobRepository {
     private final JsonTableStore<Application> applicationStore;
 

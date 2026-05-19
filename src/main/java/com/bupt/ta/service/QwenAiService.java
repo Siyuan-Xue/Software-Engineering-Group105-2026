@@ -24,9 +24,9 @@ import java.util.regex.Pattern;
  * Calls the DashScope-compatible Qwen VL API.
  *
  * Two main functions:
- *   1. analyzeResumeForOptimization() – used on the Resumes page.
+ *   1. analyzeResumeForOptimization() - used on the Resumes page.
  *      Focuses on improving the student's resume quality.
- *   2. batchScoreJobs()               – used on the Vacancies page.
+ *   2. batchScoreJobs()               - used on the Vacancies page.
  *      Rates how well the student matches each open TA position (returns 0-100 score).
  *
  * Configuration (set in D:\Programs\Tomcat 11.0\bin\setenv.bat):
@@ -44,8 +44,9 @@ public class QwenAiService {
     private static final int MAX_TEXT_CHARS   = 6000;
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
 
-    // ── Descriptors used for batch scoring ────────────────────────────────────
+    /** Vacancy descriptor passed to AI batch scoring prompts. */
     public record JobInfo(String id, String title, String description, String department) {}
+    /** Resume descriptor passed to AI batch scoring prompts. */
     public record ResumeInfo(String id, String title, String department, String degree, String gpa, String bio) {}
     /** One applicant row for MO multi-applicant ranking (same vacancy). */
     public record MoApplicantSnippet(
@@ -71,8 +72,6 @@ public class QwenAiService {
         this.vlModel    = (vlModel    != null && !vlModel.isBlank())    ? vlModel    : DEFAULT_VL_MODEL;
         this.textModel  = (textModel  != null && !textModel.isBlank())  ? textModel  : DEFAULT_TEXT_MODEL;
     }
-
-    // ── static factory / config resolution ───────────────────────────────────
 
     public static String resolveApiKey() {
         String v = System.getenv("QWEN_API_KEY");
@@ -100,10 +99,6 @@ public class QwenAiService {
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank();
     }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 1. Resume Optimisation  (Resumes page)
-    // ═══════════════════════════════════════════════════════════════════════════
 
     /**
      * Analyses a student's resume and returns coaching advice on how to improve it.
@@ -168,10 +163,6 @@ public class QwenAiService {
         return chat(vlModel, sysPrompt, contentParts, 1800, 0.65, false);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 2. Batch Job Match Scoring  (Vacancies page)
-    // ═══════════════════════════════════════════════════════════════════════════
-
     /**
      * Scores how well the student's resume matches each of the given TA jobs.
      *
@@ -181,7 +172,7 @@ public class QwenAiService {
      * @param gpa        GPA string
      * @param bio        personal statement
      * @param jobs       list of jobs to score
-     * @return map of jobId → score (0-100). Missing entries mean scoring failed for that job.
+     * @return map of jobId to score (0-100). Missing entries mean scoring failed for that job.
      */
     public Map<String, Integer> batchScoreJobs(
             String title,
@@ -198,12 +189,10 @@ public class QwenAiService {
         ArrayNode parts = mapper.createArrayNode();
         addText(parts, prompt);
 
-        // disable thinking: we need clean JSON without CoT traces
+        // Disable model thinking so JSON parsing receives a clean object.
         String raw = chat(textModel, buildBatchSystemPrompt(), parts, 600, 0.0, true);
         return parseBatchScores(raw, jobs);
     }
-
-    // ── private: resume optimisation helpers ──────────────────────────────────
 
     private String buildOptimizationSystemPrompt(List<String> vacancyContext) {
         StringBuilder sb = new StringBuilder();
@@ -251,13 +240,9 @@ public class QwenAiService {
         return sb.toString();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 3. Rank Resumes for a Specific Job  (vacancy_detail apply modal)
-    // ═══════════════════════════════════════════════════════════════════════════
-
     /**
      * Scores each of the user's resumes against a single TA job posting.
-     * Returns a map of resumeId → score (0-100).
+     * Returns a map of resumeId to score (0-100).
      */
     public Map<String, Integer> rankResumesForJob(
             String jobTitle,
@@ -292,14 +277,12 @@ public class QwenAiService {
 
         ArrayNode parts = mapper.createArrayNode();
         addText(parts, sb.toString());
-        // disable thinking: need clean JSON output
+        // Disable model thinking so JSON parsing receives a clean object.
         String raw = chat(textModel, buildBatchSystemPrompt(), parts, 400, 0.0, true);
 
         List<String> ids = resumes.stream().map(ResumeInfo::id).toList();
         return parseScoreMap(raw, ids);
     }
-
-    // ── private: batch scoring helpers ────────────────────────────────────────
 
     private String buildBatchSystemPrompt() {
         return """
@@ -368,10 +351,6 @@ public class QwenAiService {
         return result;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 4. MO application decision assistant  (Applications page)
-    // ═══════════════════════════════════════════════════════════════════════════
-
     /**
      * Suggests whether a module owner might lean toward offer vs reject, with reasoning.
      * Not a hiring decision; not legal advice.
@@ -434,10 +413,6 @@ public class QwenAiService {
         return chat(textModel, sys, parts, 2200, 0.35, false);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 5. TA cover letter / motivation draft  (Applications page)
-    // ═══════════════════════════════════════════════════════════════════════════
-
     /**
      * Draft a short motivation paragraph or cover letter snippet for one vacancy.
      */
@@ -482,12 +457,8 @@ public class QwenAiService {
         return chat(textModel, sys, parts, 1800, 0.45, false);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 6. MO multi-applicant ranking for one vacancy  (Applications page)
-    // ═══════════════════════════════════════════════════════════════════════════
-
     /**
-     * Ranks multiple applicants for the same TA vacancy (JSON array). Triaging aid only — not a hiring decision.
+     * Ranks multiple applicants for the same TA vacancy (JSON array). Triaging aid only; not a hiring decision.
      *
      * @return raw model text expected to contain a single JSON array
      */
@@ -550,8 +521,6 @@ public class QwenAiService {
         }
         return s.substring(0, max) + "\n...[truncated]";
     }
-
-    // ── private: shared HTTP helper ───────────────────────────────────────────
 
     /**
      * Sends a chat completion request and returns the assistant's message content.

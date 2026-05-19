@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /**
  * JSON API for toggling saved/favorite vacancies.
- * POST /favorites?vacancyId={uuid}  →  {"saved": true/false, "count": N}
+ * POST /favorites?vacancyId={uuid} returns {"saved": true/false, "count": N}
  */
 @WebServlet("/favorites")
 public class FavoritesServlet extends HttpServlet {

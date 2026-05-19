@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Business service for TA resume versions and resume skill bindings.
+ */
 public class ResumeService {
     private static final Set<ApplicationStatus> ACTIVE_APPLICATION_STATUSES = Set.of(
             ApplicationStatus.PENDING,
@@ -51,6 +54,9 @@ public class ResumeService {
         delete(null, resumeId);
     }
 
+    /**
+     * Deletes a resume only when it is not referenced by active applications.
+     */
     public void delete(UUID operatorId, UUID resumeId) {
         Resume existing = db.resumes().findById(resumeId)
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
@@ -70,6 +76,9 @@ public class ResumeService {
         });
     }
 
+    /**
+     * Replaces all skills bound to a resume after verifying TA ownership.
+     */
     public void replaceSkills(UUID operatorId, UUID resumeId, List<ResumeSkill> skills) {
         Resume resume = db.resumes().findById(resumeId)
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));

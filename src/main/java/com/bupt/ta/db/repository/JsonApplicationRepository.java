@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * JSON-backed application repository with resume ownership-aware queries.
+ */
 public class JsonApplicationRepository extends BaseJsonRepository<Application> implements ApplicationRepository {
     private final JsonTableStore<Resume> resumeStore;
 

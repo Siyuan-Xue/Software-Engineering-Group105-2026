@@ -7,6 +7,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Application submitted by a TA for a specific vacancy using a selected resume.
+ */
 public class Application extends AbstractEntity {
     private UUID resumeId;
     private UUID jobId;

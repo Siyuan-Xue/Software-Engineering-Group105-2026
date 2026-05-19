@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Demonstration helper service used by the database demo page and integration tests.
+ */
 public class DbDemoService {
     private static final TypeReference<List<AvailabilitySlot>> AVAILABILITY_TYPE = new TypeReference<>() { };
 
@@ -557,6 +560,9 @@ public class DbDemoService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * Table row-count summary rendered on the database demo page.
+     */
     public static final class TableCount {
         private final String tableName;
         private final int rowCount;

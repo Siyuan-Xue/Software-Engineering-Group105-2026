@@ -6,6 +6,9 @@ import com.bupt.ta.domain.enums.SkillCategory;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository contract for skill catalogue management.
+ */
 public interface SkillRepository extends CrudRepository<Skill> {
     Optional<Skill> findByNameIgnoreCase(String name);
 

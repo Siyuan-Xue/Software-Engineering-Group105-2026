@@ -4,6 +4,9 @@ import com.bupt.ta.config.DatabaseConfig;
 import com.bupt.ta.db.core.JsonStoreConfig;
 
 @Deprecated
+/**
+ * Backward-compatible wrapper around the primary database facade.
+ */
 public final class TaDatabase {
     private final com.bupt.ta.db.facade.TaDatabase delegate;
 

@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Administrator skill-library management endpoint.
+ */
 @WebServlet("/admin/skills")
 public class AdminSkillsServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/admin_skills.jsp";

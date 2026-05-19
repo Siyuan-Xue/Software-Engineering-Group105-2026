@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository contract for account lookup and activation state.
+ */
 public interface UserRepository extends CrudRepository<User> {
     Optional<User> findByEmail(String email);
 

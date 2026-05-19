@@ -6,6 +6,9 @@ import com.bupt.ta.domain.enums.ApplicationStatus;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository contract for application lookup and duplicate-submission checks.
+ */
 public interface ApplicationRepository extends CrudRepository<Application> {
     List<Application> listByJobId(UUID jobId);
 

@@ -30,7 +30,7 @@ import java.util.UUID;
  * JSON API: POST /ai-match
  *
  * Request params (form-data or URL-encoded):
- *   ids[]   – one or more vacancy/job UUIDs to score
+ *   ids[]   - one or more vacancy/job UUIDs to score
  *
  * Response JSON:
  *   {"ok": true,  "scores": {"uuid1": 85, "uuid2": 62, ...}}
@@ -60,7 +60,6 @@ public class AiMatchServlet extends HttpServlet {
         resp.setContentType("application/json;charset=UTF-8");
         ObjectNode json = mapper.createObjectNode();
 
-        // ── auth check ──────────────────────────────────────────────────────
         User user = currentUser(req);
         if (user == null) {
             resp.setStatus(401);
@@ -70,7 +69,6 @@ public class AiMatchServlet extends HttpServlet {
             return;
         }
 
-        // ── api key check ───────────────────────────────────────────────────
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
             json.put("ok", false);
@@ -79,7 +77,6 @@ public class AiMatchServlet extends HttpServlet {
             return;
         }
 
-        // ── parse requested job IDs ─────────────────────────────────────────
         String[] rawIds = req.getParameterValues("ids[]");
         if (rawIds == null || rawIds.length == 0) {
             json.put("ok", false);
@@ -109,7 +106,6 @@ public class AiMatchServlet extends HttpServlet {
             return;
         }
 
-        // ── aggregate profile from ALL user resumes ─────────────────────────
         List<Resume> resumes = resumeService.listByUserId(user.getId());
 
         String dept   = user.getDepartment();
@@ -135,7 +131,6 @@ public class AiMatchServlet extends HttpServlet {
         String title = resumes.isEmpty() ? null :
                 resumes.get(resumes.size() - 1).getTitle();
 
-        // ── call AI ─────────────────────────────────────────────────────────
         try {
             QwenAiService ai = new QwenAiService(
                     apiKey,

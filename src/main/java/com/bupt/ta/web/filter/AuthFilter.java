@@ -18,20 +18,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 全局认证与公共数据过滤器
- * 1. 拦截所有请求，校验用户是否登录。
- * 2. 如果未登录，重定向到 /login。
- * 3. 如果已登录，在 request 中注入全局共享数据（Header、Sidebar 需要的字段）。
- * <p>
- * 已登录时注入 {@code currentUser} 会话数据对应的展示字段，并设置 {@code userRole}，
- * 供 JSP 做导航与按钮的条件渲染；真正的授权仍应在各 Servlet 中校验，Filter 只解决「全站一致带上身份上下文」。
+ * Global authentication filter and request-context injector.
+ *
+ * <p>The filter redirects unauthenticated users to the login page and enriches
+ * authenticated requests with shared profile, role, theme, language, and
+ * notification attributes used by portal JSP fragments. Servlet-level
+ * authorization remains responsible for sensitive role-specific operations.</p>
  */
-@WebFilter("/*") // 拦截所有请求，我们在代码里手动放行静态资源和登录页
+@WebFilter("/*")
 public class AuthFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // 初始化逻辑（留空即可）
     }
 
     @Override
@@ -55,7 +53,6 @@ public class AuthFilter implements Filter {
         String route = path.substring(contextPath.length());
         boolean dbDemoRoute = route.equals("/db-demo");
 
-        // 1. 定义白名单（放行登录页、注销动作、以及所有静态资源）
         if (route.equals("/") ||
             route.equals("/login") ||
             route.equals("/register") ||
@@ -73,7 +70,6 @@ public class AuthFilter implements Filter {
             return;
         }
 
-        // 3. 如果未登录，重定向到登录页，并带上前端契约规定的 errorMessage
         if (currentUser == null) {
             String errorMsg = URLEncoder.encode(I18n.message(language, "auth.loginRequired"), StandardCharsets.UTF_8);
             resp.sendRedirect(contextPath + "/login?errorMessage=" + errorMsg);
@@ -85,12 +81,7 @@ public class AuthFilter implements Filter {
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, appearance);
         }
 
-        // ====================================================================
-        // 4. 重点：用户已登录！在此注入所有 JSP 页面（Header/Sidebar）需要的公共字段
-        // 这样你的业务 Servlet (DashboardServlet等) 就不需要再重复写这些代码了！
-        // ====================================================================
-
-        // 4.1 组装前端需要的 userProfile 对象
+        // Shared profile data consumed by the header and sidebar fragments.
         Map<String, Object> userProfile = new HashMap<>();
 
         String fullName = currentUser.getFullName() != null ? currentUser.getFullName() : I18n.message(language, "common.studentUser");
@@ -101,7 +92,6 @@ public class AuthFilter implements Filter {
         userProfile.put("email", currentUser.getEmail());
         userProfile.put("phone", currentUser.getPhone());
 
-        // 直接从 User 对象读取持久化字段（已存入 users.json）
         String dept = currentUser.getDepartment();
         userProfile.put("department", (dept == null || dept.isBlank()) ? "None" : dept);
         userProfile.put("studentId", currentUser.getStudentId());
@@ -112,28 +102,24 @@ public class AuthFilter implements Filter {
 
         req.setAttribute("userName", fullName);
         req.setAttribute("userProfile", userProfile);
-        // 与前端契约中的 userRole 对齐，JSP 用 EL 比较 TA/MO/ADMIN 即可分支 UI
         req.setAttribute("userRole", currentUser.getRole().name());
 
-        // 4.2 动态计算并注入 sidebar 需要的 profileCompletionPercentage
         int completion = calculateProfileCompletion(currentUser);
         req.setAttribute("profileCompletionPercentage", completion);
         req.setAttribute("unreadNotificationCount", unreadNotificationCount(req, currentUser));
 
-        // 5. 放行请求，继续走到对应的 Servlet
         chain.doFilter(request, response);
     }
 
     @Override
     public void destroy() {
-        // 销毁逻辑（留空即可）
     }
 
     /**
-     * 根据 User 对象的字段是否完善，简单计算资料完整度
+     * Calculates the profile-completion percentage displayed in the sidebar.
      */
     private int calculateProfileCompletion(User user) {
-        int score = 20; // 基础分（邮箱必填）
+        int score = 20;
         if (user.getFullName() != null && !user.getFullName().isBlank()) score += 20;
         if (user.getPhone()    != null && !user.getPhone().isBlank())    score += 15;
         if (user.getDepartment() != null && !user.getDepartment().isBlank()) score += 15;

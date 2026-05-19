@@ -37,6 +37,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Handles MO vacancy editing, status changes, and requirement replacement.
+ */
 @WebServlet("/vacancy/edit")
 public class VacancyEditServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/vacancy_edit.jsp";

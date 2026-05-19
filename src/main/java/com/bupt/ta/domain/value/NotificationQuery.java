@@ -4,6 +4,9 @@ import com.bupt.ta.domain.enums.NotificationType;
 
 import java.util.UUID;
 
+/**
+ * Filter and paging criteria for notification inbox queries.
+ */
 public class NotificationQuery {
     private UUID userId;
     private Boolean unreadOnly;

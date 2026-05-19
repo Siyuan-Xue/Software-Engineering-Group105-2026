@@ -19,6 +19,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 
+/**
+ * Generic in-memory table abstraction synchronized to a JSON file.
+ */
 public class JsonTableStore<T extends AbstractEntity> {
     private final TableDescriptor<T> descriptor;
     private final ObjectMapper mapper;

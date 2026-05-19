@@ -1,5 +1,8 @@
 package com.bupt.ta.domain.enums;
 
+/**
+ * Auditable action categories written to the audit log.
+ */
 public enum AuditAction {
     CREATE,
     UPDATE,

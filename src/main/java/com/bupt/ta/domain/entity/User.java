@@ -8,6 +8,9 @@ import java.util.Set;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Account record for Teaching Assistants, Module Organisers, and Administrators.
+ */
 public class User extends AbstractEntity {
     private String email;
     private String passwordHash;

@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Administrator audit-log search page and CSV export endpoint.
+ */
 @WebServlet("/admin/audit")
 public class AdminAuditServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/admin_audit.jsp";

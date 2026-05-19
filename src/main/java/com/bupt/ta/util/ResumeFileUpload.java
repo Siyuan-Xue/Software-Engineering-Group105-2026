@@ -8,6 +8,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+/**
+ * Handles safe storage of TA resume uploads.
+ */
 public final class ResumeFileUpload {
     private static final String ALLOWED_EXT = "\\.(pdf|doc|docx|jpg|jpeg|png|txt)$";
 
@@ -39,6 +42,9 @@ public final class ResumeFileUpload {
         return new SavedResumeFile(uploadPath, originalName);
     }
 
+    /**
+     * Stored upload path and original client-provided filename.
+     */
     public record SavedResumeFile(Path path, String originalFileName) {
     }
 }

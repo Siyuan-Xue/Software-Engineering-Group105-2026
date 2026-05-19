@@ -7,6 +7,9 @@ import com.bupt.ta.domain.value.NotificationQuery;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Thin service wrapper for notification creation and read-state operations.
+ */
 public class NotificationService {
     private final TaDatabase db;
 

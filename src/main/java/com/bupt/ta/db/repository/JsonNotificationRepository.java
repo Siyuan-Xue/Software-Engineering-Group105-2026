@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * JSON-backed notification repository for inbox and unread-count operations.
+ */
 public class JsonNotificationRepository extends BaseJsonRepository<Notification> implements NotificationRepository {
     public JsonNotificationRepository(JsonTableStore<Notification> store) {
         super(store);

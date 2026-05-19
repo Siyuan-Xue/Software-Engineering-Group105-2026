@@ -6,6 +6,9 @@ import com.bupt.ta.domain.enums.EntityType;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Search criteria for administrator audit-log review and export.
+ */
 public class AuditLogQuery {
     private UUID operatorId;
     private AuditAction action;

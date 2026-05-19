@@ -3,6 +3,9 @@ package com.bupt.ta.web.util;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Utilities for safely appending query parameters to redirect targets.
+ */
 public final class RedirectUrls {
     private RedirectUrls() {
     }

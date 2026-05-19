@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Skill tag bound to a resume with proficiency and experience metadata.
+ */
 public class ResumeSkill extends AbstractEntity {
     private UUID resumeId;
     private UUID skillId;

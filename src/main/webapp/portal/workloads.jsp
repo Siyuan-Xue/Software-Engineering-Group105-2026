@@ -146,6 +146,56 @@
                             </div>
                         </div>
 
+                        <c:if test="${not empty rebalanceSuggestions}">
+                            <div class="portal-panel p-5 mb-6">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">${language == 'zh' ? '再平衡建议' : 'Rebalance suggestions'}</h3>
+                                        <p class="mt-1 text-sm text-slate-500">${language == 'zh' ? '基于当前容量自动派生；用于辅助管理员判断，不会自动修改岗位分配。' : 'Derived from current capacity; use as admin guidance, with no automatic assignment changes.'}</p>
+                                    </div>
+                                    <span class="inline-flex w-fit items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">
+                                        <span class="material-symbols-outlined text-sm">balance</span>
+                                        ${language == 'zh' ? '规则建议' : 'Rule-based'}
+                                    </span>
+                                </div>
+                                <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                                    <c:forEach items="${rebalanceSuggestions}" var="suggestion">
+                                        <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div>
+                                                    <p class="text-sm font-bold text-slate-900"><c:out value="${suggestion.sourceName}"/></p>
+                                                    <p class="mt-1 text-xs text-slate-500">
+                                                        <c:out value="${suggestion.sourceStatus}"/> · <c:out value="${suggestion.sourceUtilization}"/>%
+                                                    </p>
+                                                </div>
+                                                <span class="material-symbols-outlined text-slate-400">arrow_forward</span>
+                                                <div class="text-right">
+                                                    <p class="text-sm font-bold text-slate-900"><c:out value="${suggestion.targetName}"/></p>
+                                                    <p class="mt-1 text-xs text-slate-500">
+                                                        <c:out value="${suggestion.targetRemainingHours}"/> hrs ${language == 'zh' ? '可用' : 'available'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <c:choose>
+                                                <c:when test="${suggestion.hasTarget}">
+                                                    <p class="mt-3 text-xs text-slate-500">
+                                                        ${language == 'zh' ? '建议优先转移或避免新增约' : 'Prioritize shifting or avoiding about'}
+                                                        <strong><c:out value="${suggestion.reliefHours}"/></strong>
+                                                        ${language == 'zh' ? '小时/周的新增负载。' : 'hours/week of additional load.'}
+                                                    </p>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <p class="mt-3 text-xs font-semibold text-amber-700">
+                                                        ${language == 'zh' ? '当前没有可承接的低负载助教；建议暂停新增分配或手动调整岗位。' : 'No low-load TA is currently available; pause new assignments or rebalance manually.'}
+                                                    </p>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </div>
+                                    </c:forEach>
+                                </div>
+                            </div>
+                        </c:if>
+
                         <!-- Main Workload Table -->
                         <div class="portal-panel overflow-hidden whitespace-nowrap">
                             <table class="w-full text-left text-sm">

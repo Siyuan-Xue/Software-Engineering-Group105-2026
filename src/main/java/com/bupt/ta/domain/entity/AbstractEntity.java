@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Base entity fields shared by all JSON-persisted domain records.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractEntity {
     private UUID id;

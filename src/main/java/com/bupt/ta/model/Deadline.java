@@ -1,5 +1,8 @@
 package com.bupt.ta.model;
 
+/**
+ * Dashboard deadline item with precomputed display classes.
+ */
 public class Deadline {
     private String title;
     private String timeRemaining;
@@ -13,7 +16,6 @@ public class Deadline {
         this.textColorClass = textColorClass;
     }
 
-    // Getters
     public String getTitle() { return title; }
     public String getTimeRemaining() { return timeRemaining; }
     public String getColorClass() { return colorClass; }

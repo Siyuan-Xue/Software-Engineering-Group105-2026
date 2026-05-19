@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Workload assignment created when a TA accepts an offer.
+ */
 public class WorkloadRecord extends AbstractEntity {
     private UUID taId;
     private UUID jobId;

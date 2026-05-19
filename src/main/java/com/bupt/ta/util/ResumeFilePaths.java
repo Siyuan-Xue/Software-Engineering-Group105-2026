@@ -6,6 +6,9 @@ import com.bupt.ta.domain.entity.Resume;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Resolves and validates stored resume upload paths.
+ */
 public final class ResumeFilePaths {
     private ResumeFilePaths() {
     }

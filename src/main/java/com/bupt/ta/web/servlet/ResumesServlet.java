@@ -50,6 +50,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * TA resume management endpoint for profile data, uploads, and skill bindings.
+ */
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 2,
     maxFileSize       = 1024 * 1024 * 15,
@@ -81,7 +84,6 @@ public class ResumesServlet extends HttpServlet {
         }
     }
 
-    // ── GET ────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -134,7 +136,6 @@ public class ResumesServlet extends HttpServlet {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    // ── POST ───────────────────────────────────────────────────────────────
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -145,7 +146,7 @@ public class ResumesServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
-        // JSON-returning actions – handle before the redirect block
+        // Handle JSON-returning actions before redirect-based form actions.
         if ("aiReview".equals(action)) {
             handleAIReview(req, resp, user);
             return;
@@ -172,7 +173,6 @@ public class ResumesServlet extends HttpServlet {
         }
     }
 
-    // ── action handlers ────────────────────────────────────────────────────
 
     /**
      * Handles file upload and returns JSON:
@@ -276,8 +276,7 @@ public class ResumesServlet extends HttpServlet {
             List<Resume> resumes = resumeService.listByUserId(user.getId());
 
             // Determine target resume:
-            //   card button → specific resumeId passed in the request
-            //   sidebar button → most recent resume that has an uploaded file (fallback: latest overall)
+            // Card buttons pass a resumeId; the sidebar action falls back to the latest uploaded resume.
             String resumeIdParam = req.getParameter("resumeId");
             Resume target = null;
 
@@ -431,7 +430,6 @@ public class ResumesServlet extends HttpServlet {
         resumeService.delete(user.getId(), id);
     }
 
-    // ── helpers ────────────────────────────────────────────────────────────
 
     private Map<UUID, List<Map<String, Object>>> buildResumeSkillViews(List<Resume> resumes) {
         Map<UUID, Skill> skillsById = database.skills().findAll().stream()

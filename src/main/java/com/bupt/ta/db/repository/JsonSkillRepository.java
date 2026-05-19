@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+/**
+ * JSON-backed repository for administrator-managed skill library entries.
+ */
 public class JsonSkillRepository extends BaseJsonRepository<Skill> implements SkillRepository {
     public JsonSkillRepository(JsonTableStore<Skill> store) {
         super(store);

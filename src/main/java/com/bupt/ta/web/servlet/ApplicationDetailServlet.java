@@ -28,8 +28,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * Renders the application detail view for the vacancy owner or the applicant.
+ *
+ * <p>Module Organisers receive the full screening view, including rule-based and
+ * fallback match scores. Teaching Assistants receive only applicant-facing status
+ * and skill-gap feedback; score and recommendation fields are intentionally not
+ * exposed to satisfy the Sprint 3 visibility boundary.</p>
+ */
 @WebServlet("/application/detail")
 public class ApplicationDetailServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/application_detail.jsp";
@@ -112,6 +121,7 @@ public class ApplicationDetailServlet extends HttpServlet {
         req.setAttribute("canMoManage", canMoManage);
         req.setAttribute("canTaView", canTaView);
         req.setAttribute("canTaRespond", canTaView && application.getStatus() == ApplicationStatus.OFFER_PENDING);
+        req.setAttribute("canRunMatchAnalysis", canMoManage && application.getStatus() == ApplicationStatus.REVIEWING);
         req.setAttribute("applicationStatus", toDisplayStatus(application.getStatus()));
         req.setAttribute("applicationStatusRaw", application.getStatus().name());
         req.setAttribute("appliedDate", application.getCreatedAt() == null
@@ -139,13 +149,17 @@ public class ApplicationDetailServlet extends HttpServlet {
             displayFileName = resume == null ? "" : nullToEmpty(resume.getOriginalFileName());
         }
         req.setAttribute("resumeFileName", displayFileName);
-        if (matchScore != null) {
+        if (matchScore != null && canMoManage) {
             req.setAttribute("matchScore", matchScore);
             req.setAttribute("matchComputedAt", matchScore.getComputedAt() == null
                     ? ""
                     : DATE_FORMATTER.format(matchScore.getComputedAt()));
+        } else if (matchScore != null && canTaView) {
+            List<String> suggestions = matchScore.getMissingSkillSuggestions();
+            req.setAttribute("taSkillGapSuggestions", suggestions);
+            req.setAttribute("taFeedbackAvailable", true);
         }
-        if (resume != null && job != null) {
+        if (resume != null && job != null && canMoManage) {
             req.setAttribute("skillCoverage", matchingService.computeCoverage(resume.getId(), job.getId()));
         }
 

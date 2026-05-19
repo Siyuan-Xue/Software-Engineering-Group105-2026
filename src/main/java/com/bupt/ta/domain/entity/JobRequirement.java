@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Skill requirement attached to a vacancy, including required/preferred status.
+ */
 public class JobRequirement extends AbstractEntity {
     private UUID jobId;
     private UUID skillId;

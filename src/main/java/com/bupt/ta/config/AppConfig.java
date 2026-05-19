@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * Central application configuration for JSON mapper and data-directory resolution.
+ */
 public final class AppConfig {
     public static final String DATA_DIR_PROPERTY = "ta105.data.dir";
     public static final String DATA_DIR_ENV = "TA105_DATA_DIR";

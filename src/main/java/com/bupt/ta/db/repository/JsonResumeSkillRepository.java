@@ -7,6 +7,9 @@ import com.bupt.ta.db.store.JsonTableStore;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * JSON-backed repository for resume skill tags.
+ */
 public class JsonResumeSkillRepository extends BaseJsonRepository<ResumeSkill> implements ResumeSkillRepository {
     public JsonResumeSkillRepository(JsonTableStore<ResumeSkill> store) {
         super(store);

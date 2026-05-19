@@ -8,6 +8,9 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * JSON-backed audit repository with filtered chronological search.
+ */
 public class JsonAuditLogRepository extends BaseJsonRepository<AuditLog> implements AuditLogRepository {
     public JsonAuditLogRepository(JsonTableStore<AuditLog> store) {
         super(store);

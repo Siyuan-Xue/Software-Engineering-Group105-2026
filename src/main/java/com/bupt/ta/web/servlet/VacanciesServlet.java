@@ -39,6 +39,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Lists vacancies with role-specific visibility and filtering.
+ */
 @WebServlet("/vacancies")
 public class VacanciesServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/vacancies.jsp";
@@ -153,7 +156,6 @@ public class VacanciesServlet extends HttpServlet {
         }
     }
 
-    // ── View mapping ─────────────────────────────────────────────────────────
 
     private VacancyCardView toCard(Job job, Map<UUID, User> userById, Set<UUID> savedIds, User currentUser) {
         String department  = resolveDepartment(job);
@@ -196,7 +198,6 @@ public class VacanciesServlet extends HttpServlet {
         );
     }
 
-    // ── Filter helpers ────────────────────────────────────────────────────────
 
     private boolean matchesKeyword(Job job, String keyword) {
         if (keyword == null) return true;
@@ -266,7 +267,6 @@ public class VacanciesServlet extends HttpServlet {
         return term.equalsIgnoreCase(resolved);
     }
 
-    // ── Term options (dynamic based on current date) ─────────────────────────
 
     /**
      * Generates a chronological list of semester options covering
@@ -297,7 +297,6 @@ public class VacanciesServlet extends HttpServlet {
         return terms;
     }
 
-    // ── Utility ───────────────────────────────────────────────────────────────
 
     private String resolveDepartment(Job job) {
         String moduleCode = normalize(job.getModuleCode());
@@ -366,8 +365,9 @@ public class VacanciesServlet extends HttpServlet {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    // ── View model ────────────────────────────────────────────────────────────
-
+    /**
+     * View model for a vacancy card in the listing page.
+     */
     public static final class VacancyCardView {
         private final String vacancyId;
         private final String courseCode;

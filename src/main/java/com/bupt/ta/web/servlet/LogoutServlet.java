@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Invalidates the current login session while preserving display preferences.
+ */
 @WebServlet("/logout")
 public class LogoutServlet extends HttpServlet {
     @Override
@@ -21,8 +24,6 @@ public class LogoutServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
-        // 1. 获取当前会话（传入 false 表示如果当前没有会话，则不创建新会话）
         HttpSession session = req.getSession(false);
         String language = I18n.DEFAULT_LANGUAGE;
         String appearance = I18n.DEFAULT_APPEARANCE;
@@ -37,7 +38,6 @@ public class LogoutServlet extends HttpServlet {
             }
         }
                 
-        // 2. 如果会话存在，则将其作废并清除所有绑定的信息
         if (session != null) {
             session.invalidate(); 
         }

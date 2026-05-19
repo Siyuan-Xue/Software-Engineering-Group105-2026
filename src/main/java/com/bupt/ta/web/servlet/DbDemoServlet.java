@@ -35,6 +35,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
+/**
+ * Public demonstration endpoint for inspecting seeded JSON database workflows.
+ */
 @WebServlet("/db-demo")
 public class DbDemoServlet extends HttpServlet {
     private static final String VIEW_PATH = "/WEB-INF/jsp/db-demo.jsp";

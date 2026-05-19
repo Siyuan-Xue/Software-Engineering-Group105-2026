@@ -7,6 +7,9 @@ import com.bupt.ta.db.store.JsonTableStore;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * JSON-backed repository for vacancy skill requirements.
+ */
 public class JsonJobRequirementRepository extends BaseJsonRepository<JobRequirement> implements JobRequirementRepository {
     public JsonJobRequirementRepository(JsonTableStore<JobRequirement> store) {
         super(store);

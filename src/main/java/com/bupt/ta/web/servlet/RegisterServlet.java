@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Self-registration endpoint for TA and MO accounts.
+ */
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
 

@@ -7,6 +7,9 @@ import com.bupt.ta.util.PasswordUtil;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Authentication service for email/password login and account activation state.
+ */
 public class AuthService {
     private final TaDatabase db;
 

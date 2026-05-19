@@ -11,6 +11,9 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * JSON-backed user repository enforcing case-insensitive email uniqueness.
+ */
 public class JsonUserRepository extends BaseJsonRepository<User> implements UserRepository {
     public JsonUserRepository(JsonTableStore<User> store) {
         super(store);

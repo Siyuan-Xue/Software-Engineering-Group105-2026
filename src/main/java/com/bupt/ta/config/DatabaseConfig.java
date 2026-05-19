@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Factory for opening the configured application database.
+ */
 public final class DatabaseConfig {
     private final Path dataDirectory;
     private final ObjectMapper objectMapper;

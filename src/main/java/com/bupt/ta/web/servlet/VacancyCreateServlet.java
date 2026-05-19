@@ -34,6 +34,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Handles MO vacancy creation and initial skill requirements.
+ */
 @WebServlet("/vacancy/create")
 public class VacancyCreateServlet extends HttpServlet {
 

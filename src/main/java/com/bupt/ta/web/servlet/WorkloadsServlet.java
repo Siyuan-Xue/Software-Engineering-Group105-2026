@@ -14,9 +14,19 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Renders the administrator workload dashboard.
+ *
+ * <p>The dashboard is derived from accepted workload records and resume capacity
+ * data. It also produces lightweight rebalance suggestions in-memory so the
+ * final coursework can demonstrate workload balancing without adding new
+ * persistence tables or AI-only dependencies.</p>
+ */
 @WebServlet("/workloads")
 public class WorkloadsServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/workloads.jsp";
@@ -71,6 +81,7 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("totalWeeklyHours", totalWeeklyHours);
             req.setAttribute("totalEstimatedIncome", totalEstimatedIncome);
             req.setAttribute("overloadedTAs", overloadedTAs);
+            req.setAttribute("rebalanceSuggestions", buildRebalanceSuggestions(workloads));
         } catch (Exception ex) {
             getServletContext().log("Failed to load workloads", ex);
             req.setAttribute("pageState", "loadError");
@@ -81,10 +92,51 @@ public class WorkloadsServlet extends HttpServlet {
             req.setAttribute("overloadedTAs", 0);
             req.setAttribute("departmentOptions", List.of());
             req.setAttribute("semesterOptions", List.of());
+            req.setAttribute("rebalanceSuggestions", List.of());
             req.setAttribute("errorMessage", I18n.message(req, "msg.workloadsLoadFailed"));
         }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
+    }
+
+    private List<Map<String, Object>> buildRebalanceSuggestions(List<Map<String, Object>> workloads) {
+        List<Map<String, Object>> candidates = workloads.stream()
+                .filter(row -> intValue(row.get("remainingHours")) > 0)
+                .sorted(Comparator
+                        .comparing((Map<String, Object> row) -> intValue(row.get("remainingHours")))
+                        .reversed())
+                .toList();
+        List<Map<String, Object>> suggestions = new ArrayList<>();
+        for (Map<String, Object> source : workloads) {
+            int utilization = intValue(source.get("utilizationPct"));
+            int remaining = intValue(source.get("remainingHours"));
+            if (utilization < 80 && remaining >= 0) {
+                continue;
+            }
+            Map<String, Object> target = bestCandidate(source, candidates);
+            int reliefHours = target == null ? 0 : Math.min(Math.max(1, Math.abs(Math.min(remaining, 0))), intValue(target.get("remainingHours")));
+            suggestions.add(Map.of(
+                    "sourceName", text(source.get("taName"), "Unknown TA"),
+                    "sourceStatus", text(source.get("workloadStatus"), "Busy"),
+                    "sourceUtilization", utilization,
+                    "hasTarget", target != null,
+                    "targetName", target == null ? "No spare-capacity TA found" : text(target.get("taName"), "Available TA"),
+                    "targetRemainingHours", target == null ? 0 : intValue(target.get("remainingHours")),
+                    "reliefHours", reliefHours
+            ));
+        }
+        return suggestions;
+    }
+
+    private Map<String, Object> bestCandidate(Map<String, Object> source, List<Map<String, Object>> candidates) {
+        String sourceDepartment = text(source.get("department"), "");
+        return candidates.stream()
+                .filter(candidate -> candidate != source)
+                .sorted(Comparator
+                        .comparing((Map<String, Object> candidate) -> !sourceDepartment.equalsIgnoreCase(text(candidate.get("department"), "")))
+                        .thenComparing((Map<String, Object> candidate) -> intValue(candidate.get("remainingHours")), Comparator.reverseOrder()))
+                .findFirst()
+                .orElse(null);
     }
 
     private static String normalize(String value) {
@@ -93,5 +145,16 @@ public class WorkloadsServlet extends HttpServlet {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static int intValue(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
+    }
+
+    private static String text(Object value, String fallback) {
+        if (value == null || value.toString().isBlank()) {
+            return fallback;
+        }
+        return value.toString();
     }
 }

@@ -32,6 +32,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Coordinates the application lifecycle from submission through offer response.
+ *
+ * <p>The service enforces TA/MO ownership rules, records audit events, creates
+ * workload records after TA acceptance, and emits the notifications used by the
+ * message centre.</p>
+ */
 public class ApplicationService {
     private final TaDatabase db;
     private final ObjectMapper mapper = JsonMapperFactory.create();
@@ -57,6 +64,12 @@ public class ApplicationService {
         return submit(taUserId, resumeId, jobId, coverLetter, null);
     }
 
+    /**
+     * Submits an application for an open vacancy and stores an immutable resume snapshot.
+     *
+     * <p>The method rejects duplicate active applications for the same TA/job pair,
+     * creates audit evidence, and notifies the vacancy owner.</p>
+     */
     public Application submit(UUID taUserId, UUID resumeId, UUID jobId, String coverLetter,
                             ResumeFileUpload.SavedResumeFile uploadedFile) {
         if (resumeId == null && uploadedFile == null) {
@@ -159,6 +172,11 @@ public class ApplicationService {
         return transition(moUserId, applicationId, ApplicationStatus.REVIEWING, null);
     }
 
+    /**
+     * Sends a formal offer without creating workload records.
+     *
+     * <p>Workload is created only after the TA explicitly accepts the offer.</p>
+     */
     public Application sendOffer(UUID moUserId, UUID applicationId) {
         Application current = requireApplication(applicationId);
         assertMoOwnsApplication(moUserId, current);
@@ -186,6 +204,9 @@ public class ApplicationService {
         return transition(moUserId, applicationId, ApplicationStatus.REJECTED, notes);
     }
 
+    /**
+     * Accepts an offer and atomically creates or updates the linked workload record.
+     */
     public Application acceptOffer(UUID taUserId, UUID applicationId) {
         Application current = requireApplication(applicationId);
         if (current.getStatus() != ApplicationStatus.OFFER_PENDING) {
@@ -235,6 +256,9 @@ public class ApplicationService {
         return respondToOffer(taUserId, applicationId, ApplicationStatus.DECLINED);
     }
 
+    /**
+     * Withdraws a non-terminal application owned by the TA and notifies the MO.
+     */
     public Application withdraw(UUID taUserId, UUID applicationId) {
         Application current = requireApplication(applicationId);
         Resume resume = requireResume(current.getResumeId());

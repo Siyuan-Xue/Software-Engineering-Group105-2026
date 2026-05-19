@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * View object representing a conversation between the current user and another user.
- * This is not a persisted entity — it is assembled by MessageService from Notification records.
+ * This is not a persisted entity; it is assembled by MessageService from Notification records.
  */
 public class ConversationDTO {
     private String conversationId;

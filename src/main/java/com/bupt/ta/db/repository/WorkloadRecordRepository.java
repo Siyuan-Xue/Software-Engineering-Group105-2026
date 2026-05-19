@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Repository contract for accepted-offer workload assignments.
+ */
 public interface WorkloadRecordRepository extends CrudRepository<WorkloadRecord> {
     Optional<WorkloadRecord> findByApplicationId(UUID applicationId);
 

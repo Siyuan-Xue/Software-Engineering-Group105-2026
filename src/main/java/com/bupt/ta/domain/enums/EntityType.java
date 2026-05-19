@@ -1,5 +1,8 @@
 package com.bupt.ta.domain.enums;
 
+/**
+ * Entity categories referenced by audit logs and notifications.
+ */
 public enum EntityType {
     USER,
     RESUME,

@@ -18,6 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handles account profile, password, language, and appearance settings.
+ */
 @WebServlet("/settings")
 public class SettingsServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/settings.jsp";
@@ -29,7 +32,6 @@ public class SettingsServlet extends HttpServlet {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
-    // ── GET ──────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -66,7 +68,6 @@ public class SettingsServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
-    // ── POST ─────────────────────────────────────────────────────────────────
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -86,7 +87,6 @@ public class SettingsServlet extends HttpServlet {
         }
     }
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
 
     private void handleUpdateProfile(HttpServletRequest req, HttpServletResponse resp, User currentUser)
             throws IOException {
@@ -186,7 +186,6 @@ public class SettingsServlet extends HttpServlet {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Map<String, Object> buildUserProfile(User user) {
         Map<String, Object> profile = new HashMap<>();

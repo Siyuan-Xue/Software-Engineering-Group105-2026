@@ -9,6 +9,9 @@ import jakarta.servlet.annotation.WebFilter;
 
 import java.io.IOException;
 
+/**
+ * Applies UTF-8 request and response encoding across the web application.
+ */
 @WebFilter(filterName = "encodingFilter", urlPatterns = "/*")
 public class EncodingFilter implements Filter {
     private static final String DEFAULT_ENCODING = "UTF-8";

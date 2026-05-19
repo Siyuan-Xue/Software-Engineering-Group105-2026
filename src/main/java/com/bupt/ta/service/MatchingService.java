@@ -27,6 +27,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Computes persisted match analysis from structured skills and workload data.
+ *
+ * <p>The rule score is always computed locally. When external AI is unavailable,
+ * the AI score intentionally falls back to the rule score so the workflow remains
+ * demonstrable and explainable.</p>
+ */
 public class MatchingService {
     private final TaDatabase db;
     private final ObjectMapper mapper = JsonMapperFactory.create();
@@ -35,6 +42,13 @@ public class MatchingService {
         this.db = db;
     }
 
+    /**
+     * Computes and persists the match analysis for one application.
+     *
+     * <p>The stored record includes rule score, AI/fallback score, skill coverage,
+     * missing skill suggestions, workload remaining hours, audit evidence, and a
+     * completion notification for the MO.</p>
+     */
     public MatchScore runAnalysis(UUID operatorId, UUID applicationId) {
         Application application = db.applications().findById(applicationId)
                 .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
@@ -183,6 +197,9 @@ public class MatchingService {
         return aggregate == null ? 20 : aggregate.getRemainingHours();
     }
 
+    /**
+     * Immutable coverage summary for one resume against one vacancy.
+     */
     public static final class SkillCoverageView {
         private final int requiredMatched;
         private final int requiredTotal;

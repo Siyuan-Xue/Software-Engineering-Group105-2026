@@ -13,6 +13,9 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Administrator-facing service for workload aggregation, audit search, and user updates.
+ */
 public class AdminService {
     private final TaDatabase db;
 
@@ -112,14 +115,13 @@ public class AdminService {
                 BigDecimal hourlyRate = job.getHourlyRate() != null ? job.getHourlyRate() : BigDecimal.ZERO;
                 vView.put("hourlyRate", hourlyRate);
 
-                // Assuming 8 weeks
+                // The coursework demo treats a semester assignment as eight active weeks.
                 int estimatedWorkload = requiredHours * 8;
                 vView.put("estimatedWorkloadHours", estimatedWorkload);
                 
                 BigDecimal estimatedIncomeForJob = hourlyRate.multiply(BigDecimal.valueOf(estimatedWorkload));
                 vView.put("estimatedIncome", estimatedIncomeForJob);
 
-                // Fetch MO user
                 Optional<User> moUserOpt = db.users().findById(job.getPostedBy());
                 if (moUserOpt.isPresent()) {
                     vView.put("moduleOwner", moUserOpt.get().getFullName());

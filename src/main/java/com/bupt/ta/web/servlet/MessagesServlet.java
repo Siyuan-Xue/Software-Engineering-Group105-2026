@@ -21,9 +21,9 @@ import java.util.List;
 /**
  * Servlet handling the Messages page.
  * <p>
- * GET /messages                    — render conversation list (no active conversation)
- * GET /messages?conversationId=... — render conversation list + active conversation thread
- * POST /messages                   — send a message then redirect back
+ * GET /messages renders the conversation list without an active thread.
+ * GET /messages?conversationId=... renders the list and active thread.
+ * POST /messages sends a message and redirects back to the thread.
  */
 @WebServlet("/messages")
 public class MessagesServlet extends HttpServlet {
@@ -38,7 +38,6 @@ public class MessagesServlet extends HttpServlet {
         this.messageService = new MessageService(database);
     }
 
-    // ── GET ──────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -90,7 +89,6 @@ public class MessagesServlet extends HttpServlet {
         req.setAttribute("errorMessage", I18n.message(req, "msg.messagesLoadFailed"));
     }
 
-    // ── POST ─────────────────────────────────────────────────────────────────
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -143,7 +141,6 @@ public class MessagesServlet extends HttpServlet {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private User requireCurrentUser(HttpServletRequest req) {
         HttpSession session = req.getSession(false);

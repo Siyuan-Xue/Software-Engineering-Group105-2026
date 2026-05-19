@@ -33,6 +33,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Lists applications from the current user's role-specific perspective.
+ *
+ * <p>Module Organisers see applications for vacancies they posted, while
+ * Teaching Assistants see applications submitted with their own resumes.</p>
+ */
 @WebServlet("/applications")
 public class ApplicationsServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/applications.jsp";
@@ -64,14 +70,12 @@ public class ApplicationsServlet extends HttpServlet {
 
             java.util.function.Predicate<Application> roleFilter;
             if ("MO".equalsIgnoreCase(userRole)) {
-                // MO 逻辑：获取该用户发布的所有 Job ID
                 Set<UUID> postedJobIds = database.jobs().listByPoster(currentUser.getId()).stream()
                         .map(Job::getId)
                         .collect(java.util.stream.Collectors.toSet());
 
                 roleFilter = app -> postedJobIds.contains(app.getJobId());
             } else {
-                // TA 逻辑（默认）：获取该用户所有的 Resume ID
                 Set<UUID> myResumeIds = database.resumes().listByUserId(currentUser.getId()).stream()
                         .map(Resume::getId)
                         .collect(java.util.stream.Collectors.toSet());

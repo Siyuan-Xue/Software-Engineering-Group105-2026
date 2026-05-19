@@ -4,6 +4,9 @@ import com.bupt.ta.domain.entity.AbstractEntity;
 
 import java.nio.file.Path;
 
+/**
+ * Metadata describing one logical JSON table.
+ */
 public class TableDescriptor<T extends AbstractEntity> {
     private final String tableName;
     private final Path filePath;

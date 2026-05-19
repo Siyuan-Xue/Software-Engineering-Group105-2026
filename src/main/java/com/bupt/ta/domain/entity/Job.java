@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Vacancy posted by a Module Organiser for TA recruitment.
+ */
 public class Job extends AbstractEntity {
     private UUID postedBy;
     private String title;

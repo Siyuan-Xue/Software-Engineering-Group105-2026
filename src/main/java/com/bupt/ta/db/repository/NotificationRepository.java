@@ -6,6 +6,9 @@ import com.bupt.ta.domain.value.NotificationQuery;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository contract for notification inbox and read-state management.
+ */
 public interface NotificationRepository extends CrudRepository<Notification> {
     List<Notification> listByUser(NotificationQuery query);
 

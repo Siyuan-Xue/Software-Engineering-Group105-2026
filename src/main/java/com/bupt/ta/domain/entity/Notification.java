@@ -7,6 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * In-app notification or message addressed to a single user.
+ */
 public class Notification extends AbstractEntity {
     private UUID userId;
     private NotificationType notifType;

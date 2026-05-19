@@ -6,6 +6,9 @@ import jakarta.servlet.ServletContext;
 
 import java.nio.file.Path;
 
+/**
+ * Servlet-context holder for the shared application database instance.
+ */
 public final class DatabaseProvider {
     public static final String CONTEXT_KEY = TaDatabase.class.getName();
 

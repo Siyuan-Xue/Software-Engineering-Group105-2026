@@ -32,7 +32,7 @@ import java.util.UUID;
  * a ranked list so the apply modal can highlight the best-fit resume.
  *
  * Request params:
- *   jobId  – UUID of the vacancy to score against
+ *   jobId  - UUID of the vacancy to score against
  *
  * Response JSON (success):
  *   {
@@ -67,7 +67,6 @@ public class AiResumeRankServlet extends HttpServlet {
         resp.setContentType("application/json;charset=UTF-8");
         ObjectNode json = mapper.createObjectNode();
 
-        // ── auth check ──────────────────────────────────────────────────────
         User user = currentUser(req);
         if (user == null) {
             resp.setStatus(401);
@@ -77,7 +76,6 @@ public class AiResumeRankServlet extends HttpServlet {
             return;
         }
 
-        // ── api key check ───────────────────────────────────────────────────
         String apiKey = QwenAiService.resolveApiKey();
         if (apiKey == null) {
             json.put("ok", false);
@@ -86,7 +84,6 @@ public class AiResumeRankServlet extends HttpServlet {
             return;
         }
 
-        // ── parse job ID ────────────────────────────────────────────────────
         String rawJobId = req.getParameter("jobId");
         if (rawJobId == null || rawJobId.isBlank()) {
             json.put("ok", false);
@@ -113,7 +110,6 @@ public class AiResumeRankServlet extends HttpServlet {
             return;
         }
 
-        // ── get user's resumes ──────────────────────────────────────────────
         List<Resume> resumes = resumeService.listByUserId(user.getId());
         if (resumes.isEmpty()) {
             json.put("ok", true);
@@ -136,7 +132,6 @@ public class AiResumeRankServlet extends HttpServlet {
             ));
         }
 
-        // ── call AI ─────────────────────────────────────────────────────────
         try {
             QwenAiService ai = new QwenAiService(
                     apiKey,

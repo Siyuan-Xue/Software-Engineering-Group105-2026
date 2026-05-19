@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Runtime configuration for the file-backed JSON store.
+ */
 public final class JsonStoreConfig {
     private final Path dataDir;
     private final ObjectMapper objectMapper;

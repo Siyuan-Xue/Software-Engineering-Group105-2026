@@ -2,6 +2,9 @@ package com.bupt.ta.domain.value;
 
 import java.util.UUID;
 
+/**
+ * Computed workload summary for one TA within a semester.
+ */
 public class WorkloadAggregate {
     private UUID taId;
     private String semester;

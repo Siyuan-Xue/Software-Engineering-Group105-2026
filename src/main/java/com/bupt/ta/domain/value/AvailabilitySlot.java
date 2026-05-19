@@ -6,6 +6,9 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Weekly availability interval stored on a TA resume.
+ */
 public class AvailabilitySlot {
     private DayOfWeek dayOfWeek;
     private LocalTime startTime;

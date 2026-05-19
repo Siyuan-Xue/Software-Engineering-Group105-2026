@@ -31,6 +31,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Renders vacancy details and TA application preparation data.
+ */
 @WebServlet("/vacancy")
 public class VacancyDetailServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/vacancy_detail.jsp";
@@ -226,6 +229,9 @@ public class VacancyDetailServlet extends HttpServlet {
         return value == null || value.isBlank() ? fallback : value;
     }
 
+    /**
+     * View model for the vacancy detail header and application form.
+     */
     public static final class VacancyDetailView {
         private final String vacancyId;
         private final String courseCode;
@@ -322,6 +328,9 @@ public class VacancyDetailServlet extends HttpServlet {
         }
     }
 
+    /**
+     * View model for a TA resume option on the application form.
+     */
     public static final class ResumeSelectionView {
         private final String resumeId;
         private final String resumeName;

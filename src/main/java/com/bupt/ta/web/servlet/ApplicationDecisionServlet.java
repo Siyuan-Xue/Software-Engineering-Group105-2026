@@ -20,6 +20,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+/**
+ * Handles MO and TA application state transitions from forms.
+ */
 @WebServlet("/application/decision")
 public class ApplicationDecisionServlet extends HttpServlet {
     private ApplicationService applicationService;

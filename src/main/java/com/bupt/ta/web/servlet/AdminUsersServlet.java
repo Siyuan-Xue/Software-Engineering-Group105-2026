@@ -25,6 +25,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Administrator user-management endpoint for account creation and activation.
+ */
 @WebServlet("/admin/users")
 public class AdminUsersServlet extends HttpServlet {
     private static final String VIEW_PATH = "/portal/admin_users.jsp";

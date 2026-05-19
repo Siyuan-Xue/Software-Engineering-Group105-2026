@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * TA profile and optional uploaded resume file used for applications.
+ */
 public class Resume extends AbstractEntity {
     private UUID userId;
     private String title;

@@ -1,5 +1,8 @@
 package com.bupt.ta.model;
 
+/**
+ * Dashboard activity item rendered in recent-activity feeds.
+ */
 public class Activity {
     private String title;
     private String description;
@@ -10,7 +13,6 @@ public class Activity {
     private String statusBadge;
     private String statusBadgeClass;
 
-    // 全参构造函数
     public Activity(String title, String description, String timeAgo, String icon, 
                     String iconColorClass, String iconBgClass, String statusBadge, String statusBadgeClass) {
         this.title = title;
@@ -23,7 +25,6 @@ public class Activity {
         this.statusBadgeClass = statusBadgeClass;
     }
 
-    // Getters
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getTimeAgo() { return timeAgo; }

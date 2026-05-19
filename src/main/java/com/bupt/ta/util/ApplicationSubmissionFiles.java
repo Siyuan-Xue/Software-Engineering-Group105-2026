@@ -9,6 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+/**
+ * File utilities for immutable resume snapshots attached to applications.
+ */
 public final class ApplicationSubmissionFiles {
     private ApplicationSubmissionFiles() {
     }

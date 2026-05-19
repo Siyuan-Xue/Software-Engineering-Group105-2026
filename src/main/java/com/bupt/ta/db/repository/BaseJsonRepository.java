@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Base implementation that delegates common CRUD operations to a JSON table store.
+ */
 public abstract class BaseJsonRepository<T extends AbstractEntity> implements CrudRepository<T> {
     protected final JsonTableStore<T> store;
 

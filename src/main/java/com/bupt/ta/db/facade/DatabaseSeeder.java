@@ -39,6 +39,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Seeds demonstration data when the JSON database is first initialized.
+ */
 public final class DatabaseSeeder {
     public static final String DEFAULT_PASSWORD = "password";
     public static final String DEFAULT_TA_EMAIL = "test@example.com";

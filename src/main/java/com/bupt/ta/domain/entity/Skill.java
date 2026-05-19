@@ -4,6 +4,9 @@ import com.bupt.ta.domain.enums.SkillCategory;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Controlled vocabulary entry from the administrator-managed skill library.
+ */
 public class Skill extends AbstractEntity {
     private String name;
     private SkillCategory category;

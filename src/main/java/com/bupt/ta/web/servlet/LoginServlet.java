@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 
+/**
+ * Authenticates users, starts portal sessions, and records login attempts.
+ */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
@@ -61,18 +64,14 @@ public class LoginServlet extends HttpServlet {
         Optional<User> userOpt = authService.authenticate(email, password);
 
         if (userOpt.isPresent()) {
-            // 登录成功！
             User realUser = userOpt.get();
             appendLoginAudit(realUser, true);
             HttpSession session = req.getSession(true);
-            // session 身份供 AuthFilter 注入 request、后续页面与 Servlet 共用
             session.setAttribute("currentUser", realUser);
             session.setAttribute(I18n.SESSION_LANGUAGE_ATTR, I18n.normalizeLanguage(realUser.getPreferredLanguage()));
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, I18n.normalizeAppearance(realUser.getPreferredAppearance()));
-            // 重定向到后台控制台
             resp.sendRedirect(req.getContextPath() + "/dashboard");
         } else {
-            // 登录失败
             Optional<User> foundUser = authService.findByEmail(email);
             foundUser.ifPresent(user -> appendLoginAudit(user, false));
             if (foundUser.isPresent() && !foundUser.get().isActive()) {

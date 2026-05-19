@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * TA-only password reset endpoint used by the coursework demo.
+ */
 @WebServlet("/forgot-password")
 public class ForgotPasswordServlet extends HttpServlet {
 

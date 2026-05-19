@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Business service for vacancy creation, editing, status transitions, and requirements.
+ */
 public class JobService {
     private static final Set<ApplicationStatus> IN_PROGRESS_APPLICATIONS = Set.of(
             ApplicationStatus.PENDING,
@@ -87,6 +90,12 @@ public class JobService {
         return saved;
     }
 
+    /**
+     * Applies a status transition and performs cancellation side effects.
+     *
+     * <p>When a vacancy is cancelled, in-progress applications are withdrawn and
+     * any linked workload records are cancelled in the same database operation.</p>
+     */
     public Job changeStatus(UUID operatorId, UUID jobId, JobStatus status) {
         Job existing = db.jobs().findById(jobId)
                 .orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
@@ -149,6 +158,9 @@ public class JobService {
         }
     }
 
+    /**
+     * Replaces all skill requirements for a vacancy in one atomic operation.
+     */
     public void replaceRequirements(UUID operatorId, UUID jobId, List<JobRequirement> requirements) {
         db.jobs().findById(jobId).orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));
         db.executeAtomically(() -> {

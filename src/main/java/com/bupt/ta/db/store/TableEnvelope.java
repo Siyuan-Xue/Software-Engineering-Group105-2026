@@ -3,6 +3,9 @@ package com.bupt.ta.db.store;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Serializable wrapper for table metadata and rows on disk.
+ */
 public class TableEnvelope<T> {
     private int version = 1;
     private List<T> rows = new ArrayList<>();

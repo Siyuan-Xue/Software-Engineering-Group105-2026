@@ -12,6 +12,9 @@ import com.bupt.ta.db.repository.SkillRepository;
 import com.bupt.ta.db.repository.UserRepository;
 import com.bupt.ta.db.repository.WorkloadRecordRepository;
 
+/**
+ * Facade that exposes all repositories used by services and servlets.
+ */
 public interface TaDatabase {
     UserRepository users();
 

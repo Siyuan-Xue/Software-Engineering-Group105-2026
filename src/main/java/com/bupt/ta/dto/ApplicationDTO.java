@@ -1,15 +1,16 @@
 package com.bupt.ta.dto;
 
-import java.time.Instant;
 import java.util.UUID;
 
-// 这是专门传给前端展示用的对象 (Data Transfer Object)
+/**
+ * View model used by the applications list page.
+ */
 public class ApplicationDTO {
     private UUID applicationId;
     private UUID vacancyId;
     private String vacancyTitle;
     private String courseCode;
-    private String department;  // 【新增】解决 Checklist 7.1 提到的 Department 字段空缺
+    private String department;
     private String status;
     private String appliedDate;
     private String resumeName;
@@ -19,7 +20,6 @@ public class ApplicationDTO {
     private String coverLetter;
     private boolean resumeFileAvailable;
 
-    // Getters and Setters
     public UUID getApplicationId() { return applicationId; }
     public void setApplicationId(UUID applicationId) { this.applicationId = applicationId; }
 

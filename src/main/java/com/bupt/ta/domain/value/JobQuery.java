@@ -5,6 +5,9 @@ import com.bupt.ta.domain.enums.JobType;
 
 import java.time.Instant;
 
+/**
+ * Filter criteria for vacancy listing and search.
+ */
 public class JobQuery {
     private JobType type;
     private String moduleCodeKeyword;

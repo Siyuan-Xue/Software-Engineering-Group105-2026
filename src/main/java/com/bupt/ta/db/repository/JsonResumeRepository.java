@@ -8,6 +8,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * JSON-backed resume repository supporting multi-version resumes per TA.
+ */
 public class JsonResumeRepository extends BaseJsonRepository<Resume> implements ResumeRepository {
     public JsonResumeRepository(JsonTableStore<Resume> store) {
         super(store);

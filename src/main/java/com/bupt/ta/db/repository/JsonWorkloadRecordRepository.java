@@ -14,6 +14,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * JSON-backed workload repository with semester aggregation helpers.
+ */
 public class JsonWorkloadRecordRepository extends BaseJsonRepository<WorkloadRecord> implements WorkloadRecordRepository {
     private final JsonTableStore<Resume> resumeStore;
 

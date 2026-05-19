@@ -5,6 +5,7 @@ import com.bupt.ta.db.facade.DatabaseProvider;
 import com.bupt.ta.db.facade.TaDatabase;
 import com.bupt.ta.domain.entity.Application;
 import com.bupt.ta.domain.entity.User;
+import com.bupt.ta.domain.enums.ApplicationStatus;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.i18n.I18n;
 import com.bupt.ta.service.ApplicationService;
@@ -22,6 +23,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+/**
+ * Handles persisted match-analysis refreshes for Module Organisers.
+ *
+ * <p>The endpoint is limited to applications owned by the current MO and only
+ * runs after the application has entered the review state. This mirrors the
+ * backlog workflow: submit, start review, then refresh the rule/AI-fallback
+ * analysis used for screening.</p>
+ */
 @WebServlet("/match-analysis")
 public class MatchAnalysisServlet extends HttpServlet {
     private TaDatabase database;
@@ -54,6 +63,9 @@ public class MatchAnalysisServlet extends HttpServlet {
             Application application = database.applications().findById(applicationId)
                     .orElseThrow(() -> new ConstraintViolationException("Application not found"));
             applicationService.assertMoOwnsApplication(currentUser.getId(), application);
+            if (application.getStatus() != ApplicationStatus.REVIEWING) {
+                throw new ConstraintViolationException("Match analysis can only be refreshed after review starts");
+            }
             matchingService.runAnalysis(currentUser.getId(), applicationId);
             redirect(req, resp, applicationId, I18n.isChinese(I18n.resolveLanguage(req))
                     ? "匹配分析已刷新。"
@@ -63,10 +75,10 @@ public class MatchAnalysisServlet extends HttpServlet {
             UUID fallbackId = parseUuid(rawId);
             if (fallbackId == null) {
                 resp.sendRedirect(req.getContextPath() + "/applications?errorMessage="
-                        + URLEncoder.encode(ex.getMessage() == null ? "Unable to run match analysis." : ex.getMessage(),
+                        + URLEncoder.encode(errorMessage(req, ex),
                         StandardCharsets.UTF_8));
             } else {
-                redirect(req, resp, fallbackId, ex.getMessage() == null ? "Unable to run match analysis." : ex.getMessage(), true);
+                redirect(req, resp, fallbackId, errorMessage(req, ex), true);
             }
         }
     }
@@ -103,5 +115,15 @@ public class MatchAnalysisServlet extends HttpServlet {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private String errorMessage(HttpServletRequest req, RuntimeException ex) {
+        String message = ex.getMessage();
+        if ("Match analysis can only be refreshed after review starts".equals(message)) {
+            return I18n.isChinese(I18n.resolveLanguage(req))
+                    ? "请先将申请标记为审核中，再刷新匹配分析。"
+                    : "Start review before refreshing match analysis.";
+        }
+        return message == null || message.isBlank() ? "Unable to run match analysis." : message;
     }
 }

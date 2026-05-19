@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Persisted rule-based and AI-fallback screening result for one application.
+ */
 public class MatchScore extends AbstractEntity {
     private UUID applicationId;
     private BigDecimal ruleScore;
