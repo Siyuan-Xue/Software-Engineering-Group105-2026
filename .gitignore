@@ -34,9 +34,20 @@ target/
 /.codex/
 /.github/
 /target
-/docs
 # Local startup script (not for repo)
 init.txt
+
+# Local documentation archive and non-Markdown documentation assets
+.local-docs-archive/
+docs/slides/
+docs/screenshots/
+docs/**/*.pdf
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/*.gif
+docs/**/*.svg
+docs/.DS_Store
 
 # Local analysis / generated result files
 *_analysis_results.json

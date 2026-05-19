@@ -27,8 +27,8 @@ The handout requires the final software ZIP to include source code, test program
 | Source code | `src/main/java/`, `src/main/webapp/` |
 | Test programs | `src/test/java/` |
 | Code documentation | Generate with `mvn javadoc:javadoc`; output is `target/reports/apidocs/index.html` |
-| User manual and screenshots | `docs/user-manual.md`, `docs/screenshots/` |
-| Setup, configuration, and run instructions | This README plus `docs/guides/` |
+| User manual and deployment notes | `docs/07-user-deployment-and-maintenance.md` |
+| Setup, configuration, and run instructions | This README plus `docs/README.md` |
 | Final software ZIP | Submit as `Software_group105.zip` on QM+ |
 | Final report | Submit separately as `Report_group105.pdf` |
 
@@ -269,7 +269,7 @@ Linux or macOS:
 export QWEN_API_KEY=sk-your-key-here
 ```
 
-For consent rules, fallback behaviour, and troubleshooting, see `docs/guides/ai-and-configuration.md`.
+For consent rules, fallback behaviour, and troubleshooting, see `docs/06-risk-security-and-ai-ethics.md` and `docs/07-user-deployment-and-maintenance.md`.
 
 ---
 
@@ -277,16 +277,17 @@ For consent rules, fallback behaviour, and troubleshooting, see `docs/guides/ai-
 
 | Document | Purpose |
 |---|---|
-| `docs/README.md` | Documentation index |
-| `docs/user-manual.md` | User workflows and screenshot checklist |
-| `docs/guides/deployment.md` | Tomcat deployment and data-directory notes |
-| `docs/guides/ai-and-configuration.md` | Qwen configuration, consent, and fallback behaviour |
-| `docs/non-functional-requirements.md` | Quality attributes and verification methods |
-| `docs/risk-register.md` | Project risks and mitigations |
-| `docs/final-acceptance-checklist.md` | Manual acceptance script for the final demo |
-| `docs/ta-recruitment-system/` | Database, repository, ER, and sprint architecture documents |
+| `docs/README.md` | Final coursework documentation index |
+| `docs/01-requirements-and-user-stories.md` | Requirements, user stories, acceptance criteria, and traceability |
+| `docs/02-analysis-models.md` | EBC analysis, use case, domain, ER, and activity diagrams |
+| `docs/03-architecture-and-design.md` | 4+1 architecture, component/package/deployment diagrams, sequences, state, SOLID, patterns |
+| `docs/04-implementation-and-code-quality.md` | Implementation conventions, security coding rules, persistence quality, code review checklist |
+| `docs/05-testing-and-quality-assurance.md` | Test strategy, QA gates, black-box/white-box/security/regression testing |
+| `docs/06-risk-security-and-ai-ethics.md` | Risk register, threat model, security controls, AI consent and ethics |
+| `docs/07-user-deployment-and-maintenance.md` | User manual, admin entry points, deployment, data directory, troubleshooting |
+| `docs/08-coursework-documentation-traceability.md` | EBU6304 slide-to-document and diagram traceability |
 
-文档目录包含用户手册、部署说明、AI 配置、非功能需求、风险登记表和最终验收清单。最终交付前应补齐 `docs/screenshots/` 中的关键页面截图。
+文档目录现在只追踪最终交付型 Markdown 文档；课程 slides、截图、大文件和本地过程文档归档不作为远端交付物追踪。
 
 ---
 
