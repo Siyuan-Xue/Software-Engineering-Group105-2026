@@ -1,36 +1,35 @@
-# 03 架构与设计
+# 03 Architecture and Design
 
-## 课程依据
+## Course Basis
+The design phase transforms the analysis model into an implementable, testable, and maintainable structure. EBU6304 slides on Design, Architecture, Design Principles, and Design Patterns require us to specify architectural views, module responsibilities, interface boundaries, object interactions, state transitions, and the appropriate application of SOLID and design patterns.
 
-设计阶段把分析模型转化为可实现、可测试、可维护的结构。EBU6304 的 Design、Architecture、Design Principles 和 Design Patterns slides 要求我们说明架构视图、模块职责、接口边界、对象交互、状态转换，以及 SOLID 和设计模式是否被恰当使用。
-
-| Slide | 本文档产物 |
+| Slide | Document Deliverable |
 |---|---|
-| EBU6304_06 Design | UML sequence、state、package/component 设计 |
-| EBU6304_09 Software Architecture | 4+1 view、部署视图、架构质量属性 |
-| EBU6304_14 Design Principles | SOLID、内聚、耦合、职责划分 |
-| EBU6304_15 Design Patterns | Facade、Repository、Filter、Strategy-like fallback 等模式说明 |
-| EBU6304_17 Revision | 设计与实现、测试、质量风险的综合复习 |
+| EBU6304_06 Design | UML sequence, state, package/component design |
+| EBU6304_09 Software Architecture | 4+1 view, deployment view, architectural quality attributes |
+| EBU6304_14 Design Principles | SOLID, cohesion, coupling, responsibility separation |
+| EBU6304_15 Design Patterns | Explanation of patterns such as Facade, Repository, Filter, Strategy-like fallback |
+| EBU6304_17 Revision | Comprehensive review of design, implementation, testing, and quality risks |
 
 ## Architecture Decision Summary
 
 | Decision | Chosen approach | Rationale | Trade-off |
 |---|---|---|---|
-| Deployment unit | Single Java WAR on Tomcat 11 | 符合课程 Java Web 项目和易演示要求 | 不适合多节点生产部署 |
-| Presentation | JSP + Servlet + JSTL + shared components | 与 Jakarta Servlet 课程栈贴合，部署简单 | 前端交互能力弱于 SPA |
-| Business layer | Service classes per workflow | 把业务规则从 Servlet 中分离，提高测试性 | 需要维护 service 边界 |
-| Persistence | JSON file store behind `TaDatabase` facade and repositories | 无外部数据库依赖，便于课程演示和测试隔离 | 并发和查询能力弱于 RDBMS |
-| AI | Optional Qwen/DashScope service with rule fallback | 核心流程不依赖外部 AI；伦理上保持人类决策 | AI 可用性和输出质量不完全可控 |
-| Security | Filter + servlet/service role checks + upload validation + audit | 覆盖常见 Web 风险 | 仍需生产级 headers、rate limit、external auth 才能上线 |
+| Deployment unit | Single Java WAR on Tomcat 11 | Meets course requirements for Java Web projects and easy demonstration | Not suitable for multi-node production deployment |
+| Presentation | JSP + Servlet + JSTL + shared components | Aligns with Jakarta Servlet course stack, simple deployment | Weak frontend interaction compared to SPA |
+| Business layer | Service classes per workflow | Separates business rules from Servlets, improves testability | Requires maintenance of service boundaries |
+| Persistence | JSON file store behind `TaDatabase` facade and repositories | No external database dependency, easy for course demonstration and test isolation | Weak concurrency and query capabilities compared to RDBMS |
+| AI | Optional Qwen/DashScope service with rule fallback | Core processes do not rely on external AI; ethically maintains human decision-making | AI availability and output quality are not fully controllable |
+| Security | Filter + servlet/service role checks + upload validation + audit | Covers common Web risks | Still requires production-grade headers, rate limit, external auth for live deployment |
 
 ## 4+1 Architecture View
 
 | View | Content in QM HIRE | Main evidence |
 |---|---|---|
-| Logical view | Domain entities、services、repositories、workflow rules | `domain/`、`service/`、`db/repository/` |
-| Development view | Maven project, layered Java packages, JSP structure, tests | `pom.xml`、`src/main/java`、`src/main/webapp`、`src/test/java` |
-| Process view | Request lifecycle through filters, servlets, services and persistence locks | `AuthFilter`、`CsrfFilter`、`JsonTableStore` |
-| Physical view | Browser, Tomcat WAR, local JSON data directory, optional DashScope API | `README.md`、`AppConfig`、`QwenAiService` |
+| Logical view | Domain entities, services, repositories, workflow rules | `domain/`, `service/`, `db/repository/` |
+| Development view | Maven project, layered Java packages, JSP structure, tests | `pom.xml`, `src/main/java`, `src/main/webapp`, `src/test/java` |
+| Process view | Request lifecycle through filters, servlets, services and persistence locks | `AuthFilter`, `CsrfFilter`, `JsonTableStore` |
+| Physical view | Browser, Tomcat WAR, local JSON data directory, optional DashScope API | `README.md`, `AppConfig`, `QwenAiService` |
 | Scenarios | TA application, MO review, Admin maintenance, AI assistance | sequence diagrams below |
 
 ```mermaid
@@ -45,7 +44,7 @@ flowchart TB
   Scenario --> Development
   Scenario --> Process
   Scenario --> Physical
-```
+
 
 ## Component Diagram
 

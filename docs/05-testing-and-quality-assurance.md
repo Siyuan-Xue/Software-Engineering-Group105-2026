@@ -1,16 +1,15 @@
-# 05 测试与质量保证
+# 05 Testing and Quality Assurance
 
-## 课程依据
+## Course Basis
+Testing slides require designing tests from unit, integration, system, and acceptance levels, and using methods such as black-box, white-box, boundary value, equivalence class, and regression testing. Risk and Quality Management slides require incorporating quality objectives, quality gates, defect tracking, and continuous verification into project management.
 
-Testing slides 要求从单元、集成、系统、验收等层次设计测试，并使用黑盒、白盒、边界值、等价类、回归测试等方法。Risk and Quality Management slides 要求把质量目标、质量门禁、缺陷跟踪和持续验证纳入项目管理。
-
-| Slide | 本文档产物 |
+| Slide | Document Deliverable |
 |---|---|
-| EBU6304_08 Testing | 测试层次、测试技术、测试计划、测试报告 |
-| EBU6304_10 Project Management | 质量活动纳入迭代和交付计划 |
-| EBU6304_12 Risk and Quality Management | 风险驱动测试、质量指标、缺陷控制 |
-| EBU6304_13 Secure Software Development | 安全测试和滥用场景 |
-| EBU6304_17 Revision | 需求-测试-设计追踪 |
+| EBU6304_08 Testing | Test levels, test techniques, test plan, test report |
+| EBU6304_10 Project Management | Quality activities integrated into iteration and delivery plans |
+| EBU6304_12 Risk and Quality Management | Risk-driven testing, quality metrics, defect control |
+| EBU6304_13 Secure Software Development | Security testing and abuse scenarios |
+| EBU6304_17 Revision | Traceability from requirements to tests to design |
 
 ## Quality Objectives
 
@@ -150,3 +149,4 @@ For documentation-only commits, `mvn test` is still required before final course
 | Manual demo path exercised before final presentation | Required |
 | Docs align with implementation and route names | Required |
 | Known limitations recorded in risk register | Required |
+```

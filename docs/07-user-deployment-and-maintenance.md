@@ -1,17 +1,16 @@
-# 07 用户、部署与维护说明
+# 07 User, Deployment, and Maintenance Guide
 
-## 课程依据
+## Course Basis
 
-最终软件交付需要让评审者和维护者能够运行、验证和理解系统。EBU6304 的项目管理、实现、测试和复习内容都要求交付物不仅包含代码，还要包含用户手册、运行说明、配置说明、维护风险和验收路径。
+Final software delivery should allow assessors and maintainers to run, verify, and understand the system. The EBU6304 content on project management, implementation, testing, and revision all requires that deliverables include not only code, but also a user manual, run instructions, configuration guidance, maintenance risks, and acceptance paths.
 
-| Slide | 本文档产物 |
+| Slide | Artifact in this document |
 |---|---|
-| EBU6304_07 Implementation | 构建、配置、集成、部署说明 |
-| EBU6304_08 Testing | 手动验收流程和运行验证 |
-| EBU6304_10 Project Management | 交付、维护、风险沟通 |
-| EBU6304_12 Risk and Quality Management | 故障排查和维护控制 |
-| EBU6304_17 Revision | 最终提交材料一致性 |
-
+| EBU6304_07 Implementation | Build, configuration, integration, and deployment instructions |
+| EBU6304_08 Testing | Manual acceptance flow and runtime verification |
+| EBU6304_10 Project Management | Delivery, maintenance, and risk communication |
+| EBU6304_12 Risk and Quality Management | Troubleshooting and maintenance controls |
+| EBU6304_17 Revision | Consistency of final submission materials |
 ## Quick Start
 
 | Item | Value |

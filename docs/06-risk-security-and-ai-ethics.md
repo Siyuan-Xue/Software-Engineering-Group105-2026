@@ -1,33 +1,52 @@
-# 06 风险、安全与 AI 伦理
+# 06 Risk, Security, and AI Ethics
 
-## 课程依据
+## Course Basis
 
-EBU6304 强调软件质量不只来自功能完成，还来自风险识别、风险控制、质量管理、安全开发和伦理判断。对于 TA 招聘系统，安全和伦理尤其重要，因为系统处理学生简历、申请状态、工作量和 AI 辅助评价。
+EBU6304 emphasises that software quality does not only come from completed functionality, but also from risk identification, risk control, quality management, secure development, and ethical judgement. For a TA recruitment system, security and ethics are especially important because the system handles student resumes, application status, workload, and AI-assisted evaluation.
 
-| Slide | 本文档产物 |
+| Slide | Artifact in this document |
 |---|---|
-| EBU6304_10 Project Management | 风险登记、优先级、责任和跟踪 |
-| EBU6304_11 Ethics and AI in Software Engineering | AI 辅助、隐私、公平性、透明度和人工责任 |
-| EBU6304_12 Risk and Quality Management | 风险概率/影响、质量控制、缓解计划 |
-| EBU6304_13 Secure Software Development | 威胁建模、认证授权、输入校验、secret 管理 |
-| EBU6304_16 AI for Software Development | AI 作为开发和产品能力时的可靠性边界 |
+| EBU6304_10 Project Management | Risk register, priority, ownership, and tracking |
+| EBU6304_11 Ethics and AI in Software Engineering | AI assistance, privacy, fairness, transparency, and human accountability |
+| EBU6304_12 Risk and Quality Management | Risk probability/impact, quality control, and mitigation plan |
+| EBU6304_13 Secure Software Development | Threat modelling, authentication and authorisation, input validation, and secret management |
+| EBU6304_16 AI for Software Development | Reliability boundaries when AI is used in development and product capabilities |
 
 ## Risk Register
 
 | ID | Risk | Probability | Impact | Current mitigation | Owner | Priority |
 |---|---|---|---|---|---|---|
-| R-01 | 未授权用户访问 TA、MO 或 Admin 数据 | 中 | 高 | `AuthFilter`、Servlet/Service 角色和所有权检查、测试 | Backend | 高 |
-| R-02 | CSRF 导致用户在不知情时提交状态变更 | 中 | 高 | `CsrfFilter`、JSP token 注入、CSRF 测试 | Backend | 高 |
-| R-03 | 恶意文件上传或路径穿越 | 中 | 高 | 扩展名、MIME、签名、大小校验，路径限制 | Backend | 高 |
-| R-04 | AI 请求泄露隐私或被误解为自动录用决定 | 中 | 高 | 显式同意、审计、最小记录、人工最终决策 | Product/Backend | 高 |
-| R-05 | JSON 文件损坏或部分写入 | 低 | 高 | 原子写入、读写锁、corruption exception、测试 | Backend | 高 |
-| R-06 | 多用户并发或多 Tomcat 实例导致文件数据竞争 | 中 | 中 | 文档明确单 JVM 课程部署假设 | Maintainer | 中 |
-| R-07 | 需求和实现不一致导致评审无法追踪 | 中 | 中 | 需求矩阵、文档索引、traceability 文档 | Team | 中 |
-| R-08 | 测试覆盖偏向 happy path | 中 | 中 | 边界/负向/安全测试清单和回归门禁 | QA | 中 |
-| R-09 | API key 或运行数据被误提交 | 中 | 高 | `.gitignore` 忽略大文件、data、archives、slides，secret 搜索 | Maintainer | 高 |
-| R-10 | UI 中输出未转义引发 XSS | 低 | 高 | JSP/JSTL 输出转义约定，静态搜索和人工审查 | Frontend/Backend | 中 |
-| R-11 | 工作量计算不准确影响公平分配 | 中 | 中 | `AdminService` 聚合测试、人工审查建议 | Backend | 中 |
-| R-12 | 远端 AI 不可用影响核心流程 | 中 | 中 | 规则匹配兜底；AI 可选 | Backend | 中 |
+| R-01 | Unauthorised users access TA, MO, or Admin data | Medium | High | `AuthFilter`, role and ownership checks in Servlet/Service, tests | Backend | High |
+| R-02 | CSRF causes users to submit state changes without their knowledge | Medium | High | `CsrfFilter`, JSP token injection, CSRF tests | Backend | High |
+| R-03 | Malicious file upload or path traversal | Medium | High | Extension, MIME, signature, and size validation, path restriction | Backend | High |
+| R-04 | AI requests leak privacy or are misunderstood as automatic hiring decisions | Medium | High | Explicit consent, audit, minimal logging, human final decision | Product/Backend | High |
+| R-05 | JSON files become corrupted or partially written | Low | High | Atomic writes, read/write locks, corruption exception, tests | Backend | High |
+| R-06 | Multi-user concurrency or multiple Tomcat instances cause file data races | Medium | Medium | Documentation clearly states the single-JVM coursework deployment assumption | Maintainer | Medium |
+| R-07 | Inconsistency between requirements and implementation makes review untraceable | Medium | Medium | Requirements matrix, document index, traceability document | Team | Medium |
+| R-08 | Test coverage is biased toward happy paths | Medium | Medium | Boundary/negative/security test checklist and regression gate | QA | Medium |
+| R-09 | API keys or runtime data are accidentally committed | Medium | High | `.gitignore` ignores large files, data, archives, slides, plus secret search | Maintainer | High |
+| R-10 | Unescaped UI output causes XSS | Low | High | JSP/JSTL output escaping convention, static search, and manual review | Frontend/Backend | Medium |
+| R-11 | Inaccurate workload calculation affects fair allocation | Medium | Medium | `AdminService` aggregation tests, manual review suggestions | Backend | Medium |
+| R-12 | Remote AI unavailability affects the core workflow | Medium | Medium | Rule-based matching fallback; AI remains optional | Backend | Medium |
+
+## Security Threat Model
+
+```mermaid
+flowchart TB
+  Attacker["Attacker or wrong-role user"]
+  Browser["Browser"]
+  Filters["AuthFilter / CsrfFilter"]
+  Servlets["Servlets"]
+  Services["Services"]
+  Store["JSON store and uploaded files"]
+  AI["Optional AI provider"]
+
+  Attacker -->|"unauthenticated request"| Filters
+  Attacker -->|"CSRF POST"| Filters
+  Attacker -->|"malicious upload"| Servlets
+  Attacker -->|"role bypass attempt"| Services
+  Browser --> Filters --> Servlets --> Services --> Store
+  Services -. "consented server-side request" .-> AI
 
 ## Security Threat Model
 

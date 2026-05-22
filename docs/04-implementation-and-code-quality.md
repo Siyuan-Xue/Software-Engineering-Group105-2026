@@ -1,26 +1,24 @@
-# 04 实现与代码质量
+# 04 Implementation and Code Quality
+## Course Basis
+Implementation slides emphasize: implementation is not mechanically translating design into code, but continuously managing readability, maintainability, integration, configuration, exceptions, code reviews, and version control. Secure Development, SOLID, and Design Patterns slides further require building security and quality into the code structure rather than patching them in at the end.
 
-## 课程依据
-
-Implementation slides 强调：实现不是机械地把设计翻译成代码，而是持续管理可读性、可维护性、集成、配置、异常、代码审查和版本控制。Secure Development、SOLID、Design Patterns slides 进一步要求把安全和质量内建到代码结构中，而不是在最后补丁式加入。
-
-| Slide | 本文档产物 |
+| Slide | Document Deliverable |
 |---|---|
-| EBU6304_07 Implementation | 编码规范、集成、配置、异常处理、版本控制 |
-| EBU6304_13 Secure Software Development | 输入校验、认证授权、文件上传、CSRF、secret 管理 |
-| EBU6304_14 Design Principles | SOLID、内聚、耦合、重复代码控制 |
-| EBU6304_15 Design Patterns | Facade、Repository、Filter 等实现证据 |
-| EBU6304_16 AI for Software Development | AI 功能作为辅助工具时的可靠性和审计 |
+| EBU6304_07 Implementation | Coding standards, integration, configuration, exception handling, version control |
+| EBU6304_13 Secure Software Development | Input validation, authentication & authorization, file upload, CSRF, secret management |
+| EBU6304_14 Design Principles | SOLID, cohesion, coupling, duplicate code control |
+| EBU6304_15 Design Patterns | Implementation evidence of Facade, Repository, Filter, etc. |
+| EBU6304_16 AI for Software Development | Reliability and auditing when AI features are used as auxiliary tools |
 
 ## Implementation Stack
 
 | Area | Choice | Evidence |
 |---|---|---|
-| Language/runtime | Java 17 | `pom.xml`、README |
-| Web framework | Jakarta Servlet 6 + JSP + JSTL | `src/main/java/com/bupt/ta/web`、`src/main/webapp` |
-| Build/test | Maven + JUnit 5 | `pom.xml`、`src/test/java` |
-| Persistence | Jackson JSON files | `db/store`、`db/repository`、`db/facade` |
-| UI | JSP portal pages, shared components, Tailwind CDN | `src/main/webapp/portal`、`WEB-INF/jsp/components` |
+| Language/runtime | Java 17 | `pom.xml`, README |
+| Web framework | Jakarta Servlet 6 + JSP + JSTL | `src/main/java/com/bupt/ta/web`, `src/main/webapp` |
+| Build/test | Maven + JUnit 5 | `pom.xml`, `src/test/java` |
+| Persistence | Jackson JSON files | `db/store`, `db/repository`, `db/facade` |
+| UI | JSP portal pages, shared components, Tailwind CDN | `src/main/webapp/portal`, `WEB-INF/jsp/components` |
 | Optional AI | Qwen/DashScope | `QwenAiService` |
 
 ## Module Responsibilities
@@ -103,7 +101,6 @@ Implementation slides 强调：实现不是机械地把设计翻译成代码，�
 | Documentation | Does user-facing or architectural behavior need docs? | README/docs updated for routes, config or workflow changes |
 
 ## Static Search Review Targets
-
 These searches should be repeated before major submission or release.
 
 ```bash
@@ -125,7 +122,6 @@ rg -n "innerHTML|escapeXml|c:out|fn:escapeXml" src/main/webapp
 | Test count grows but assertions are weak | Prefer behavior assertions over only "does not throw" tests |
 
 ## Definition Of Done For Code Changes
-
 1. Requirement or defect is clear.
 2. Implementation follows existing package and naming patterns.
 3. Role/ownership/security implications are checked.

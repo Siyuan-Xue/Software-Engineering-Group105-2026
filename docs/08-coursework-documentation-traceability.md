@@ -1,8 +1,5 @@
-# 08 课程文档与图表追踪矩阵
+# 08-coursework-documentation-traceability
 
-## Purpose
-
-本文档证明 EBU6304 的 17 份 slides 中要求的软件工程产物已经被最终 Markdown 文档覆盖。它也用于最终提交前检查：哪些图已经画、哪些文档承担哪些课程主题、哪些旧过程文档已经不再作为远端交付物追踪。
 
 ## Slide-To-Deliverable Matrix
 
