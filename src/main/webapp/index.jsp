@@ -357,11 +357,13 @@
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-black tracking-widest text-[#94a3b8] uppercase mb-1 lg:mb-2">Message</label>
-                                    <textarea rows="3" placeholder="How can we help?" class="w-full px-4 py-3 bg-[#f8fafc] border border-slate-200 rounded-lg text-slate-700 outline-none resize-none"></textarea>
+                                    <textarea id="inquiry-message" rows="3" placeholder="How can we help?" class="w-full px-4 py-3 bg-[#f8fafc] border border-slate-200 rounded-lg text-slate-700 outline-none resize-none"></textarea>
                                 </div>
-                                <button class="w-full py-4 bg-[#0f172a] text-white font-bold rounded-lg hover:bg-[#1e293b] transition-colors mt-2">
+                                <a href="mailto:ta-support@university.edu?subject=Application%20Issue"
+                                   id="send-message-link"
+                                   class="w-full py-4 bg-[#0f172a] text-white font-bold rounded-lg hover:bg-[#1e293b] transition-colors mt-2 flex items-center justify-center no-underline">
                                     SEND MESSAGE
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -455,6 +457,18 @@
             if(indicators[0]){
                  indicators[0].style.backgroundColor = '#0f172a';
                  indicators[0].style.opacity = '1';
+            }
+
+            const sendMessageLink = document.getElementById('send-message-link');
+            const inquiryMessage = document.getElementById('inquiry-message');
+            if (sendMessageLink) {
+                sendMessageLink.addEventListener('click', (event) => {
+                    const body = inquiryMessage ? encodeURIComponent(inquiryMessage.value.trim()) : '';
+                    const mailto = body
+                        ? 'mailto:ta-support@university.edu?subject=Application%20Issue&body=' + body
+                        : 'mailto:ta-support@university.edu?subject=Application%20Issue';
+                    sendMessageLink.setAttribute('href', mailto);
+                });
             }
         });
     </script>
