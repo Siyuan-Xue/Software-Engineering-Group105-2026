@@ -17,20 +17,26 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * JSON API for toggling saved/favorite vacancies.
- * POST /favorites?vacancyId={uuid} returns {"saved": true/false, "count": N}
+ * Minimal JSON facade for vacancy bookmark persistence at {@code /favorites}.
+ *
+ * <p>{@code POST} toggles identifiers inside {@link com.bupt.ta.domain.entity.User#getSavedJobIds()} then mirrors the mutated entity onto the session avatar.
+ * {@code GET} returns the saved identifiers as UTF-8 JSON for client bootstrapping.</p>
  */
 @WebServlet("/favorites")
 public class FavoritesServlet extends HttpServlet {
 
     private UserRepository userRepository;
 
+    /** Resolves repositories from the servlet-wide {@link com.bupt.ta.db.facade.TaDatabase} holder. */
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
         this.userRepository = database.users();
     }
 
+    /**
+     * Streams JSON documenting the toggled {@code saved} flag and aggregate bookmark tally to {@link jakarta.servlet.ServletResponse#getWriter()}.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -84,7 +90,7 @@ public class FavoritesServlet extends HttpServlet {
         }
     }
 
-    /** GET /favorites - returns the current user's saved vacancy IDs as JSON array */
+    /** Serialises bookmark identifiers or an empty JSON array when the session is anonymous. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {

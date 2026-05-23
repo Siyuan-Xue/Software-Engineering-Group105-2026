@@ -18,20 +18,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Global authentication filter and request-context injector.
+ * Servlet filter mounted on {@code /*} enforcing login redirection and injecting portal request attributes.
  *
- * <p>The filter redirects unauthenticated users to the login page and enriches
- * authenticated requests with shared profile, role, theme, language, and
- * notification attributes used by portal JSP fragments. Servlet-level
- * authorization remains responsible for sensitive role-specific operations.</p>
+ * <p>Public routes (landing, credentials, logout, static assets) bypass enforcement. Authenticated traversals hydrate
+ * internationalisation artefacts, flattened {@code userProfile} maps for header fragments, recruiter role strings,
+ * profile-completion heuristics, and unread notification tallies sourced from {@link TaDatabase}.
+ * Detailed resource authorisation stays within individual controllers.</p>
  */
 @WebFilter("/*")
 public class AuthFilter implements Filter {
 
+    /** No-filter configuration hook; container lifecycle invokes this before first {@link #doFilter}. */
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
     }
 
+    /**
+     * Enriches the request pipeline or terminates with a redirect to {@code /login}.
+     *
+     * @param request  incoming servlet request (cast to {@link HttpServletRequest})
+     * @param response outgoing servlet response (cast to {@link HttpServletResponse})
+     * @param chain    remainder of the filter/servlet invocation stack
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -57,8 +65,8 @@ public class AuthFilter implements Filter {
             route.equals("/register") ||
             route.equals("/forgot-password") ||
             route.equals("/logout") ||
-            route.startsWith("/css/") || 
-            route.startsWith("/js/") || 
+            route.startsWith("/css/") ||
+            route.startsWith("/js/") ||
             route.startsWith("/images/") ||
             route.startsWith("/assets/")) {
             chain.doFilter(request, response);
@@ -76,7 +84,7 @@ public class AuthFilter implements Filter {
             session.setAttribute(I18n.SESSION_APPEARANCE_ATTR, appearance);
         }
 
-        // Shared profile data consumed by the header and sidebar fragments.
+        // Shared profile map consumed by header and sidebar fragments.
         Map<String, Object> userProfile = new HashMap<>();
 
         String fullName = currentUser.getFullName() != null ? currentUser.getFullName() : I18n.message(language, "common.studentUser");
@@ -106,12 +114,15 @@ public class AuthFilter implements Filter {
         chain.doFilter(request, response);
     }
 
+    /** Stateful resources are not tracked; hook retained for completeness. */
     @Override
     public void destroy() {
     }
 
     /**
-     * Calculates the profile-completion percentage displayed in the sidebar.
+     * Heuristic sidebar gauge derived from populated profile primitives.
+     *
+     * @return percentage capped at {@code 100}
      */
     private int calculateProfileCompletion(User user) {
         int score = 20;
@@ -123,6 +134,11 @@ public class AuthFilter implements Filter {
         return Math.min(score, 100);
     }
 
+    /**
+     * @param session     optional servlet session transporting anonymous preference overrides
+     * @param currentUser authoritative account row when authenticated
+     * @return normalised locale token understood by {@link I18n}
+     */
     private String resolveLanguage(HttpSession session, User currentUser) {
         if (currentUser != null && currentUser.getPreferredLanguage() != null) {
             return I18n.normalizeLanguage(currentUser.getPreferredLanguage());
@@ -136,6 +152,9 @@ public class AuthFilter implements Filter {
         return I18n.DEFAULT_LANGUAGE;
     }
 
+    /**
+     * Mirrors {@link #resolveLanguage(HttpSession, User)} precedence for CSS theme presets.
+     */
     private String resolveAppearance(HttpSession session, User currentUser) {
         if (currentUser != null && currentUser.getPreferredAppearance() != null) {
             return I18n.normalizeAppearance(currentUser.getPreferredAppearance());
@@ -149,6 +168,9 @@ public class AuthFilter implements Filter {
         return I18n.DEFAULT_APPEARANCE;
     }
 
+    /**
+     * Counts unread {@link com.bupt.ta.domain.entity.Notification} envelopes for badges; silently degrades when persistence IO fails mid-request.
+     */
     private int unreadNotificationCount(HttpServletRequest req, User currentUser) {
         try {
             TaDatabase database = DatabaseProvider.get(req.getServletContext());

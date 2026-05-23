@@ -22,8 +22,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * JSON API: POST /ai-ta-cover-letter
- * Body parameters: vacancyId and resumeId are both required. TA only; resume must belong to current user.
+ * JSON helper {@code POST /ai-ta-cover-letter}.
+ *
+ * <p>{@code vacancyId} and {@code resumeId} scope {@link QwenAiService} draft generation for authenticated {@link UserRole#TA}
+ * personas. Consent prerequisites mirror other DashScope gateways.</p>
+ *
+ * @see AiRequestGuard
  */
 @WebServlet("/ai-ta-cover-letter")
 public class AiTaCoverLetterServlet extends HttpServlet {
@@ -31,12 +35,14 @@ public class AiTaCoverLetterServlet extends HttpServlet {
     private TaDatabase database;
     private ObjectMapper mapper;
 
+    /** Prepares singleton persistence wiring for downstream entity hydration. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.mapper = new ObjectMapper();
     }
 
+    /** Emits Markdown cover-letter drafts as JSON payloads for client-side previews. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json;charset=UTF-8");

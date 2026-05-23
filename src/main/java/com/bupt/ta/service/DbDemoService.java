@@ -15,8 +15,6 @@ import com.bupt.ta.domain.entity.Skill;
 import com.bupt.ta.domain.entity.User;
 import com.bupt.ta.domain.entity.WorkloadRecord;
 import com.bupt.ta.domain.enums.JobStatus;
-import com.bupt.ta.domain.enums.ProficiencyLevel;
-import com.bupt.ta.domain.enums.SkillCategory;
 import com.bupt.ta.domain.enums.UserRole;
 import com.bupt.ta.domain.value.AvailabilitySlot;
 import com.bupt.ta.util.PasswordUtil;
@@ -33,7 +31,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Demonstration helper service used by the database demo page and integration tests.
+ * Facade powering the database demo tooling and integration scenarios that exercise cohesive workflows.
+ *
+ * <p>{@link TaDatabase} remains reachable for raw JSON-table inspection, while higher-level helpers delegate to
+ * {@link ResumeService}, {@link JobService}, {@link ApplicationService}, and {@link MatchingService} to keep business
+ * rules aligned with production paths.</p>
  */
 public class DbDemoService {
     private static final TypeReference<List<AvailabilitySlot>> AVAILABILITY_TYPE = new TypeReference<>() { };
@@ -45,6 +47,7 @@ public class DbDemoService {
     private final MatchingService matchingService;
     private final ObjectMapper mapper;
 
+    /** @param db shared persistence facade powering every table walkthrough */
     public DbDemoService(TaDatabase db) {
         this.db = db;
         this.resumeService = new ResumeService(db);
@@ -54,54 +57,63 @@ public class DbDemoService {
         this.mapper = JsonMapperFactory.create();
     }
 
+    /** @return every user row ordered by {@link User#getUpdatedAt()} descending */
     public List<User> listUsers() {
         return db.users().findAll().stream()
                 .sorted(Comparator.comparing(User::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return MO and ADMIN accounts only, newest activity first */
     public List<User> listRecruiters() {
         return listUsers().stream()
                 .filter(user -> user.getRole() == UserRole.MO || user.getRole() == UserRole.ADMIN)
                 .toList();
     }
 
+    /** @return resumes ordered by {@link Resume#getUpdatedAt()} descending */
     public List<Resume> listResumes() {
         return db.resumes().findAll().stream()
                 .sorted(Comparator.comparing(Resume::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return vacancies ordered by {@link Job#getUpdatedAt()} descending */
     public List<Job> listJobs() {
         return db.jobs().findAll().stream()
                 .sorted(Comparator.comparing(Job::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return applications ordered by {@link Application#getUpdatedAt()} descending */
     public List<Application> listApplications() {
         return db.applications().findAll().stream()
                 .sorted(Comparator.comparing(Application::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return global skill catalogue ordered by {@link Skill#getUpdatedAt()} descending */
     public List<Skill> listSkills() {
         return db.skills().findAll().stream()
                 .sorted(Comparator.comparing(Skill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return resume-skill junction rows ordered by {@link ResumeSkill#getUpdatedAt()} descending */
     public List<ResumeSkill> listResumeSkills() {
         return db.resumeSkills().findAll().stream()
                 .sorted(Comparator.comparing(ResumeSkill::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return structured requirements ordered by {@link JobRequirement#getUpdatedAt()} descending */
     public List<JobRequirement> listJobRequirements() {
         return db.jobRequirements().findAll().stream()
                 .sorted(Comparator.comparing(JobRequirement::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
+    /** @return persisted analytics rows ordered primarily by {@link MatchScore#getComputedAt()} */
     public List<MatchScore> listMatchScores() {
         return db.matchScores().findAll().stream()
                 .sorted(Comparator.comparing(MatchScore::getComputedAt, Comparator.nullsLast(Comparator.reverseOrder()))
@@ -109,6 +121,7 @@ public class DbDemoService {
                 .toList();
     }
 
+    /** @param limit maximum rows to include from the notification stream */
     public List<Notification> listRecentNotifications(int limit) {
         return db.notifications().findAll().stream()
                 .sorted(Comparator.comparing(Notification::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -116,6 +129,7 @@ public class DbDemoService {
                 .toList();
     }
 
+    /** @param limit maximum audit events to return */
     public List<AuditLog> listRecentAuditLogs(int limit) {
         return db.auditLogs().findAll().stream()
                 .sorted(Comparator.comparing(AuditLog::getOperatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -123,6 +137,7 @@ public class DbDemoService {
                 .toList();
     }
 
+    /** @param limit maximum workload ledger entries to return */
     public List<WorkloadRecord> listRecentWorkloadRecords(int limit) {
         return db.workloadRecords().findAll().stream()
                 .sorted(Comparator.comparing(WorkloadRecord::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -130,6 +145,7 @@ public class DbDemoService {
                 .toList();
     }
 
+    /** @return row counts aligned with JSON fixture filenames for the dashboard summary cards */
     public List<TableCount> listTableCounts() {
         return List.of(
                 new TableCount("users", db.users().findAll().size(), "users.json"),
@@ -146,34 +162,46 @@ public class DbDemoService {
         );
     }
 
+    /** @return direct lookup helper for editable {@code User} tuples */
     public Optional<User> findUser(UUID userId) {
         return db.users().findById(userId);
     }
 
+    /** @return resume snapshot keyed by identifier */
     public Optional<Resume> findResume(UUID resumeId) {
         return db.resumes().findById(resumeId);
     }
 
+    /** @return vacancy tuple for binding demo forms */
     public Optional<Job> findJob(UUID jobId) {
         return db.jobs().findById(jobId);
     }
 
+    /** @return application linkage row for downstream workflow mutations */
     public Optional<Application> findApplication(UUID applicationId) {
         return db.applications().findById(applicationId);
     }
 
+    /** @return master skill definition keyed by catalogue id */
     public Optional<Skill> findSkill(UUID skillId) {
         return db.skills().findById(skillId);
     }
 
+    /** @return bridge row between resume drafts and proficiency metadata */
     public Optional<ResumeSkill> findResumeSkill(UUID resumeSkillId) {
         return db.resumeSkills().findById(resumeSkillId);
     }
 
+    /** @return structured vacancy requirement keyed by surrogate id */
     public Optional<JobRequirement> findJobRequirement(UUID requirementId) {
         return db.jobRequirements().findById(requirementId);
     }
 
+    /**
+     * Creates or mutates demo accounts with password hygiene mirroring interactive registration.
+     *
+     * @param plainPassword hashed when supplied; omitted updates keep the prior hash
+     */
     public User saveUser(User submitted, String plainPassword) {
         if (submitted == null) {
             throw new ConstraintViolationException("User submission is required");
@@ -207,6 +235,11 @@ public class DbDemoService {
         return db.users().save(toSave);
     }
 
+    /**
+     * Persists resumes while parsing textual availability payloads into structured slots.
+     *
+     * @param availabilitySlotsJson JSON array serialisation conforming to {@link AvailabilitySlot}
+     */
     public Resume saveResume(Resume submitted, String availabilitySlotsJson) {
         if (submitted == null) {
             throw new ConstraintViolationException("Resume submission is required");
@@ -223,6 +256,9 @@ public class DbDemoService {
         return resumeService.save(toSave);
     }
 
+    /**
+     * Saves vacancies through {@link JobService} defaults (status {@link JobStatus#OPEN}, hourly rate stub).
+     */
     public Job saveJob(Job submitted) {
         if (submitted == null) {
             throw new ConstraintViolationException("Job submission is required");
@@ -242,6 +278,7 @@ public class DbDemoService {
         return jobService.save(toSave);
     }
 
+    /** Validates catalogue constraints before inserting or patching global skills. */
     public Skill saveSkill(Skill submitted) {
         if (submitted == null) {
             throw new ConstraintViolationException("Skill submission is required");
@@ -263,6 +300,7 @@ public class DbDemoService {
         return db.skills().save(toSave);
     }
 
+    /** Enforces uniqueness between resume drafts and enumerated skills prior to persistence. */
     public ResumeSkill saveResumeSkill(ResumeSkill submitted) {
         if (submitted == null) {
             throw new ConstraintViolationException("Resume skill submission is required");
@@ -290,6 +328,7 @@ public class DbDemoService {
         return db.resumeSkills().save(toSave);
     }
 
+    /** Mirrors {@link ResumeSkill} validation for prerequisite rows on vacancy postings. */
     public JobRequirement saveJobRequirement(JobRequirement submitted) {
         if (submitted == null) {
             throw new ConstraintViolationException("Job requirement submission is required");
@@ -314,59 +353,69 @@ public class DbDemoService {
         return db.jobRequirements().save(toSave);
     }
 
+    /** Recomputes analytic payloads under the recruiter who originated the vacancy. */
     public MatchScore refreshMatchScore(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Job job = requireJob(application.getJobId());
         return matchingService.runAnalysis(job.getPostedBy(), applicationId);
     }
 
+    /** Convenience wrapper around {@link ApplicationService#submit(UUID, UUID, UUID, String)} for demos. */
     public Application submitApplication(UUID resumeId, UUID jobId, String coverLetter) {
         Resume resume = requireResume(resumeId);
         requireJob(jobId);
         return applicationService.submit(resume.getUserId(), resumeId, jobId, trimToNull(coverLetter));
     }
 
+    /** @see ApplicationService#startReview(UUID, UUID) */
     public Application startReview(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Job job = requireJob(application.getJobId());
         return applicationService.startReview(job.getPostedBy(), applicationId);
     }
 
+    /** @see ApplicationService#sendOffer(UUID, UUID) */
     public Application sendOffer(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Job job = requireJob(application.getJobId());
         return applicationService.sendOffer(job.getPostedBy(), applicationId);
     }
 
+    /** @see ApplicationService#reject(UUID, UUID, String) */
     public Application reject(UUID applicationId, String notes) {
         Application application = requireApplication(applicationId);
         Job job = requireJob(application.getJobId());
         return applicationService.reject(job.getPostedBy(), applicationId, trimToNull(notes));
     }
 
+    /** @see ApplicationService#acceptOffer(UUID, UUID) */
     public Application acceptOffer(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Resume resume = requireResume(application.getResumeId());
         return applicationService.acceptOffer(resume.getUserId(), applicationId);
     }
 
+    /** @see ApplicationService#declineOffer(UUID, UUID) */
     public Application declineOffer(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Resume resume = requireResume(application.getResumeId());
         return applicationService.declineOffer(resume.getUserId(), applicationId);
     }
 
+    /** @see ApplicationService#withdraw(UUID, UUID) */
     public Application withdraw(UUID applicationId) {
         Application application = requireApplication(applicationId);
         Resume resume = requireResume(application.getResumeId());
         return applicationService.withdraw(resume.getUserId(), applicationId);
     }
 
+    /** @see JobService#changeStatus(UUID, UUID, JobStatus) */
     public Job cancelJob(UUID jobId) {
         Job job = requireJob(jobId);
         return jobService.changeStatus(job.getPostedBy(), jobId, JobStatus.CANCELLED);
     }
 
+    /** Pretty-prints persisted availability tuples for textual editors embedded in demo forms. */
     public String availabilitySlotsJson(Resume resume) {
         if (resume == null || resume.getAvailabilitySlots().isEmpty()) {
             return "";
@@ -378,6 +427,7 @@ public class DbDemoService {
         }
     }
 
+    /** @return display labels {@code Full Name (email)} keyed by stable user ids */
     public Map<UUID, String> buildUserLabels() {
         return listUsers().stream().collect(java.util.stream.Collectors.toMap(
                 User::getId,
@@ -387,6 +437,7 @@ public class DbDemoService {
         ));
     }
 
+    /** @return resume titles suffixed by owning {@code UUID} keys */
     public Map<UUID, String> buildResumeLabels() {
         return listResumes().stream().collect(java.util.stream.Collectors.toMap(
                 Resume::getId,
@@ -396,6 +447,7 @@ public class DbDemoService {
         ));
     }
 
+    /** @return vacancy titles annotated with enumerated {@link JobStatus} values */
     public Map<UUID, String> buildJobLabels() {
         return listJobs().stream().collect(java.util.stream.Collectors.toMap(
                 Job::getId,
@@ -405,6 +457,7 @@ public class DbDemoService {
         ));
     }
 
+    /** @return skill names annotated with categorical metadata */
     public Map<UUID, String> buildSkillLabels() {
         return listSkills().stream().collect(java.util.stream.Collectors.toMap(
                 Skill::getId,
@@ -414,6 +467,7 @@ public class DbDemoService {
         ));
     }
 
+    /** @return composite labels pairing surrogate ids with {@link com.bupt.ta.domain.enums.ApplicationStatus} markers */
     public Map<UUID, String> buildApplicationLabels() {
         return listApplications().stream().collect(java.util.stream.Collectors.toMap(
                 Application::getId,
@@ -560,28 +614,36 @@ public class DbDemoService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    /**
-     * Table row-count summary rendered on the database demo page.
-     */
+    /** Tuple rendered by the dashboard summarising persisted JSON artefacts. */
     public static final class TableCount {
         private final String tableName;
         private final int rowCount;
         private final String fileName;
 
+        /**
+         * Binds relation metadata for template rendering.
+         *
+         * @param tableName canonical relation label for UI columns
+         * @param rowCount  live count pulled from persistence
+         * @param fileName  backing fixture filename for hyperlinking exports
+         */
         public TableCount(String tableName, int rowCount, String fileName) {
             this.tableName = tableName;
             this.rowCount = rowCount;
             this.fileName = fileName;
         }
 
+        /** @return logical table or collection name */
         public String getTableName() {
             return tableName;
         }
 
+        /** @return number of rows observed while building the summary */
         public int getRowCount() {
             return rowCount;
         }
 
+        /** @return JSON filename presented beside the counter */
         public String getFileName() {
             return fileName;
         }

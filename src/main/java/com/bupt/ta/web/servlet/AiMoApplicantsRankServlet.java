@@ -32,9 +32,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * JSON API: POST /ai-mo-applicants-rank
- * Form body: jobId=&lt;uuid&gt;
- * MO only; job must be posted by current user; at least 2 non-withdrawn applications.
+ * JSON comparator {@code POST /ai-mo-applicants-rank}.
+ *
+ * <p>{@code jobId} targets a recruiter-owned vacancy; at least two in-flight applications seed {@link QwenAiService}'s pairwise ranking JSON payloads.</p>
+ *
+ * @see AiRequestGuard
  */
 @WebServlet("/ai-mo-applicants-rank")
 public class AiMoApplicantsRankServlet extends HttpServlet {
@@ -42,12 +44,14 @@ public class AiMoApplicantsRankServlet extends HttpServlet {
     private TaDatabase database;
     private ObjectMapper mapper;
 
+    /** Hydrates collaborators used for entitlement checks before AI fan-out. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.mapper = new ObjectMapper();
     }
 
+    /** Invokes multi-applicant ranking prompts and relays structured text payloads for SPA-side validation. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json;charset=UTF-8");

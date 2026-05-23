@@ -28,7 +28,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Business service for vacancy creation, editing, status transitions, and requirements.
+ * Vacancy lifecycle orchestration spanning draft creation, publication, requirement editing, cancellation side effects,
+ * and recruiter notifications shared by servlet handlers.
+ *
+ * <p>Status transitions funnel through {@link #changeStatus} so cascading application withdrawals stay atomic.</p>
  */
 public class JobService {
     private static final Set<ApplicationStatus> IN_PROGRESS_APPLICATIONS = Set.of(
@@ -41,29 +44,44 @@ public class JobService {
     private final TaDatabase db;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /**
+     * @param db shared façade for JSON persistence accessed from MO servlets
+     */
     public JobService(TaDatabase db) {
         this.db = db;
     }
 
+    /** @param now comparator instant against vacancy deadlines supplied to repository filtering */
     public List<Job> listOpen(Instant now) {
         JobQuery query = new JobQuery();
         query.setNow(now);
         return db.jobs().listOpen(query);
     }
 
+    /** @param query caller-populated predicates (titles, faculties, paging flags, etc.) */
     public List<Job> listOpen(JobQuery query) {
         return db.jobs().listOpen(query);
     }
 
+    /** @param posterId MO or admin UUID who owns the authoring relationship */
     public List<Job> listByPoster(UUID posterId) {
         return db.jobs().listByPoster(posterId);
     }
 
+    /**
+     * Inserts drafts or updates persisted rows keyed by identifier presence on {@code job}.
+     *
+     * @param job hydrated entity referencing {@link Job#getPostedBy()} credentials
+     * @return latest projection after persistence and notifications
+     */
     public Job save(Job job) {
         UUID operatorId = job.getPostedBy();
         return job.getId() == null ? createDraft(job) : update(operatorId, job);
     }
 
+    /**
+     * Inserts either {@link JobStatus#DRAFT} or caller-provided statuses, auditing creation and optionally notifying TA users.
+     */
     public Job createDraft(Job job) {
         validateJob(job);
         if (job.getStatus() == null) {
@@ -77,10 +95,16 @@ public class JobService {
         return saved;
     }
 
+    /**
+     * Promotes drafts to OPEN with identical validation as broader status mutations.
+     */
     public Job publish(UUID operatorId, UUID jobId) {
         return changeStatus(operatorId, jobId, JobStatus.OPEN);
     }
 
+    /**
+     * Overwrites vacancy fields belonging to {@code operatorId}; poster identity must remain consistent with repository ACL.
+     */
     public Job update(UUID operatorId, Job job) {
         Job existing = db.jobs().findById(job.getId())
                 .orElseThrow(() -> new ConstraintViolationException("Job not found: " + job.getId()));
@@ -159,7 +183,11 @@ public class JobService {
     }
 
     /**
-     * Replaces all skill requirements for a vacancy in one atomic operation.
+     * Deletes prior rows for {@code jobId} and persists {@code requirements} atomically inside one transaction bracket.
+     *
+     * @param operatorId  actor recorded in supplemental audit hooks
+     * @param jobId       target vacancy UUID
+     * @param requirements full replacement snapshot (identifiers may be regenerated)
      */
     public void replaceRequirements(UUID operatorId, UUID jobId, List<JobRequirement> requirements) {
         db.jobs().findById(jobId).orElseThrow(() -> new ConstraintViolationException("Job not found: " + jobId));

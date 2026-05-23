@@ -32,7 +32,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Renders vacancy details and TA application preparation data.
+ * Drill-down vacancy page reachable at {@code /vacancy} with optional {@code vacancyId}.
+ *
+ * <p>Teaching Assistants receive resume pick-lists annotated with heuristic coverage summaries from {@link MatchingService}.
+ * Anonymous traffic can still introspect sanitized descriptions while AI-assisted widgets observe {@link QwenAiService} configuration.</p>
  */
 @WebServlet("/vacancy")
 public class VacancyDetailServlet extends HttpServlet {
@@ -44,6 +47,7 @@ public class VacancyDetailServlet extends HttpServlet {
     private ResumeService resumeService;
     private MatchingService matchingService;
 
+    /** Composes cooperating services atop the servlet-scoped {@link TaDatabase}. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
@@ -51,6 +55,7 @@ public class VacancyDetailServlet extends HttpServlet {
         this.matchingService = new MatchingService(database);
     }
 
+    /** Normalises vacancy identifiers from query strings, hydrates contextual DTOs, and attaches flash messages when present. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {

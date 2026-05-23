@@ -37,7 +37,9 @@ import java.util.UUID;
  * Lists applications from the current user's role-specific perspective.
  *
  * <p>Module Organisers see applications for vacancies they posted, while
- * Teaching Assistants see applications submitted with their own resumes.</p>
+ * Teaching Assistants see applications linked to their resume catalogue.</p>
+ *
+ * @see ApplicationDetailServlet
  */
 @WebServlet("/applications")
 public class ApplicationsServlet extends HttpServlet {
@@ -48,11 +50,13 @@ public class ApplicationsServlet extends HttpServlet {
 
     private TaDatabase database;
 
+    /** Provides repository access for assembling {@link com.bupt.ta.dto.ApplicationDTO}s. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
+    /** Applies keyword, status, and ordering filters sourced from canonical query strings. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

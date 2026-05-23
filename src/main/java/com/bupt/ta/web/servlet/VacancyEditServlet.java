@@ -38,7 +38,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Handles MO vacancy editing, status changes, and requirement replacement.
+ * Owner-managed vacancy maintenance mapped to {@code /vacancy/edit}.
+ *
+ * <p>{@code GET} primes {@code vacancy_edit.jsp} with requirement metadata while {@code POST} snapshots edits, replaces structured requirements,
+ * and coordinates status transitions exclusively for the recruiter who authored the vacancy.</p>
  */
 @WebServlet("/vacancy/edit")
 public class VacancyEditServlet extends HttpServlet {
@@ -49,12 +52,14 @@ public class VacancyEditServlet extends HttpServlet {
     private TaDatabase database;
     private JobService jobService;
 
+    /** Acquires persistence collaborators for guarded job updates. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.jobService = new JobService(database);
     }
 
+    /** Loads authoritative job rows plus requirement collections for authorised MO editors. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -128,6 +133,7 @@ public class VacancyEditServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
+    /** Persists job mutations, optionally updates lifecycle status, and rewrites requirement rows atomically via {@link JobService}. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

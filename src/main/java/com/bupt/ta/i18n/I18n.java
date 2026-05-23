@@ -7,16 +7,38 @@ import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 
 /**
- * In-memory internationalization catalogue and preference helpers.
+ * Immutable message catalogue and preference normalisation helpers for servlet/JSP views.
+ *
+ * <p>Message keys follow a dotted naming scheme (for example {@code settings.title}, {@code msg.appSubmitted}).
+ * English texts are authoritative for missing translations: {@link #message(String, String)} falls back first to English,
+ * then to the key string so diagnostics remain visible.</p>
+ *
+ * <p>{@link #resolveLanguage} and {@link #resolveAppearance} pick the active preference in this order: request-scope
+ * attribute named {@value #SESSION_LANGUAGE_ATTR} / {@value #SESSION_APPEARANCE_ATTR}, persisted fields on {@link User}
+ * when present in session, matching session attributes, finally {@value #DEFAULT_LANGUAGE} / {@value #DEFAULT_APPEARANCE}.</p>
  */
 public final class I18n {
+    /** Canonical English language tag for persistence ({@link User#getPreferredLanguage()}). */
     public static final String EN = "en";
+    /** Canonical Chinese language tag for persistence ({@link User#getPreferredLanguage()}). */
     public static final String ZH = "zh";
+    /** Active language when callers supply no usable hint. */
     public static final String DEFAULT_LANGUAGE = EN;
+    /**
+     * Session key for language; the same literal is read from {@link HttpServletRequest#getAttribute(String)} first in
+     * {@link #resolveLanguage}, then from the session after user defaults.
+     */
     public static final String SESSION_LANGUAGE_ATTR = "language";
+    /** Light colour theme token. */
     public static final String LIGHT = "light";
+    /** Dark colour theme token. */
     public static final String DARK = "dark";
+    /** Active theme when callers supply no usable hint. */
     public static final String DEFAULT_APPEARANCE = LIGHT;
+    /**
+     * Session key for theme; the same literal is read from {@link HttpServletRequest#getAttribute(String)} first in
+     * {@link #resolveAppearance}, then from the session after user defaults.
+     */
     public static final String SESSION_APPEARANCE_ATTR = "appearance";
 
     private static final Map<String, String> EN_MESSAGES = Map.ofEntries(
@@ -361,33 +383,75 @@ public final class I18n {
             Map.entry("msg.invalidConversation", "无效的会话。")
     );
 
+    /** Utility holder; instantiation is unsupported. */
     private I18n() {
     }
 
+    /**
+     * Collapses arbitrary user input to one of the supported language codes.
+     *
+     * @param language raw token (may be {@code null})
+     * @return {@value #ZH} when the argument matches Chinese (case-insensitive); otherwise {@value #EN}
+     */
     public static String normalizeLanguage(String language) {
         return ZH.equalsIgnoreCase(language) ? ZH : EN;
     }
 
+    /**
+     * Collapses arbitrary user input to one of the supported theme tokens.
+     *
+     * @param appearance raw token (may be {@code null})
+     * @return {@value #DARK} when the argument matches dark mode (case-insensitive); otherwise {@value #LIGHT}
+     */
     public static String normalizeAppearance(String appearance) {
         return DARK.equalsIgnoreCase(appearance) ? DARK : LIGHT;
     }
 
+    /**
+     * @param language raw language tag before normalisation
+     * @return {@code true} when {@link #normalizeLanguage} yields {@value #ZH}
+     */
     public static boolean isChinese(String language) {
         return ZH.equals(normalizeLanguage(language));
     }
 
+    /**
+     * Produces a BCP 47 language tag suitable for HTML {@code lang} attributes.
+     *
+     * @param language raw or normalised language token
+     * @return {@code zh-CN} for Chinese UI, otherwise {@code en}
+     */
     public static String langTag(String language) {
         return isChinese(language) ? "zh-CN" : "en";
     }
 
+    /**
+     * Exposes the backing map for the requested locale.
+     *
+     * @param language raw or normalised language token
+     * @return {@link #ZH_MESSAGES} for Chinese UI, otherwise {@link #EN_MESSAGES}; callers must not mutate the map
+     */
     public static Map<String, String> messagesFor(String language) {
         return isChinese(language) ? ZH_MESSAGES : EN_MESSAGES;
     }
 
+    /**
+     * Looks up a translated string, applying the English fallback policy described in the class documentation.
+     *
+     * @param language active UI language (normalised by {@link #normalizeLanguage} at call sites when needed)
+     * @param key      dotted message identifier
+     * @return translated text, or English if the key is missing in the active map, or {@code key} when still unknown
+     */
     public static String message(String language, String key) {
         return messagesFor(language).getOrDefault(key, EN_MESSAGES.getOrDefault(key, key));
     }
 
+    /**
+     * Derives the active UI language for the current request by consulting request attributes, session state, and user profile.
+     *
+     * @param req current HTTP request; {@code null} yields {@value #DEFAULT_LANGUAGE}
+     * @return normalised language code suitable for {@link #message(String, String)}
+     */
     public static String resolveLanguage(HttpServletRequest req) {
         if (req == null) return DEFAULT_LANGUAGE;
 
@@ -411,6 +475,13 @@ public final class I18n {
         return DEFAULT_LANGUAGE;
     }
 
+    /**
+     * Derives the active theme for the current request using the same precedence rules as {@link #resolveLanguage}
+     * (request attribute, persisted user preference, session attribute, default).
+     *
+     * @param req current HTTP request; {@code null} yields {@value #DEFAULT_APPEARANCE}
+     * @return normalised theme token ({@value #LIGHT} or {@value #DARK})
+     */
     public static String resolveAppearance(HttpServletRequest req) {
         if (req == null) return DEFAULT_APPEARANCE;
 
@@ -434,6 +505,13 @@ public final class I18n {
         return DEFAULT_APPEARANCE;
     }
 
+    /**
+     * Convenience wrapper around {@link #message(String, String)} using {@link #resolveLanguage}.
+     *
+     * @param req current HTTP request (used only to detect language)
+     * @param key dotted message identifier
+     * @return resolved text for the active language
+     */
     public static String message(HttpServletRequest req, String key) {
         return message(resolveLanguage(req), key);
     }

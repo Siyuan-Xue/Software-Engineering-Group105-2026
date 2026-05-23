@@ -31,7 +31,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Administrator skill-library management endpoint.
+ * Global skill catalogue stewardship under {@code /admin/skills}, including categorical metadata and guarded deletion semantics.
+ *
+ * <p>Inbound POST actions map onto CRUD verbs with {@link AuditLog} fan-out mirroring privileged operator identity.</p>
  */
 @WebServlet("/admin/skills")
 public class AdminSkillsServlet extends HttpServlet {
@@ -40,11 +42,13 @@ public class AdminSkillsServlet extends HttpServlet {
     private TaDatabase database;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /** Hydrates pooled JSON mapper plus repository accessors. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
+    /** Renders enumerated skill rows with degraded {@code loadError} states when repositories fail abruptly. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User currentUser = requireCurrentUser(req);
@@ -67,8 +71,7 @@ public class AdminSkillsServlet extends HttpServlet {
         }
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
-    }
-
+    }    /** Mutates catalogue rows according to contextual {@code action} parameters carried by HTML forms. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User currentUser = requireCurrentUser(req);

@@ -14,31 +14,60 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Administrator-facing service for workload aggregation, audit search, and user updates.
+ * Administrator widgets that expose TA utilization, departmental drill-down helpers, aggregated workload dashboards,
+ * and lightweight user maintenance hooks for the `/admin/**` controllers.
+ *
+ * <p>{@link #buildTAWorkloads(String)} derives each TA row from ACTIVE {@link WorkloadRecord} rows grouped by tutor id.
+ * Per-assignment monetisation multiples weekly hours by a fixed demo factor of eight to approximate one semester workload.</p>
  */
 public class AdminService {
     private final TaDatabase db;
 
+    /**
+     * @param db façade initialised alongside portal filters
+     */
     public AdminService(TaDatabase db) {
         this.db = db;
     }
 
+    /**
+     * Equivalent to calling {@link #calculateTAWorkloads(String, String, String)} with unrestricted semester/keyword/dept triple.
+     *
+     * @return view projection maps described in {@link #buildTAWorkloads(String)}
+     */
     public List<Map<String, Object>> calculateTAWorkloads() {
         return calculateTAWorkloads(null, null, null);
     }
 
+    /**
+     * Applies keyword and departmental filters regardless of semester.
+     */
     public List<Map<String, Object>> calculateTAWorkloads(String keyword, String departmentFilter) {
         return calculateTAWorkloads(null, keyword, departmentFilter);
     }
 
+    /**
+     * Primary workload grid builder respecting optional semester narrowing plus UI filters supplied from JSP widgets.
+     *
+     * @param semester          optional textual semester filter (ignored when {@code null})
+     * @param keyword           case-insensitive match against TA name, student id or email substring
+     * @param departmentFilter  exact departmental label match against TA or vacancy metadata
+     * @return immutable table rows keyed by descriptive strings ({@code taId}, {@code assignedVacancies}, {@code utilizationPct}, etc.)
+     */
     public List<Map<String, Object>> calculateTAWorkloads(String semester, String keyword, String departmentFilter) {
         return filterTAWorkloads(buildTAWorkloads(semester), keyword, departmentFilter);
     }
 
+    /**
+     * Convenience wrapper listing distinct department labels across all semesters.
+     */
     public List<String> listWorkloadDepartmentOptions() {
         return listWorkloadDepartmentOptions(null);
     }
 
+    /**
+     * Computes filter chips for departmental drill-down respecting optional semester narrowing.
+     */
     public List<String> listWorkloadDepartmentOptions(String semester) {
         return buildTAWorkloads(semester).stream()
                 .flatMap(this::departmentsForWorkload)
@@ -48,6 +77,7 @@ public class AdminService {
                 .toList();
     }
 
+    /** Surfaces distinct semesters present on ACTIVE workload rows for dropdown population. */
     public List<String> listWorkloadSemesterOptions() {
         return db.workloadRecords().findAll().stream()
                 .filter(record -> record.getStatus() == WorkloadStatus.ACTIVE)
@@ -58,6 +88,9 @@ public class AdminService {
                 .toList();
     }
 
+    /**
+     * Applies UI filters atop an eagerly built workload collection (typically originating from {@link #calculateTAWorkloads} overloads).
+     */
     public List<Map<String, Object>> filterTAWorkloads(List<Map<String, Object>> workloads,
                                                        String keyword,
                                                        String departmentFilter) {
@@ -115,7 +148,7 @@ public class AdminService {
                 BigDecimal hourlyRate = job.getHourlyRate() != null ? job.getHourlyRate() : BigDecimal.ZERO;
                 vView.put("hourlyRate", hourlyRate);
 
-                // The coursework demo treats a semester assignment as eight active weeks.
+                // Demo assumption: multiply weekly hours by eight to approximate workload for one semester.
                 int estimatedWorkload = requiredHours * 8;
                 vView.put("estimatedWorkloadHours", estimatedWorkload);
                 
@@ -220,14 +253,23 @@ public class AdminService {
         return value.toString().toLowerCase(Locale.ROOT).contains(normalizedKeyword);
     }
 
+    /**
+     * Pass-through to repository aggregates used by workloads dashboard charts.
+     */
     public List<WorkloadAggregate> workloadDashboard(String semester) {
         return db.workloadRecords().aggregateBySemester(semester);
     }
 
+    /**
+     * Administrative audit explorer delegating verbatim to persistence search indices.
+     */
     public List<AuditLog> searchAuditLogs(AuditLogQuery query) {
         return db.auditLogs().search(query);
     }
 
+    /**
+     * Saves arbitrary {@link User} mutations performed from admin tooling; caller enforces uniqueness and role sanity.
+     */
     public User updateUser(UUID operatorId, User user) {
         return db.users().save(user);
     }

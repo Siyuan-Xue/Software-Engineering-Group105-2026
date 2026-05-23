@@ -26,7 +26,10 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * Handles TA application submission with an existing resume or uploaded file.
+ * Multipart form handler backing {@code /application} TA submissions against a vacancy.
+ *
+ * <p>Optional resume uploads land under {@link com.bupt.ta.config.AppConfig#resolveDataDirectory()} while existing resume IDs short-circuit
+ * through {@link ApplicationService}. Non-TA personas are bounced back toward the vacancy catalogue.</p>
  */
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024 * 2,
@@ -38,6 +41,7 @@ public class ApplicationSubmitServlet extends HttpServlet {
     private ApplicationService applicationService;
     private Path uploadDir;
 
+    /** Resolves {@link ApplicationService} plus on-disk staging directories permitted by {@link MultipartConfig}. */
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
@@ -45,6 +49,7 @@ public class ApplicationSubmitServlet extends HttpServlet {
         this.uploadDir = AppConfig.resolveDataDirectory().resolve("resumes").resolve("uploads");
     }
 
+    /** Validates TA role, parses ids, persists optional multipart snapshots, then redirects via {@link RedirectUrls}. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

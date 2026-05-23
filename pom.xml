@@ -88,8 +88,11 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>3.12.0</version>
                 <configuration>
-                    <doclint>none</doclint>
-                    <failOnWarnings>false</failOnWarnings>
+                    <!-- Fail the build on malformed tags / broken references / invalid HTML without requiring every symbol to document every parameter. -->
+                    <doclint>reference,syntax,html</doclint>
+                    <failOnWarnings>true</failOnWarnings>
+                    <show>protected</show>
+                    <detectOfflineLinks>false</detectOfflineLinks>
                 </configuration>
             </plugin>
         </plugins>

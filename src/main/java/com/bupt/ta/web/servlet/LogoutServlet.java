@@ -13,15 +13,20 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Invalidates the current login session while preserving display preferences.
+ * Safe sign-out endpoint mapped to {@code /logout}.
+ *
+ * <p>Only {@code POST} mutates server state: the previous session is discarded, lightweight {@link I18n}
+ * preference keys are copied into a fresh session, and the browser is redirected to {@code /login} with an encoded logout confirmation.</p>
  */
 @WebServlet("/logout")
 public class LogoutServlet extends HttpServlet {
+    /** Rejects stateless GET probes in favour of an explicit POST sign-out handshake. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Use POST to sign out.");
     }
 
+    /** Invalidates the active session while cloning language or appearance selections into the replacement session. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

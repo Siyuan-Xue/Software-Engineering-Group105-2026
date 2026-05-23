@@ -36,8 +36,10 @@ import java.util.UUID;
  *
  * <p>Module Organisers receive the full screening view, including rule-based and
  * fallback match scores. Teaching Assistants receive only applicant-facing status
- * and skill-gap feedback; score and recommendation fields are intentionally not
- * exposed to satisfy the Sprint 3 visibility boundary.</p>
+ * and skill-gap feedback because analytical scores remain hidden behind MO-only visibility controls.</p>
+ *
+ * @see MatchingService
+ * @see ApplicationService
  */
 @WebServlet("/application/detail")
 public class ApplicationDetailServlet extends HttpServlet {
@@ -49,6 +51,7 @@ public class ApplicationDetailServlet extends HttpServlet {
     private ApplicationService applicationService;
     private MatchingService matchingService;
 
+    /** Instantiates services sharing the servlet-scoped facade. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
@@ -56,6 +59,7 @@ public class ApplicationDetailServlet extends HttpServlet {
         this.matchingService = new MatchingService(database);
     }
 
+    /** Requires {@code applicationId} UUID parameters and renders role-scoped payloads. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

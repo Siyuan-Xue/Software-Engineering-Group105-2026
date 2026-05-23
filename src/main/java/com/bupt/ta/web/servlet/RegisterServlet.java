@@ -19,24 +19,30 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Self-registration endpoint for TA applicant accounts.
+ * Self-service onboarding flow at {@code /register}.
+ *
+ * <p>{@link TaAccountService#registerUser} enforces uniqueness, password symmetry, and field constraints. Successful submissions
+ * redirect prospective TAs back to login with translated flash messaging; violations repopulate the form via request attributes.</p>
  */
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
 
     private TaAccountService accountService;
 
+    /** Acquires persistence through {@link DatabaseProvider#get(jakarta.servlet.ServletContext)} for account mutations. */
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
         this.accountService = new TaAccountService(database);
     }
 
+    /** Renders {@code register.jsp}. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         forwardForm(req, resp);
     }
 
+    /** Persists a provisional TA applicant via {@link TaAccountService}. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String language = resolveLanguage(req);

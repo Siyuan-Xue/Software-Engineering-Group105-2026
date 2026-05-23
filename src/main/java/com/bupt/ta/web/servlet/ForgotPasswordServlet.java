@@ -12,17 +12,23 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
 /**
- * Password recovery request page. The public form never changes credentials;
- * administrators reset passwords from the user-management screen.
+ * Informational workflow at {@code /forgot-password}.
+ *
+ * <p>The servlet never executes credential rotation; submissions always short-circuit to the same {@code forgot-password.jsp}
+ * with reassurance messaging while real resets remain an administrator-operated workflow.</p>
  */
 @WebServlet("/forgot-password")
 public class ForgotPasswordServlet extends HttpServlet {
 
+    /** Loads the explanatory form without mutating persisted users. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getRequestDispatcher("/forgot-password.jsp").forward(req, resp);
     }
 
+    /**
+     * Acknowledges the email field for UX continuity without issuing outbound mail or password tokens.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String language = resolveLanguage(req);

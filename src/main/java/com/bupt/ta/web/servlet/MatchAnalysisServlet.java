@@ -26,10 +26,10 @@ import java.util.UUID;
 /**
  * Handles persisted match-analysis refreshes for Module Organisers.
  *
- * <p>The endpoint is limited to applications owned by the current MO and only
- * runs after the application has entered the review state. This mirrors the
- * backlog workflow: submit, start review, then refresh the rule/AI-fallback
- * analysis used for screening.</p>
+ * <p>Limited strictly to vacancy-owned applications currently in {@link ApplicationStatus#REVIEWING}, the servlet mirrors the backlog
+ * contract: Teaching Assistants submit, Module Organisers start review, then this endpoint persists refreshed rule-driven analytics (with AI placeholders).</p>
+ *
+ * @see MatchingService#runAnalysis(java.util.UUID, java.util.UUID)
  */
 @WebServlet("/match-analysis")
 public class MatchAnalysisServlet extends HttpServlet {
@@ -37,6 +37,7 @@ public class MatchAnalysisServlet extends HttpServlet {
     private ApplicationService applicationService;
     private MatchingService matchingService;
 
+    /** Provisions cooperating services referencing the servlet {@link TaDatabase}. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
@@ -44,6 +45,10 @@ public class MatchAnalysisServlet extends HttpServlet {
         this.matchingService = new MatchingService(database);
     }
 
+    /**
+     * Recomputes stored analytics exclusively for applications tied to the logged-in recruiter once {@link ApplicationStatus#REVIEWING} is reached,
+     * then redirects back to {@code application/detail} carrying flash messaging.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User currentUser = requireCurrentUser(req);

@@ -21,18 +21,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Calls the DashScope-compatible Qwen VL API.
+ * HTTP client for the DashScope OpenAI-compatible chat completion endpoint powering resume coaching workflows.
  *
- * Two main functions:
- *   1. analyzeResumeForOptimization() - used on the Resumes page.
- *      Focuses on improving the student's resume quality.
- *   2. batchScoreJobs()               - used on the Vacancies page.
- *      Rates how well the student matches each open TA position (returns 0-100 score).
+ * <p>The dual entry points exercised by production JSP backing code are resume optimisation (VL capable) versus
+ * batch scoring/text reasoning (deterministic JSON via the complementary text-weighted models).</p>
  *
- * Configuration (set in D:\Programs\Tomcat 11.0\bin\setenv.bat):
- *   set QWEN_API_KEY=sk-xxxxxxxxxxxxxxxx
- *   set QWEN_MODEL=qwen-vl-max-latest        (optional, default shown)
- *   set QWEN_TEXT_MODEL=qwen-plus-latest     (optional, used for text-only batch scoring)
+ * <p>Configure credentials through {@code QWEN_API_KEY} ({@link System#getenv}) and optional overrides
+ * {@code QWEN_MODEL} plus {@code QWEN_TEXT_MODEL} sourced from JVM system properties then environment variables.</p>
  */
 public class QwenAiService {
 
@@ -44,11 +39,40 @@ public class QwenAiService {
     private static final int MAX_TEXT_CHARS   = 6000;
     private static final long MAX_IMAGE_BYTES = 5L * 1024 * 1024;
 
-    /** Vacancy descriptor passed to AI batch scoring prompts. */
+    /**
+     * Lightweight vacancy excerpt embedded inside JSON scoring prompts.
+     *
+     * @param id stable foreign key surfaced back to parsers
+     * @param title human readable role label
+     * @param description trimmed narrative reused for contextual scoring
+     * @param department owning faculty or organisational unit hint
+     */
     public record JobInfo(String id, String title, String description, String department) {}
-    /** Resume descriptor passed to AI batch scoring prompts. */
+
+    /**
+     * Resume snapshot distilled for relative ranking prompts.
+     *
+     * @param id stable resume identifier echoed in model output keys
+     * @param title headline chosen by the student
+     * @param department organisational affiliation hint
+     * @param degree academic level label as captured in profile forms
+     * @param gpa textual GPA field without normalisation guarantees
+     * @param bio long-form statement truncated upstream when necessary
+     */
     public record ResumeInfo(String id, String title, String department, String degree, String gpa, String bio) {}
-    /** One applicant row for MO multi-applicant ranking (same vacancy). */
+
+    /**
+     * Materialised applicant payload for multi-applicant vacancy ranking prompts (single vacancy scope).
+     *
+     * @param applicationId surrogate identifier echoed verbatim in emitted JSON payloads
+     * @param statusDisplay human readable workflow checkpoint label
+     * @param resumeTitle applicant headline surfaced to recruiters
+     * @param department academic unit hint propagated from persisted profiles
+     * @param degree degree level label aiding comparative filtering
+     * @param gpa textual GPA excerpt without enforcing numeric coercion
+     * @param bioExcerpt truncated narrative bound for token budgets
+     * @param coverLetterExcerpt supplementary submission text limited upstream
+     */
     public record MoApplicantSnippet(
             String applicationId,
             String statusDisplay,
@@ -66,10 +90,18 @@ public class QwenAiService {
     private final URI apiUri;
     private final ChatTransport transport;
 
+    /**
+     * @param apiKey     bearer secret permitting DashScope invocation; blanks disable remote calls downstream
+     * @param vlModel    optional multimodal backbone override
+     * @param textModel  optional deterministic text backbone override used for structured scoring prompts
+     */
     public QwenAiService(String apiKey, String vlModel, String textModel) {
         this(apiKey, vlModel, textModel, URI.create(API_URL), defaultTransport());
     }
 
+    /**
+     * Package-private wiring hook enabling integration tests to stub {@link ChatTransport} or alternative endpoints.
+     */
     QwenAiService(String apiKey, String vlModel, String textModel, URI apiUri, ChatTransport transport) {
         this.apiKey     = apiKey;
         this.vlModel    = (vlModel    != null && !vlModel.isBlank())    ? vlModel    : DEFAULT_VL_MODEL;
@@ -78,11 +110,13 @@ public class QwenAiService {
         this.transport = transport;
     }
 
+    /** @return bearer token sourced exclusively from {@code QWEN_API_KEY} environment variables */
     public static String resolveApiKey() {
         String v = System.getenv("QWEN_API_KEY");
         return (v != null && !v.isBlank()) ? v : null;
     }
 
+    /** @return configured VL backbone with {@link #DEFAULT_VL_MODEL} fallback */
     public static String resolveVlModel() {
         String v = System.getProperty("QWEN_MODEL");
         if (v != null && !v.isBlank()) return v;
@@ -90,6 +124,7 @@ public class QwenAiService {
         return (v != null && !v.isBlank()) ? v : DEFAULT_VL_MODEL;
     }
 
+    /** @return configured text backbone with {@link #DEFAULT_TEXT_MODEL} fallback */
     public static String resolveTextModel() {
         String v = System.getProperty("QWEN_TEXT_MODEL");
         if (v != null && !v.isBlank()) return v;
@@ -97,10 +132,12 @@ public class QwenAiService {
         return (v != null && !v.isBlank()) ? v : DEFAULT_TEXT_MODEL;
     }
 
+    /** @return singleton configured from environment-derived secrets and model identifiers */
     public static QwenAiService create() {
         return new QwenAiService(resolveApiKey(), resolveVlModel(), resolveTextModel());
     }
 
+    /** @return {@code true} once a usable API bearer token exists */
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank();
     }
@@ -246,8 +283,13 @@ public class QwenAiService {
     }
 
     /**
-     * Scores each of the user's resumes against a single TA job posting.
-     * Returns a map of resumeId to score (0-100).
+     * Scores numerous resume snapshots against exactly one vacancy.
+     *
+     * @param jobTitle vacancy headline used to anchor prompting
+     * @param jobDescription narrative excerpt describing duties and expectations
+     * @param jobDepartment owning unit label for recruiter context
+     * @param resumes structured resume payloads each supplying an explicit identifier key for JSON parsing
+     * @return map from resume identifiers to heuristic {@code [0,100]} scores; absent keys imply parsing drift
      */
     public Map<String, Integer> rankResumesForJob(
             String jobTitle,
@@ -463,9 +505,14 @@ public class QwenAiService {
     }
 
     /**
-     * Ranks multiple applicants for the same TA vacancy (JSON array). Triaging aid only; not a hiring decision.
+     * Requests a JSON array comparing multiple TA applicants scoped to identical vacancy metadata.
      *
-     * @return raw model text expected to contain a single JSON array
+     * @param jobTitle vacancy headline surfaced to the organiser tooling
+     * @param moduleCode curriculum identifier aiding disambiguation
+     * @param jobDescription substantive description excerpt fed to comparative reasoning prompts
+     * @param jobLabelsJoined comma-joined recruiter tags enriching context
+     * @param applicants anonymised dossier payloads with stable {@link MoApplicantSnippet#applicationId} keys
+     * @return raw assistant payload expected to encode a strictly parsed JSON array
      */
     public String rankMoApplicantsForJobJson(
             String jobTitle,

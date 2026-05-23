@@ -37,7 +37,9 @@ import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
 /**
- * Administrator-only demonstration endpoint for inspecting seeded JSON database workflows.
+ * Administrator-only front controller over {@link DbDemoService} exposed at {@code /admin/database}.
+ *
+ * <p>{@code GET} renders {@code WEB-INF/jsp/db-demo.jsp}; {@code POST} multiplexes scripted CRUD and workflow rehearsals with flash redirects mirroring QA harness expectations.</p>
  */
 @WebServlet("/admin/database")
 public class DbDemoServlet extends HttpServlet {
@@ -47,11 +49,13 @@ public class DbDemoServlet extends HttpServlet {
 
     private DbDemoService dbDemoService;
 
+    /** Binds the demo helper to the servlet-context database singleton. */
     @Override
     public void init() {
         this.dbDemoService = new DbDemoService(DatabaseProvider.get(getServletContext()));
     }
 
+    /** Applies flash parameters, primes editor defaults, then forwards to {@value #VIEW_PATH}. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (!requireAdmin(req, resp)) {
@@ -63,6 +67,7 @@ public class DbDemoServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
 
+    /** Executes scripted operations surfaced as HTML forms; failures re-render contextual error banners inline. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (!requireAdmin(req, resp)) {

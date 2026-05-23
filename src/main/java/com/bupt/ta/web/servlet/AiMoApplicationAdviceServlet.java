@@ -23,9 +23,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * JSON API: POST /ai-mo-application-advice
- * Body: application/x-www-form-urlencoded with applicationId=
- * MO only; application must belong to a job posted by the current user.
+ * JSON helper {@code POST /ai-mo-application-advice} providing coaching copy for recruiter review panes.
+ *
+ * <p>Requires Module Organiser sessions whose vacancies own the referenced {@code applicationId}.
+ * Responses remain advisory; downstream UI layers render legal disclaimers separately.</p>
+ *
+ * @see AiRequestGuard
  */
 @WebServlet("/ai-mo-application-advice")
 public class AiMoApplicationAdviceServlet extends HttpServlet {
@@ -33,12 +36,14 @@ public class AiMoApplicationAdviceServlet extends HttpServlet {
     private TaDatabase database;
     private ObjectMapper mapper;
 
+    /** Acquires persistence access for deterministic ownership checks ahead of prompting. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.mapper = new ObjectMapper();
     }
 
+    /** Streams Markdown guidance payloads mirroring dashboard expectations. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json;charset=UTF-8");

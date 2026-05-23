@@ -51,7 +51,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * TA resume management endpoint for profile data, uploads, and skill bindings.
+ * Teaching Assistant workspace at {@code /resumes} for CRUD drafts, availability JSON, multilingual AI coaching hints, and file uploads.
+ *
+ * <p>Multipart uploads respect {@link MultipartConfig} thresholds while {@link AiRequestGuard} governs discretionary model calls surfaced on the client.</p>
  */
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 2,
@@ -70,6 +72,7 @@ public class ResumesServlet extends HttpServlet {
     private ObjectMapper  objectMapper;
     private Path uploadDir;
 
+    /** Initialises collaborators, configures Jackson, and ensures resume upload staging directories exist. */
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
@@ -85,6 +88,7 @@ public class ResumesServlet extends HttpServlet {
     }
 
 
+    /** Supplies resume collections, enumerated skills, proficiency metadata, and client AI configuration flags. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -137,6 +141,7 @@ public class ResumesServlet extends HttpServlet {
     }
 
 
+    /** Dispatches CRUD-ish resume actions plus JSON endpoints for uploads and conversational AI review previews. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
