@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Administrator audit-log search page and CSV export endpoint.
+ * Searchable administrator audit explorer mounted at {@code /admin/audit}.
+ *
+ * <p>Optional {@code export=csv} swaps the HTML dispatcher for streamed CSV payloads sized up to bounded windows while persisting supplementary audit breadcrumbs.</p>
  */
 @WebServlet("/admin/audit")
 public class AdminAuditServlet extends HttpServlet {
@@ -40,11 +42,13 @@ public class AdminAuditServlet extends HttpServlet {
     private TaDatabase database;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /** Binds DAO helpers shared between tabular renders and exporter utilities. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
+    /** Filters audit rows through {@link com.bupt.ta.domain.value.AuditLogQuery} or triggers CSV exporters. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User currentUser = requireCurrentUser(req);

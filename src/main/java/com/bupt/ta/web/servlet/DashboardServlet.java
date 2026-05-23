@@ -29,7 +29,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Builds role-specific dashboard summaries for TA, MO, and Admin users.
+ * Role-aware landing experience at {@code /dashboard}.
+ *
+ * <p>{@code TA}, {@code MO}, and {@code ADMIN} dashboards aggregate metrics from JSON-backed repositories, hydrate recent activity
+ * models, and forward to {@code portal/dashboard.jsp}. Unsupported roles degrade into an informational empty shell.</p>
  */
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
@@ -37,11 +40,13 @@ public class DashboardServlet extends HttpServlet {
 
     private TaDatabase database;
 
+    /** Pulls singleton database access for cross-aggregate queries. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
+    /** Hydrates KPI cards plus upcoming deadlines inferred from vacancy metadata. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

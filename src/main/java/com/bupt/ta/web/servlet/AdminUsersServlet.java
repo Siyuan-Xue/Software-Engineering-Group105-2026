@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Administrator user-management endpoint for account creation and activation.
+ * Administrator tooling at {@code /admin/users} for lifecycle operations on persisted {@link User} entities.
+ *
+ * <p>Create, update, and activation verbs append structured {@link AuditLog} payloads for traceability.</p>
  */
 @WebServlet("/admin/users")
 public class AdminUsersServlet extends HttpServlet {
@@ -36,11 +38,13 @@ public class AdminUsersServlet extends HttpServlet {
     private TaDatabase database;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /** Acquires transactional repositories used for account administration. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
+    /** Loads the directory view with flash parameters forwarded through query strings. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User currentUser = requireCurrentUser(req);
@@ -54,8 +58,7 @@ public class AdminUsersServlet extends HttpServlet {
         req.setAttribute("successMessage", normalize(req.getParameter("successMessage")));
         req.setAttribute("errorMessage", normalize(req.getParameter("errorMessage")));
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
-    }
-
+    }    /** Executes enumerated {@code action} verbs then issues PRG redirects with bilingual flashes. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User currentUser = requireCurrentUser(req);

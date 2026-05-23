@@ -21,7 +21,11 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Authenticates users, starts portal sessions, and records login attempts.
+ * MVC entry for credential verification at {@code /login}.
+ *
+ * <p>{@code GET} renders {@code login.jsp}, optionally replaying flash query parameters. Successful {@code POST}
+ * calls rotate the servlet session identifier, hydrate {@link I18n} preference keys, and redirect to {@code /dashboard}.
+ * Failed attempts reuse {@link I18n} keys for bilingual feedback and append anonymised audit entries when an account exists.</p>
  */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
@@ -29,12 +33,21 @@ public class LoginServlet extends HttpServlet {
     private AuthService authService;
     private TaDatabase database;
 
+    /**
+     * Binds persistence and {@link AuthService} collaborators from {@link jakarta.servlet.ServletContext}.
+     *
+     * @throws ServletException if persistence cannot be resolved from the servlet context
+     */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.authService = new AuthService(database);
     }
 
+    /**
+     * @param req  inbound request forwarded to {@code login.jsp}
+     * @param resp outbound response streamed to the JSP dispatcher
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String errorMessage = req.getParameter("errorMessage");
@@ -48,6 +61,12 @@ public class LoginServlet extends HttpServlet {
         req.getRequestDispatcher("/login.jsp").forward(req, resp);
     }
 
+    /**
+     * Validates email/password tuples, initializes session attributes, or re-renders the form with contextual errors.
+     *
+     * @param req  carries {@code email}, {@code password}, and inferred language preferences
+     * @param resp issues redirects on success or forwards back to {@code login.jsp}
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String email = req.getParameter("email");

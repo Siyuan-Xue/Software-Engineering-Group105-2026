@@ -35,7 +35,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Handles MO vacancy creation and initial skill requirements.
+ * MO-only creation pipeline at {@code /vacancy/create} binding HTML forms to persisted {@link com.bupt.ta.domain.entity.Job} rows.
+ *
+ * <p>POST bodies describe scheduling metadata, remuneration defaults, attached {@link JobRequirement} selections, and tag expansions routed through {@link JobService}.</p>
  */
 @WebServlet("/vacancy/create")
 public class VacancyCreateServlet extends HttpServlet {
@@ -43,12 +45,14 @@ public class VacancyCreateServlet extends HttpServlet {
     private TaDatabase database;
     private JobService jobService;
 
+    /** Resolves collaborator services validating MO-only publication rules. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.jobService = new JobService(database);
     }
 
+    /** Creates vacancies after verifying MO session ownership. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

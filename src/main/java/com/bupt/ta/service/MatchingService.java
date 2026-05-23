@@ -38,6 +38,7 @@ public class MatchingService {
     private final TaDatabase db;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /** @param db canonical persistence facade sourcing applications, workloads, notifications, and audit logs */
     public MatchingService(TaDatabase db) {
         this.db = db;
     }
@@ -102,6 +103,11 @@ public class MatchingService {
         return db.matchScores().findByApplicationId(applicationId).orElseThrow();
     }
 
+    /**
+     * Calculates the weighted rule score from skill coverage ratios and inferred workload slack.
+     *
+     * @return blended coverage score scaled to two decimal places; workload headroom adjusts the multiplier when semester aggregates show deficits
+     */
     public BigDecimal computeRuleScore(UUID applicationId) {
         Application application = db.applications().findById(applicationId)
                 .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
@@ -120,12 +126,20 @@ public class MatchingService {
         return BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * @return human-readable descriptions of mandatory skills the resume still lacks versus the vacancy
+     */
     public List<String> computeMissingSkills(UUID applicationId) {
         Application application = db.applications().findById(applicationId)
                 .orElseThrow(() -> new ConstraintViolationException("Application not found: " + applicationId));
         return computeCoverage(application.getResumeId(), application.getJobId()).getMissingRequiredSkills();
     }
 
+    /**
+     * Evaluates structured {@link JobRequirement} rows against the resume-linked {@link ResumeSkill} set.
+     *
+     * @return immutable tallies describing required/optional fulfilment plus missing descriptors
+     */
     public SkillCoverageView computeCoverage(UUID resumeId, UUID jobId) {
         Resume resume = db.resumes().findById(resumeId)
                 .orElseThrow(() -> new ConstraintViolationException("Resume not found: " + resumeId));
@@ -197,9 +211,7 @@ public class MatchingService {
         return aggregate == null ? 20 : aggregate.getRemainingHours();
     }
 
-    /**
-     * Immutable coverage summary for one resume against one vacancy.
-     */
+    /** Immutable tally of structured skill coverage between one resume snapshot and vacancy requirements. */
     public static final class SkillCoverageView {
         private final int requiredMatched;
         private final int requiredTotal;
@@ -218,42 +230,52 @@ public class MatchingService {
             this.missingOptionalSkills = List.copyOf(missingOptionalSkills);
         }
 
+        /** @return fulfilled mandatory requirement rows detected on the resume */
         public int getRequiredMatched() {
             return requiredMatched;
         }
 
+        /** @return total mandatory requirement rows declared on the job */
         public int getRequiredTotal() {
             return requiredTotal;
         }
 
+        /** @return fulfilled optional requirement rows detected on the resume */
         public int getOptionalMatched() {
             return optionalMatched;
         }
 
+        /** @return total optional requirement rows declared on the job */
         public int getOptionalTotal() {
             return optionalTotal;
         }
 
+        /** @return percentage covering mandatory skill rows only ({@code 100} when no requirements exist) */
         public int getRequiredCoveragePct() {
             return percent(requiredMatched, requiredTotal);
         }
 
+        /** @return percentage covering mandatory and optional requirement rows jointly */
         public int getOverallCoveragePct() {
             return percent(requiredMatched + optionalMatched, requiredTotal + optionalTotal);
         }
 
+        /** @return count of mandatory requirements still unmatched */
         public int getMissingRequiredCount() {
             return missingRequiredSkills.size();
         }
 
+        /** @return {@code true} when mandatory coverage sinks below fifty percent */
         public boolean isLowCoverageWarning() {
             return getRequiredCoveragePct() < 50;
         }
 
+        /** @return defensive copy backing list of textual gap descriptors for mandatory skills */
         public List<String> getMissingRequiredSkills() {
             return missingRequiredSkills;
         }
 
+        /** @return defensive copy backing list of textual gap descriptors for optional skills */
         public List<String> getMissingOptionalSkills() {
             return missingOptionalSkills;
         }

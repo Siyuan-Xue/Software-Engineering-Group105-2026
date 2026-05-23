@@ -322,6 +322,8 @@ mvn clean package
 mvn javadoc:javadoc
 ```
 
+After large comment refactors, prefer `mvn clean javadoc:javadoc` so `target/reports/apidocs/` is regenerated from scratch.
+
 Current local result:
 
 - `mvn test`: `133` tests, `0` failures, `0` errors.

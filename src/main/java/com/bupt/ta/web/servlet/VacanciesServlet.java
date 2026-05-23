@@ -40,7 +40,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Lists vacancies with role-specific visibility and filtering.
+ * Paginated vacancy catalogue backing {@code /vacancies}.
+ *
+ * <p>Anonymous visitors observe open postings while authenticated users merge favourite markers, departmental filters,
+ * AI availability flags ({@link QwenAiService}), and workload facets before rendering {@code portal/vacancies.jsp}.</p>
  */
 @WebServlet("/vacancies")
 public class VacanciesServlet extends HttpServlet {
@@ -53,12 +56,14 @@ public class VacanciesServlet extends HttpServlet {
     private JobService jobService;
     private TaDatabase database;
 
+    /** Wires vacancy business rules beside raw persistence for visibility toggles. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.jobService = new JobService(database);
     }
 
+    /** Builds server-side paging models ({@link #PAGE_SIZE}) and attaches filter artefacts to the view. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {

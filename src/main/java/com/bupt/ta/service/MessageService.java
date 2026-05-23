@@ -13,18 +13,15 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
- * Service that provides a messaging/conversation layer on top of the Notification table.
- * <p>
- * Messages are stored as {@link Notification} records with {@code notifType = MESSAGE}.
- * The {@code userId} field stores the <b>recipient</b>, while {@code entityId} stores the <b>sender</b>.
- * The {@code message} field stores the message content, and {@code title} holds a conversation context hint.
- * <p>
- * A "conversation" is the set of all MESSAGE notifications exchanged between two users
- * (i.e. where {userId, entityId} matches {userA, userB} in either direction).
- * The conversationId is a deterministic string derived from the two user IDs.
+ * Presentation service that multiplexes interpersonal chat and coarse system announcements on top of {@link Notification}.
+ *
+ * <ul>
+ *   <li>Peer messages use {@code MESSAGE} notifications where {@link Notification#getUserId()} captures the recipient
+ *       and {@link Notification#getEntityId()} captures the sender.</li>
+ *   <li>Every other notification type aggregates into the synthetic {@code system} pseudo-conversation.</li>
+ * </ul>
  */
 public class MessageService {
     private static final String SYSTEM_CONVERSATION_ID = "system";
@@ -33,12 +30,16 @@ public class MessageService {
 
     private final TaDatabase db;
 
+    /** @param db persistence facade queried for notifications and user projections */
     public MessageService(TaDatabase db) {
         this.db = db;
     }
 
     /**
-     * Build the list of conversations for the given user (without loading full message lists).
+     * Builds summary rows for inbox rendering without hydrating every historical message payload.
+     *
+     * @param currentUserId subject requesting the inbox
+     * @param zh            toggles Mandarin copy for placeholders and relative timestamps
      */
     public List<ConversationDTO> listConversations(UUID currentUserId, boolean zh) {
         List<Notification> allMessages = getAllMessageNotifications();
@@ -127,8 +128,12 @@ public class MessageService {
     }
 
     /**
-     * Build a full conversation (including messages) between the current user and the other party
-     * identified by conversationId.
+     * Materialises chronologically ordered payloads for UI detail pages and clears unread MESSAGE rows for the viewer.
+     *
+     * @param currentUserId subject opening the timeline
+     * @param conversationId either {@link #buildConversationId(UUID, UUID)} output or {@code system}
+     * @param zh toggles Mandarin copy for headers and previews
+     * @return hydrated DTO or {@code null} when the encoded peer cannot be inferred
      */
     public ConversationDTO getConversation(UUID currentUserId, String conversationId, boolean zh) {
         if (SYSTEM_CONVERSATION_ID.equals(conversationId)) {
@@ -187,7 +192,12 @@ public class MessageService {
     }
 
     /**
-     * Send a message from the current user to the other party in the given conversation.
+     * Persists outbound chat by inserting a MESSAGE notification targeting the inferred peer.
+     *
+     * @param senderUserId author of {@code content}
+     * @param conversationId deterministic peer channel key (see {@link #buildConversationId(UUID, UUID)})
+     * @param content plaintext body after trimming surrounding whitespace
+     * @throws IllegalArgumentException when the channel id cannot be decoded or either party is unknown
      */
     public void sendMessage(UUID senderUserId, String conversationId, String content) {
         UUID recipientUserId = extractOtherUserId(senderUserId, conversationId);
@@ -219,8 +229,7 @@ public class MessageService {
     }
 
     /**
-     * Start or retrieve a conversation with a specific user.
-     * Returns the conversation ID.
+     * Returns {@link #buildConversationId(UUID, UUID)} allowing controllers to initialise empty threads uniformly.
      */
     public String getOrCreateConversationId(UUID currentUserId, UUID otherUserId) {
         return buildConversationId(currentUserId, otherUserId);
@@ -357,7 +366,11 @@ public class MessageService {
     }
 
     /**
-     * Extract the other user's UUID from a conversation ID, given the current user.
+     * Derives {@code UUID} counterpart encoded inside {@link #buildConversationId(UUID, UUID)}'s hyphenated payload or {@code null}
+     * when malformed.
+     *
+     * @param currentUserId caller expected to inhabit the pair
+     * @param conversationId {@code conv-uuid-uuid} layout produced by deterministic builders
      */
     UUID extractOtherUserId(UUID currentUserId, String conversationId) {
         if (conversationId == null || !conversationId.startsWith("conv-")) {

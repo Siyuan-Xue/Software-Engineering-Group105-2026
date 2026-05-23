@@ -10,12 +10,20 @@ import jakarta.servlet.annotation.WebFilter;
 import java.io.IOException;
 
 /**
- * Applies UTF-8 request and response encoding across the web application.
+ * Sets servlet request and response character encodings to UTF-8 for each mapped dispatcher path.
+ *
+ * <p>Does not mutate {@link jakarta.servlet.http.HttpServletResponse#setContentType(String)}; JSP controllers remain responsible
+ * for declaring concrete MIME types alongside implicit charset propagation.</p>
  */
 @WebFilter(filterName = "encodingFilter", urlPatterns = "/*")
 public class EncodingFilter implements Filter {
     private static final String DEFAULT_ENCODING = "UTF-8";
 
+    /**
+     * @param request  mutable low-level servlet request gaining {@link ServletRequest#setCharacterEncoding(String)}
+     * @param response mutable servlet response inheriting UTF-8 output semantics
+     * @param chain    remaining pipeline members after encoding normalisation
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {

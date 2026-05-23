@@ -19,7 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Handles account profile, password, language, and appearance settings.
+ * Authenticated self-service portal for profile fields, credential rotation, and UI preferences ({@code /settings}).
+ *
+ * <p>Every branch reloads authoritative user rows via {@link TaDatabase}, synchronises flash parameters through query strings,
+ * and keeps {@code currentUser} on the servlet session aligned with canonical {@link I18n} keys.</p>
  */
 @WebServlet("/settings")
 public class SettingsServlet extends HttpServlet {
@@ -27,12 +30,13 @@ public class SettingsServlet extends HttpServlet {
 
     private TaDatabase database;
 
+    /** Resolves shared persistence for direct {@code users} mutations. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
     }
 
-
+    /** Renders {@value #VIEW_PATH}, surfacing persisted profile payloads or degraded {@code loadError} state. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User currentUser = requireCurrentUser(req);
@@ -67,8 +71,9 @@ public class SettingsServlet extends HttpServlet {
 
         req.getRequestDispatcher(VIEW_PATH).forward(req, resp);
     }
-
-
+    /**
+     * Dispatches POST actions via {@code action}: password changes, aesthetic preferences, or default profile merges.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User currentUser = requireCurrentUser(req);

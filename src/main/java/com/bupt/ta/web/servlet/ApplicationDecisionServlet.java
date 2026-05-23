@@ -21,18 +21,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
- * Handles MO and TA application state transitions from forms.
+ * Form-backed workflow at {@code /application/decision} coordinating MO review actions and TA offer responses.
+ *
+ * <p>{@code POST} payloads carry {@code action} tokens aligned with {@link ApplicationService}
+ * methods; failures redirect via flash parameters on {@code /applications} or contextual detail URLs.</p>
  */
 @WebServlet("/application/decision")
 public class ApplicationDecisionServlet extends HttpServlet {
     private ApplicationService applicationService;
 
+    /** Provisions shared {@link ApplicationService} facade state. */
     @Override
     public void init() throws ServletException {
         TaDatabase database = DatabaseProvider.get(getServletContext());
         this.applicationService = new ApplicationService(database);
     }
 
+    /** Validates roles and dispatches enumerated decision verbs. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

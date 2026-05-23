@@ -28,17 +28,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * JSON API: POST /ai-match
+ * Authenticated JSON endpoint {@code POST /ai-match}.
  *
- * Request params (form-data or URL-encoded):
- *   ids[]   - one or more vacancy/job UUIDs to score
- *
- * Response JSON:
- *   {"ok": true,  "scores": {"uuid1": 85, "uuid2": 62, ...}}
- *   {"ok": false, "error": "message"}
- *
- * Requires the user to be logged in (401 if not).
- * Requires QWEN_API_KEY to be configured (error JSON if not).
+ * <p>{@code ids[]} enumerates vacancy keys that {@link QwenAiService} batch scores against an inferred primary resume snapshot.
+ * Consent gating is enforced via {@link AiRequestGuard}; missing DashScope secrets produce structured error payloads rather than redirects.</p>
  */
 @WebServlet("/ai-match")
 public class AiMatchServlet extends HttpServlet {
@@ -47,6 +40,7 @@ public class AiMatchServlet extends HttpServlet {
     private ResumeService resumeService;
     private ObjectMapper  mapper;
 
+    /** Acquires collaborators for resume discovery and DashScope-compatible JSON replies. */
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
@@ -54,10 +48,10 @@ public class AiMatchServlet extends HttpServlet {
         this.mapper        = new ObjectMapper();
     }
 
+    /** Streams heuristic vacancy fit scores keyed by vacancy UUID strings. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
         resp.setContentType("application/json;charset=UTF-8");
         ObjectNode json = mapper.createObjectNode();
 

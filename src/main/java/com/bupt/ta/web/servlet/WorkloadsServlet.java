@@ -22,10 +22,11 @@ import java.util.Map;
 /**
  * Renders the administrator workload dashboard.
  *
- * <p>The dashboard is derived from accepted workload records and resume capacity
- * data. It also produces lightweight rebalance suggestions in-memory so the
- * final coursework can demonstrate workload balancing without adding new
- * persistence tables or AI-only dependencies.</p>
+ * <p>The dashboard derives metrics from accepted workload aggregates and inferred resume capacities.
+ * In-memory rebalance cues illustrate balancing ideas without supplementary persistence scaffolding.
+ * Only {@link com.bupt.ta.domain.enums.UserRole#ADMIN} sessions proceed; everyone else receives HTTP 403 responses.</p>
+ *
+ * @see AdminService
  */
 @WebServlet("/workloads")
 public class WorkloadsServlet extends HttpServlet {
@@ -34,12 +35,14 @@ public class WorkloadsServlet extends HttpServlet {
     private TaDatabase database;
     private AdminService adminService;
 
+    /** Instantiates {@link AdminService} helpers for deterministic workload computations. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
         this.adminService = new AdminService(database);
     }
 
+    /** Applies textual filters prior to emitting rebalance cues derived entirely in-memory. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);

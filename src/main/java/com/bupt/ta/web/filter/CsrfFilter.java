@@ -13,12 +13,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Adds a session-bound CSRF token to dynamic pages and rejects unsafe requests
- * that do not echo it in either a form parameter or request header.
+ * Global CSRF hardening layered on all URL mappings alongside {@link AuthFilter}.
+ *
+ * <p>Static asset prefixes short-circuit to avoid needless token issuance. Stateless {@code GET} traversals lazily populate
+ * request attributes ({@link CsrfTokens#ensureToken(HttpServletRequest)}) expected by forms; mutating verbs without a matching token
+ * receive HTTP {@code 403} with a terse JSON envelope suitable for AJAX clients.</p>
+ *
+ * @see CsrfTokens
  */
 @WebFilter("/*")
 public class CsrfFilter implements Filter {
 
+    /**
+     * @param request  HTTP request inspected for verbs and echoed tokens
+     * @param response JSON error channel when verification fails prior to servlet execution
+     * @param chain    downstream filters and target servlet mappings
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -41,6 +51,7 @@ public class CsrfFilter implements Filter {
         chain.doFilter(request, response);
     }
 
+    /** @return {@code true} when the route targets theme or script bundles exempt from verification */
     private static boolean isStaticAsset(HttpServletRequest req) {
         String route = req.getRequestURI().substring(req.getContextPath().length());
         return route.startsWith("/css/")

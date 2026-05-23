@@ -13,7 +13,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Business service for TA resume versions and resume skill bindings.
+ * Coordinates TA resume drafts and resume-skill linkage with transactional guardrails.
+ *
+ * <p>Deletion and skill replacement enforce ownership checks when {@code operatorId} is supplied,
+ * preserving demo flows that invoke service methods without an authenticated caller.</p>
  */
 public class ResumeService {
     private static final Set<ApplicationStatus> ACTIVE_APPLICATION_STATUSES = Set.of(
@@ -25,37 +28,52 @@ public class ResumeService {
 
     private final TaDatabase db;
 
+    /** @param db persistence facade consulted for resumes, resume skills, and application lookups */
     public ResumeService(TaDatabase db) {
         this.db = db;
     }
 
+    /** @return resumes owned by {@code userId}, ordered by persistence layer defaults */
     public List<Resume> listByUserId(UUID userId) {
         return db.resumes().listByUserId(userId);
     }
 
+    /** @see #save(Resume) */
     public Resume create(Resume resume) {
         return save(resume);
     }
 
+    /** @see #save(Resume) */
     public Resume update(Resume resume) {
         return save(resume);
     }
 
+    /**
+     * Validates invariants before persisting a resume snapshot.
+     *
+     * @throws ConstraintViolationException when the resume title is blank, the owner ID is absent,
+     *         or the owning user cannot be activated for edits
+     */
     public Resume save(Resume resume) {
         validateResume(resume);
         return db.resumes().save(resume);
     }
 
+    /** @param resumeId resume to clone verbatim through the persistence layer */
     public Resume duplicate(UUID resumeId) {
         return db.resumes().duplicate(resumeId);
     }
 
+    /** @see #delete(UUID, UUID) */
     public void delete(UUID resumeId) {
         delete(null, resumeId);
     }
 
     /**
-     * Deletes a resume only when it is not referenced by active applications.
+     * Deletes a resume only when no non-terminal applications reference it.
+     *
+     * @param operatorId when non-null, must match {@link Resume#getUserId()} or the removal is rejected
+     * @throws ConstraintViolationException when the resume does not exist, ownership fails, or active applications bind it
      */
     public void delete(UUID operatorId, UUID resumeId) {
         Resume existing = db.resumes().findById(resumeId)
@@ -77,7 +95,9 @@ public class ResumeService {
     }
 
     /**
-     * Replaces all skills bound to a resume after verifying TA ownership.
+     * Replaces all skills attached to {@code resumeId} within one atomic persistence operation.
+     *
+     * @param operatorId when non-null, must own the resume; each {@link ResumeSkill} gets {@link ResumeSkill#setResumeId(UUID)}
      */
     public void replaceSkills(UUID operatorId, UUID resumeId, List<ResumeSkill> skills) {
         Resume resume = db.resumes().findById(resumeId)

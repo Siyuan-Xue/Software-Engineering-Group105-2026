@@ -27,25 +27,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * JSON API: POST /ai-resume-rank
+ * Authenticated JSON endpoint {@code POST /ai-resume-rank}.
  *
- * Scores each of the user's resumes against a single vacancy and returns
- * a ranked list so the apply modal can highlight the best-fit resume.
+ * <p>Given {@code jobId}, {@link QwenAiService} scores every resume belonging to the session principal and emits a deterministic ranking array powering apply-modals.</p>
  *
- * Request params:
- *   jobId  - UUID of the vacancy to score against
- *
- * Response JSON (success):
- *   {
- *     "ok": true,
- *     "rankings": [
- *       { "resumeId": "...", "title": "...", "score": 88, "recommended": true },
- *       ...
- *     ]
- *   }
- *
- * Response JSON (error):
- *   { "ok": false, "error": "message" }
+ * @see AiRequestGuard
  */
 @WebServlet("/ai-resume-rank")
 public class AiResumeRankServlet extends HttpServlet {
@@ -54,6 +40,7 @@ public class AiResumeRankServlet extends HttpServlet {
     private ResumeService resumeService;
     private ObjectMapper  mapper;
 
+    /** Wires resume catalogue access used for prompting heuristics. */
     @Override
     public void init() throws ServletException {
         this.database      = DatabaseProvider.get(getServletContext());
@@ -61,6 +48,7 @@ public class AiResumeRankServlet extends HttpServlet {
         this.mapper        = new ObjectMapper();
     }
 
+    /** Executes ranking prompts and emits JSON payloads understood by AJAX clients on vacancy detail surfaces. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {

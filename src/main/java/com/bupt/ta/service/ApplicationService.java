@@ -38,28 +38,41 @@ import java.util.stream.Collectors;
  * <p>The service enforces TA/MO ownership rules, records audit events, creates
  * workload records after TA acceptance, and emits the notifications used by the
  * message centre.</p>
+ *
+ * <p>{@link #transition} encapsulates duplicated state mutation/audit emits for reviewer and TA paths.</p>
  */
 public class ApplicationService {
     private final TaDatabase db;
     private final ObjectMapper mapper = JsonMapperFactory.create();
 
+    /**
+     * @param db façade opened during servlet context bootstrap
+     */
     public ApplicationService(TaDatabase db) {
         this.db = db;
     }
 
+    /** Lists every application persisted against {@code jobId}. */
     public List<Application> listByJobId(UUID jobId) {
         return db.applications().listByJobId(jobId);
     }
 
+    /** Lists every binding between {@code resumeId} and vacancy rows irrespective of lifecycle state. */
     public List<Application> listByResumeId(UUID resumeId) {
         return db.applications().listByResumeId(resumeId);
     }
 
+    /**
+     * Low-level saver used by integration utilities; validates foreign keys before handing off to repositories.
+     */
     public Application save(Application application) {
         validateBaseApplication(application);
         return db.applications().save(application);
     }
 
+    /**
+     * @see ApplicationService#submit(UUID, UUID, UUID, String, ResumeFileUpload.SavedResumeFile)
+     */
     public Application submit(UUID taUserId, UUID resumeId, UUID jobId, String coverLetter) {
         return submit(taUserId, resumeId, jobId, coverLetter, null);
     }
@@ -163,6 +176,7 @@ public class ApplicationService {
         }
     }
 
+    /** Moves pending (submitted) applications into recruiting review state for the module organiser owning the vacancy. */
     public Application startReview(UUID moUserId, UUID applicationId) {
         Application current = requireApplication(applicationId);
         assertMoOwnsApplication(moUserId, current);
@@ -195,6 +209,7 @@ public class ApplicationService {
         return saved;
     }
 
+    /** Records recruiter rejection rationale and transitions terminal states when permissible. */
     public Application reject(UUID moUserId, UUID applicationId, String notes) {
         Application current = requireApplication(applicationId);
         assertMoOwnsApplication(moUserId, current);
@@ -252,6 +267,7 @@ public class ApplicationService {
         return db.applications().findById(applicationId).orElseThrow();
     }
 
+    /** Records TA declines while notifying the recruiter. */
     public Application declineOffer(UUID taUserId, UUID applicationId) {
         return respondToOffer(taUserId, applicationId, ApplicationStatus.DECLINED);
     }
@@ -303,6 +319,9 @@ public class ApplicationService {
         return saved;
     }
 
+    /**
+     * Validates that {@code moUserId} authored the vacancy owning {@code application}; otherwise raises consistent constraint errors.
+     */
     public void assertMoOwnsApplication(UUID moUserId, Application application) {
         Job job = requireJob(application.getJobId());
         if (job.getPostedBy() == null || !job.getPostedBy().equals(moUserId)) {

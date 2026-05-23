@@ -19,11 +19,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Servlet handling the Messages page.
- * <p>
- * GET /messages renders the conversation list without an active thread.
- * GET /messages?conversationId=... renders the list and active thread.
- * POST /messages sends a message and redirects back to the thread.
+ * Web MVC controller backing {@code /messages} conversational UX layered on {@link MessageService}.
+ *
+ * <ul>
+ *   <li>{@code GET} hydrates inbox summaries plus optional conversation threads.</li>
+ *   <li>{@code POST} dispatches outbound chat or executes {@code markAllRead} system notifications.</li>
+ * </ul>
  */
 @WebServlet("/messages")
 public class MessagesServlet extends HttpServlet {
@@ -32,6 +33,7 @@ public class MessagesServlet extends HttpServlet {
     private TaDatabase database;
     private MessageService messageService;
 
+    /** Composes messaging services with shared persistence lookups. */
     @Override
     public void init() throws ServletException {
         this.database = DatabaseProvider.get(getServletContext());
@@ -39,6 +41,7 @@ public class MessagesServlet extends HttpServlet {
     }
 
 
+    /** Lists conversations and optionally primes an active transcript for the authenticated principal. */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User currentUser = requireCurrentUser(req);
@@ -88,8 +91,7 @@ public class MessagesServlet extends HttpServlet {
         req.setAttribute("successMessage", null);
         req.setAttribute("errorMessage", I18n.message(req, "msg.messagesLoadFailed"));
     }
-
-
+    /** Applies {@link MessageService} mutations then issues PRG redirects with bilingual flash payloads. */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User currentUser = requireCurrentUser(req);
