@@ -35,6 +35,10 @@ target/
 /.github/
 /target
 /docs
+!/docs/
+/docs/*
+!/docs/apidocs/
+!/docs/apidocs/**
 # Local startup script (not for repo)
 init.txt
 
